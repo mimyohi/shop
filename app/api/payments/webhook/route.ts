@@ -51,8 +51,6 @@ export async function POST(request: NextRequest) {
       headers[key] = value;
     });
 
-    console.log("웹훅 수신:", body.substring(0, 200));
-
     // 웹훅 시그니처 검증
     let webhook: PortOne.Webhook.Webhook;
     try {
@@ -69,11 +67,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("웹훅 검증 성공:", webhook.type);
-
     // paymentId가 있는 경우에만 처리
     if (!hasPaymentId(webhook)) {
-      console.log("paymentId가 없는 웹훅:", webhook.type);
       return NextResponse.json({ received: true });
     }
 
@@ -101,7 +96,6 @@ export async function POST(request: NextRequest) {
     }
 
     const paymentData = await paymentResponse.json();
-    console.log("결제 상태:", paymentData.status);
 
     // 주문 조회
     const { data: order, error: orderError } = await supabase
@@ -112,13 +106,18 @@ export async function POST(request: NextRequest) {
 
     if (orderError || !order) {
       console.error("주문 조회 실패:", orderError);
-      return NextResponse.json({ error: "주문을 찾을 수 없습니다." }, { status: 404 });
+      return NextResponse.json(
+        { error: "주문을 찾을 수 없습니다." },
+        { status: 404 }
+      );
     }
 
     // 이미 처리된 주문인지 확인
     if (order.status === "completed") {
-      console.log("이미 처리된 주문:", paymentId);
-      return NextResponse.json({ received: true, message: "Already processed" });
+      return NextResponse.json({
+        received: true,
+        message: "Already processed",
+      });
     }
 
     // 금액 검증 (위변조 방지)
@@ -157,8 +156,6 @@ export async function POST(request: NextRequest) {
 
 // 결제 완료 처리
 async function handlePaymentSuccess(order: any, paymentData: any) {
-  console.log("결제 완료 처리 시작:", order.order_id);
-
   // 주문 상태 업데이트
   const { error: updateError } = await supabase
     .from("orders")
@@ -193,14 +190,10 @@ async function handlePaymentSuccess(order: any, paymentData: any) {
   if (order.user_phone || order.shipping_phone) {
     await sendOrderConfirmationAlimtalkNotification(order);
   }
-
-  console.log("결제 완료 처리 성공:", order.order_id);
 }
 
 // 포인트 사용 처리
 async function processPointsUsage(order: any) {
-  console.log(`포인트 사용 처리: ${order.used_points}P`);
-
   // 포인트 차감
   const { error: pointsError } = await supabase.rpc("use_points", {
     p_user_id: order.user_id,
@@ -209,7 +202,6 @@ async function processPointsUsage(order: any) {
 
   if (pointsError) {
     // RPC 함수가 없으면 수동으로 처리
-    console.log("RPC 함수 없음, 수동으로 포인트 차감");
 
     // user_points 업데이트
     const { data: userPoints } = await supabase
@@ -237,14 +229,10 @@ async function processPointsUsage(order: any) {
     reason: `주문 결제 (${order.order_id})`,
     order_id: order.order_id,
   });
-
-  console.log("포인트 사용 처리 완료");
 }
 
 // 쿠폰 사용 처리
 async function processCouponUsage(order: any) {
-  console.log("쿠폰 사용 처리:", order.user_coupon_id);
-
   const { error: couponError } = await supabase
     .from("user_coupons")
     .update({
@@ -258,8 +246,6 @@ async function processCouponUsage(order: any) {
     console.error("쿠폰 사용 처리 실패:", couponError);
     throw couponError;
   }
-
-  console.log("쿠폰 사용 처리 완료");
 }
 
 // 포인트 적립
@@ -270,8 +256,6 @@ async function earnPoints(order: any) {
   if (earnedPoints <= 0) {
     return;
   }
-
-  console.log(`포인트 적립: ${earnedPoints}P`);
 
   // user_points 조회 또는 생성
   const { data: userPoints } = await supabase
@@ -307,14 +291,10 @@ async function earnPoints(order: any) {
     reason: `주문 결제 적립 (${order.order_id})`,
     order_id: order.order_id,
   });
-
-  console.log("포인트 적립 완료");
 }
 
 // 결제 취소 처리
 async function handlePaymentCancelled(order: any, paymentData: any) {
-  console.log("결제 취소 처리 시작:", order.order_id);
-
   const { error: updateError } = await supabase
     .from("orders")
     .update({
@@ -342,16 +322,12 @@ async function handlePaymentCancelled(order: any, paymentData: any) {
   if (order.user_phone || order.shipping_phone) {
     await sendPaymentCancellationAlimtalkNotification(order);
   }
-
-  console.log("결제 취소 처리 성공:", order.order_id);
 }
 
 // 포인트 환불
 async function refundPoints(order: any) {
   // 사용한 포인트 환불
   if (order.used_points > 0) {
-    console.log(`사용한 포인트 환불: ${order.used_points}P`);
-
     const { data: userPoints } = await supabase
       .from("user_points")
       .select("*")
@@ -383,8 +359,6 @@ async function refundPoints(order: any) {
   const earnedPoints = Math.floor(order.total_amount * earnRate);
 
   if (earnedPoints > 0) {
-    console.log(`적립 포인트 회수: ${earnedPoints}P`);
-
     const { data: userPoints } = await supabase
       .from("user_points")
       .select("*")
@@ -410,14 +384,10 @@ async function refundPoints(order: any) {
       });
     }
   }
-
-  console.log("포인트 환불 완료");
 }
 
 // 쿠폰 복구
 async function restoreCoupon(order: any) {
-  console.log("쿠폰 복구:", order.user_coupon_id);
-
   const { error: couponError } = await supabase
     .from("user_coupons")
     .update({
@@ -430,14 +400,10 @@ async function restoreCoupon(order: any) {
   if (couponError) {
     console.error("쿠폰 복구 실패:", couponError);
   }
-
-  console.log("쿠폰 복구 완료");
 }
 
 // 결제 실패 처리
 async function handlePaymentFailed(order: any, paymentData: any) {
-  console.log("결제 실패 처리 시작:", order.order_id);
-
   const { error: updateError } = await supabase
     .from("orders")
     .update({
@@ -450,8 +416,6 @@ async function handlePaymentFailed(order: any, paymentData: any) {
     console.error("주문 상태 업데이트 실패:", updateError);
     throw updateError;
   }
-
-  console.log("결제 실패 처리 성공:", order.order_id);
 }
 
 // 주문 확인 알림톡 발송
@@ -464,7 +428,6 @@ async function sendOrderConfirmationAlimtalkNotification(order: any) {
       .eq("order_id", order.id);
 
     if (!orderItems || orderItems.length === 0) {
-      console.log("주문 상품 없음, 알림톡 발송 중단");
       return;
     }
 
@@ -485,7 +448,6 @@ async function sendOrderConfirmationAlimtalkNotification(order: any) {
     });
 
     if (result.success) {
-      console.log("주문 확인 알림톡 발송 성공:", phone);
     } else {
       console.error("주문 확인 알림톡 발송 실패:", result.error);
     }
@@ -507,7 +469,6 @@ async function sendPaymentCancellationAlimtalkNotification(order: any) {
     });
 
     if (result.success) {
-      console.log("주문 취소 알림톡 발송 성공:", phone);
     } else {
       console.error("주문 취소 알림톡 발송 실패:", result.error);
     }

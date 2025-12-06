@@ -6,18 +6,9 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
 
-  console.log("=== Auth Callback ===");
-  console.log("Code:", code ? "exists" : "missing");
-
   if (code) {
     const supabase = await createClient();
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-
-    console.log("Exchange result:", {
-      user: data?.user?.email,
-      session: data?.session ? "exists" : "missing",
-      error: error?.message
-    });
 
     if (error) {
       console.error("Auth exchange error:", error);
@@ -56,12 +47,9 @@ export async function GET(request: Request) {
 
         // 다른 계정으로 이미 가입된 이메일인 경우
         if (existingProfile) {
-          console.log("Email already registered with different account:", userEmail);
-
           // 카카오로 생성된 계정 삭제 (롤백)
           try {
             await serviceSupabase.auth.admin.deleteUser(data.user.id);
-            console.log("Rolled back Kakao user creation");
           } catch (deleteError) {
             console.error("Failed to rollback user:", deleteError);
           }
@@ -74,8 +62,6 @@ export async function GET(request: Request) {
           );
         }
       }
-
-      console.log("Session created successfully, redirecting...");
     }
   }
 

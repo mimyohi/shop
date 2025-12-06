@@ -13,7 +13,10 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import AddressSearch from "@/components/AddressSearch";
 import { useCreateOrder } from "@/queries/orders.queries";
-import { deleteOrderByOrderIdAction, updateOrderStatusAction } from "@/lib/actions/orders.actions";
+import {
+  deleteOrderByOrderIdAction,
+  updateOrderStatusAction,
+} from "@/lib/actions/orders.actions";
 import { couponsQueries } from "@/queries/coupons.queries";
 import { pointsQueries } from "@/queries/points.queries";
 import { addressesQueries } from "@/queries/addresses.queries";
@@ -44,7 +47,8 @@ const storeId = NEXT_PUBLIC_PORTONE_STORE_ID;
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { item, getTotalPrice, updateQuantity, clearOrder, _hasHydrated } = useOrderStore();
+  const { item, getTotalPrice, updateQuantity, clearOrder, _hasHydrated } =
+    useOrderStore();
   const createOrderMutation = useCreateOrder();
 
   const [user, setUser] = useState<any>(null);
@@ -359,7 +363,7 @@ export default function CheckoutPage() {
 
       if (response?.code != null) {
         // 결제 실패 시 생성된 주문 삭제
-        console.log("결제 실패, 주문 삭제 시도:", orderId);
+
         await deleteOrderByOrderIdAction(orderId);
         alert(`결제 실패: ${response.message}`);
         router.push("/checkout/fail");
@@ -373,7 +377,6 @@ export default function CheckoutPage() {
       console.error("결제 요청 실패:", error);
       // 주문이 생성된 후 에러 발생 시 주문 삭제 시도
       if (orderId) {
-        console.log("결제 중 에러 발생, 주문 삭제 시도:", orderId);
         await deleteOrderByOrderIdAction(orderId);
       }
       alert(error?.message || "결제 요청에 실패했습니다.");
@@ -480,7 +483,11 @@ export default function CheckoutPage() {
       });
 
       // 테스트 결제 완료 - 주문 상태를 paid로 업데이트
-      await updateOrderStatusAction(orderId, "paid", `TEST_PAYMENT_${Date.now()}`);
+      await updateOrderStatusAction(
+        orderId,
+        "paid",
+        `TEST_PAYMENT_${Date.now()}`
+      );
 
       useOrderStore.getState().clearOrder();
       router.push(`/checkout/test-success?orderId=${orderId}`);
@@ -489,7 +496,6 @@ export default function CheckoutPage() {
       // 주문 생성 중 에러 발생 시 롤백은 createOrderAction 내부에서 처리됨
       // 추가로 주문이 생성되었다면 삭제 시도
       if (orderId) {
-        console.log("테스트 결제 중 에러 발생, 주문 삭제 시도:", orderId);
         await deleteOrderByOrderIdAction(orderId);
       }
       alert(error?.message || "테스트 주문 생성에 실패했습니다.");
@@ -813,8 +819,12 @@ export default function CheckoutPage() {
                   <button
                     onClick={() => {
                       // 현재 유저 정보 사용
-                      const userName = customerName || profile?.display_name || "테스트 사용자";
-                      const userPhone = customerPhone || profile?.phone || "010-0000-0000";
+                      const userName =
+                        customerName ||
+                        profile?.display_name ||
+                        "테스트 사용자";
+                      const userPhone =
+                        customerPhone || profile?.phone || "010-0000-0000";
 
                       setUseNewAddress(true);
                       setNewAddress({

@@ -196,8 +196,6 @@ async function rollbackOrder(supabase: Awaited<ReturnType<typeof createClient>>,
       .from("orders")
       .delete()
       .eq("id", orderId);
-
-    console.log("Order rollback completed:", orderId);
   } catch (rollbackError) {
     console.error("Error during order rollback:", rollbackError);
   }
@@ -219,7 +217,6 @@ export async function deleteOrderByOrderIdAction(order_id: string) {
       .single();
 
     if (findError || !order) {
-      console.error("Order not found for deletion:", order_id);
       return {
         success: false,
         error: "Order not found",
@@ -253,14 +250,11 @@ export async function deleteOrderByOrderIdAction(order_id: string) {
       .eq("id", order.id);
 
     if (deleteError) {
-      console.error("Error deleting order:", deleteError);
       return {
         success: false,
         error: "Failed to delete order",
       };
     }
-
-    console.log("Order deleted after payment failure:", order_id);
 
     // 캐시 무효화
     revalidatePath("/profile");

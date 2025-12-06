@@ -35,10 +35,6 @@ export default function Navigation() {
 
     // 현재 사용자 정보 가져오기
     supabaseAuth.auth.getUser().then(async ({ data: { user }, error }) => {
-      console.log("=== Navigation: getUser ===");
-      console.log("User:", user?.email || null);
-      console.log("Error:", error?.message || null);
-
       setUser(user);
 
       // UserProfile 정보도 함께 로드
@@ -48,9 +44,6 @@ export default function Navigation() {
           .select("*")
           .eq("user_id", user.id)
           .single();
-
-        console.log("Profile:", profile?.display_name || null);
-        console.log("Profile Error:", profileError?.message || null);
 
         if (profile) {
           setUserProfile(profile);
@@ -64,10 +57,6 @@ export default function Navigation() {
     const {
       data: { subscription },
     } = supabaseAuth.auth.onAuthStateChange(async (event, session) => {
-      console.log("=== Auth State Change ===");
-      console.log("Event:", event);
-      console.log("User:", session?.user?.email || null);
-
       setUser(session?.user ?? null);
 
       // 로그인 시 UserProfile 로드
@@ -77,9 +66,6 @@ export default function Navigation() {
           .select("*")
           .eq("user_id", session.user.id)
           .single();
-
-        console.log("Profile loaded:", profile?.display_name || null);
-        console.log("Profile Error:", profileError?.message || null);
 
         if (profile) {
           setUserProfile(profile);

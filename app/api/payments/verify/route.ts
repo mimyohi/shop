@@ -27,9 +27,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("포트원 결제 조회 시작:", paymentId);
-    console.log("포트원 API 시크릿:", portoneApiSecret);
-
     // 포트원 V2 API로 결제 정보 조회
     const response = await fetch(
       `https://api.portone.io/payments/${encodeURIComponent(paymentId)}`,

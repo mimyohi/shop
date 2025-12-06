@@ -15,7 +15,10 @@ import {
 } from "@/queries/addresses.queries";
 import { ordersQueries, type OrderWithItems } from "@/queries/orders.queries";
 import { pointsQueries } from "@/queries/points.queries";
-import { couponsQueries, useRegisterCouponByCode } from "@/queries/coupons.queries";
+import {
+  couponsQueries,
+  useRegisterCouponByCode,
+} from "@/queries/coupons.queries";
 import {
   userProfilesQueries,
   useUpdateUserProfile,
@@ -140,7 +143,11 @@ function ProfileContent() {
   });
 
   // 쿠폰 데이터 조회
-  const { data: myCoupons = [], isLoading: couponsLoading } = useQuery({
+  const {
+    data: myCoupons = [],
+    isLoading: couponsLoading,
+    refetch,
+  } = useQuery({
     ...couponsQueries.userCoupons(user?.id || ""),
     enabled: !!user?.id,
   });
@@ -900,7 +907,9 @@ function ProfileContent() {
                         }
                         className="px-4 py-2 bg-gray-900 text-white text-sm rounded hover:bg-gray-800 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
                       >
-                        {registerCouponMutation.isPending ? "등록 중..." : "등록"}
+                        {registerCouponMutation.isPending
+                          ? "등록 중..."
+                          : "등록"}
                       </button>
                     </div>
                   </div>
