@@ -4,6 +4,8 @@ import { useState, Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signIn, signInWithKakao } from "@/lib/supabaseAuth";
+import Navigation from "@/components/Navigation";
+import Footer from "@/components/Footer";
 
 function LoginForm() {
   const router = useRouter();
@@ -74,33 +76,11 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
-      {/* Header */}
-      <header className="flex items-center px-4 py-4 md:py-6">
-        <button
-          onClick={() => router.back()}
-          className="p-2 -ml-2"
-          aria-label="뒤로가기"
-        >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-        </button>
-        <h1 className="flex-1 text-center text-lg font-medium pr-8">로그인</h1>
-      </header>
+    <div className="py-16 md:py-24">
+      <div className="max-w-[360px] mx-auto px-4">
+        {/* Title */}
+        <h1 className="text-center text-base font-medium mb-8">로그인</h1>
 
-      {/* Content */}
-      <div className="flex-1 flex flex-col px-5 md:px-0 md:max-w-[400px] md:mx-auto md:w-full md:pt-10">
         {/* Error Message */}
         {error && (
           <div className="mb-4 rounded-md bg-red-50 p-3">
@@ -109,7 +89,7 @@ function LoginForm() {
         )}
 
         {/* Login Form */}
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={handleSubmit} className="space-y-2.5">
           <div>
             <input
               id="email"
@@ -119,7 +99,7 @@ function LoginForm() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3.5 border border-gray-200 rounded-md text-sm placeholder-gray-400 focus:outline-none focus:border-gray-400"
+              className="w-full px-3 py-3 border-b border-gray-200 text-sm placeholder-gray-400 focus:outline-none focus:border-gray-400 bg-transparent"
               placeholder="아이디"
             />
           </div>
@@ -132,47 +112,58 @@ function LoginForm() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3.5 border border-gray-200 rounded-md text-sm placeholder-gray-400 focus:outline-none focus:border-gray-400"
+              className="w-full px-3 py-3 border-b border-gray-200 text-sm placeholder-gray-400 focus:outline-none focus:border-gray-400 bg-transparent"
               placeholder="비밀번호"
             />
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3.5 bg-[#8B8B73] text-white text-sm font-medium rounded-md hover:bg-[#7a7a65] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-          >
-            {loading ? "로그인 중..." : "로그인"}
-          </button>
-
-          {/* 카카오 로그인 */}
-          <button
-            type="button"
-            onClick={handleKakaoLogin}
-            disabled={loading}
-            className="w-full flex items-center justify-center py-3.5 rounded-md text-sm font-medium disabled:opacity-50"
-            style={{ backgroundColor: "#FEE500", color: "#000000" }}
-          >
-            <svg
-              className="w-5 h-5 mr-2"
-              viewBox="0 0 24 24"
-              fill="currentColor"
+          <div className="pt-4 space-y-2.5">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 bg-[#8B8B73] text-white text-sm font-medium rounded hover:bg-[#7a7a65] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
-              <path d="M12 3C6.477 3 2 6.477 2 10.8c0 2.8 1.8 5.3 4.5 6.7-.2.7-.6 2.3-.7 2.7-.1.4.1.4.3.3.2-.1 2.4-1.6 3.2-2.1.6.1 1.1.1 1.7.1 5.5 0 10-3.5 10-7.8S17.5 3 12 3z" />
-            </svg>
-            카카오로 로그인하기
-          </button>
+              {loading ? "로그인 중..." : "로그인"}
+            </button>
+
+            {/* 카카오 로그인 */}
+            <button
+              type="button"
+              onClick={handleKakaoLogin}
+              disabled={loading}
+              className="w-full flex items-center justify-center py-3 rounded text-sm font-medium disabled:opacity-50"
+              style={{ backgroundColor: "#FEE500", color: "#000000" }}
+            >
+              <svg
+                className="w-4 h-4 mr-2"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M12 3C6.477 3 2 6.477 2 10.8c0 2.8 1.8 5.3 4.5 6.7-.2.7-.6 2.3-.7 2.7-.1.4.1.4.3.3.2-.1 2.4-1.6 3.2-2.1.6.1 1.1.1 1.7.1 5.5 0 10-3.5 10-7.8S17.5 3 12 3z" />
+              </svg>
+              카카오로 로그인하기
+            </button>
+          </div>
         </form>
 
         {/* Links */}
-        <div className="flex items-center justify-center gap-4 mt-5 text-sm text-gray-500">
-          <Link href="/auth/forgot-password" className="hover:text-gray-700">
+        <div className="flex items-center justify-center gap-6 mt-5 text-xs text-gray-500">
+          <Link href="/auth/find-id" className="hover:text-gray-700">
             아이디 찾기
           </Link>
-          <span className="text-gray-300">|</span>
           <Link href="/auth/forgot-password" className="hover:text-gray-700">
             비밀번호 찾기
           </Link>
+        </div>
+
+        {/* Signup Link */}
+        <div className="mt-10 text-center">
+          <p className="text-sm text-gray-500">
+            아직 회원이 아니신가요?{" "}
+            <Link href="/auth/signup" className="text-[#8B8B73] font-medium hover:underline">
+              회원가입
+            </Link>
+          </p>
         </div>
       </div>
     </div>
@@ -181,14 +172,20 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-white flex items-center justify-center">
-          <div className="text-center text-gray-500">로딩 중...</div>
-        </div>
-      }
-    >
-      <LoginForm />
-    </Suspense>
+    <div className="min-h-screen bg-white flex flex-col">
+      <Navigation />
+      <main className="flex-1">
+        <Suspense
+          fallback={
+            <div className="py-16 md:py-24 flex items-center justify-center">
+              <div className="text-center text-gray-500">로딩 중...</div>
+            </div>
+          }
+        >
+          <LoginForm />
+        </Suspense>
+      </main>
+      <Footer />
+    </div>
   );
 }

@@ -23,7 +23,7 @@ export default function Footer() {
             <div className="mb-6">
               <p className="font-medium text-gray-700 mb-2">쇼핑몰 기본정보</p>
               <p>
-                <span className="font-medium text-gray-600">상호명</span> 미묘히 · <span className="font-medium text-gray-600">대표자명</span> 정상권
+                <span className="font-medium text-gray-600">상호명</span> 미묘히 · <span className="font-medium text-gray-600">대표자명</span> 정상원
               </p>
               <p>
                 <span className="font-medium text-gray-600">사업장 주소</span> 06628 서울 서초구 효령로 429 1414호 (서초동)
@@ -32,7 +32,7 @@ export default function Footer() {
                 <span className="font-medium text-gray-600">대표 전화</span> 070-8655-2959 · <span className="font-medium text-gray-600">사업자 등록번호</span> 431-87-03798
               </p>
               <p>
-                <span className="font-medium text-gray-600">통신판매업 신고번호</span> 기타 · <span className="font-medium text-gray-600">개인정보보호책임자</span> 정상권
+                <span className="font-medium text-gray-600">통신판매업 신고번호</span> 기타 · <span className="font-medium text-gray-600">개인정보보호책임자</span> 정상원
               </p>
             </div>
 
@@ -121,6 +121,11 @@ export default function Footer() {
                     이용안내
                   </Link>
                 </li>
+                <li>
+                  <Link href="/faq" className="hover:text-gray-900 transition">
+                    자주묻는질문(FAQ)
+                  </Link>
+                </li>
               </ul>
             </div>
           </div>
@@ -193,6 +198,11 @@ export default function Footer() {
                     이용안내
                   </Link>
                 </li>
+                <li>
+                  <Link href="/faq" className="hover:text-gray-900 transition">
+                    자주묻는질문(FAQ)
+                  </Link>
+                </li>
               </ul>
             </div>
           </div>
@@ -202,7 +212,7 @@ export default function Footer() {
             <div className="mb-6">
               <p className="font-medium text-gray-700 mb-2">쇼핑몰 기본정보</p>
               <p>
-                <span className="font-medium text-gray-600">상호명</span> 미묘히 · <span className="font-medium text-gray-600">대표자명</span> 정상권
+                <span className="font-medium text-gray-600">상호명</span> 미묘히 · <span className="font-medium text-gray-600">대표자명</span> 정상원
               </p>
               <p>
                 <span className="font-medium text-gray-600">사업장 주소</span> 06628 서울 서초구 효령로 429 1414호 (서초동)
@@ -211,7 +221,7 @@ export default function Footer() {
                 <span className="font-medium text-gray-600">대표 전화</span> 070-8655-2959 · <span className="font-medium text-gray-600">사업자 등록번호</span> 431-87-03798
               </p>
               <p>
-                <span className="font-medium text-gray-600">통신판매업 신고번호</span> 기타 · <span className="font-medium text-gray-600">개인정보보호책임자</span> 정상권
+                <span className="font-medium text-gray-600">통신판매업 신고번호</span> 기타 · <span className="font-medium text-gray-600">개인정보보호책임자</span> 정상원
               </p>
             </div>
 

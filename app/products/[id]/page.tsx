@@ -47,9 +47,10 @@ export default async function ProductDetailPage({
   }
 
   // 할인 가격 계산
-  const discountedPrice = product.discount_rate && product.discount_rate > 0
-    ? Math.floor(product.price * (1 - product.discount_rate / 100))
-    : product.price;
+  const discountedPrice =
+    product.discount_rate && product.discount_rate > 0
+      ? Math.floor(product.price * (1 - product.discount_rate / 100))
+      : product.price;
   const hasDiscount = product.discount_rate && product.discount_rate > 0;
 
   return (
@@ -84,7 +85,7 @@ export default async function ProductDetailPage({
                   <span className="text-xl font-bold text-gray-900">
                     {discountedPrice.toLocaleString()} 원
                   </span>
-                  {hasDiscount && (
+                  {hasDiscount === true && (
                     <span className="text-sm text-gray-400 line-through">
                       {product.price.toLocaleString()}원
                     </span>

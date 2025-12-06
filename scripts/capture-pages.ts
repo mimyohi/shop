@@ -17,7 +17,6 @@ const pages: PageInfo[] = [
   { name: "login", path: "/auth/login", description: "로그인 페이지" },
   { name: "signup", path: "/auth/signup", description: "회원가입 페이지" },
   { name: "products", path: "/products", description: "상품 목록" },
-  { name: "wishlist", path: "/wishlist", description: "위시리스트" },
   {
     name: "coupons",
     path: "/coupons",

@@ -22,6 +22,3 @@ export * from './point.model'
 
 // Auth models
 export * from './auth.model'
-
-// Wishlist models
-export * from './wishlist.model'

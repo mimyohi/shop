@@ -1,6 +1,6 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
 import { couponsRepository } from '@/repositories/coupons.repository'
-import { issueCouponToUserAction, useCouponAction } from '@/lib/actions/coupons.actions'
+import { issueCouponToUserAction, useCouponAction, registerCouponByCodeAction } from '@/lib/actions/coupons.actions'
 
 export const couponsQueries = {
   all: () => ['coupons'] as const,
@@ -59,6 +59,27 @@ export function useUseCoupon() {
   return useMutation({
     mutationFn: async ({ userCouponId, orderId }: { userCouponId: string; orderId: string }) => {
       const result = await useCouponAction(userCouponId, orderId)
+      if (!result.success) {
+        throw new Error(result.error)
+      }
+      return result.data
+    },
+    onSuccess: () => {
+      // 모든 쿠폰 캐시 무효화
+      queryClient.invalidateQueries({ queryKey: couponsQueries.all() })
+    },
+  })
+}
+
+/**
+ * 쿠폰 코드로 쿠폰 등록 mutation
+ */
+export function useRegisterCouponByCode() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (couponCode: string) => {
+      const result = await registerCouponByCodeAction(couponCode)
       if (!result.success) {
         throw new Error(result.error)
       }

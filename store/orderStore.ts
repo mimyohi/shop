@@ -18,6 +18,10 @@ interface OrderStore {
   // 현재 주문 아이템 (단일)
   item: OrderItem | null;
 
+  // Hydration 상태
+  _hasHydrated: boolean;
+  setHasHydrated: (state: boolean) => void;
+
   // 주문 아이템 설정
   setOrderItem: (
     option: ProductOption,
@@ -40,6 +44,11 @@ export const useOrderStore = create<OrderStore>()(
   persist(
     (set, get) => ({
       item: null,
+      _hasHydrated: false,
+
+      setHasHydrated: (state: boolean) => {
+        set({ _hasHydrated: state });
+      },
 
       setOrderItem: (
         option: ProductOption,
@@ -81,6 +90,9 @@ export const useOrderStore = create<OrderStore>()(
     }),
     {
       name: 'order-storage',
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );

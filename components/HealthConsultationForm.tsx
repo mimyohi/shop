@@ -144,13 +144,13 @@ export default function HealthConsultationForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* 1) 개인정보 */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-semibold mb-4">1) 개인정보</h3>
+      <div className="border border-gray-200 rounded p-5">
+        <h3 className="text-sm font-medium text-gray-900 mb-4">1. 개인정보</h3>
 
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm text-gray-500 mb-1">
                 이름 <span className="text-red-500">*</span>
               </label>
               <input
@@ -158,11 +158,11 @@ export default function HealthConsultationForm({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-200 rounded focus:outline-none focus:border-gray-400"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm text-gray-500 mb-1">
                 주민등록번호 <span className="text-red-500">*</span>
               </label>
               <input
@@ -170,12 +170,12 @@ export default function HealthConsultationForm({
                 value={residentNumber}
                 onChange={(e) => setResidentNumber(e.target.value)}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-200 rounded focus:outline-none focus:border-gray-400"
                 placeholder="000000-0000000"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm text-gray-500 mb-1">
                 연락처 <span className="text-red-500">*</span>
               </label>
               <input
@@ -183,13 +183,13 @@ export default function HealthConsultationForm({
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-200 rounded focus:outline-none focus:border-gray-400"
                 placeholder="010-0000-0000"
               />
             </div>
           </div>
 
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-400">
             ※ 본 정보는 의료기관 차트 작성·상담·택배 발송을 위한 필수 항목이며, 미기재 시 진료가
             어려울 수 있습니다.
           </p>
@@ -197,13 +197,13 @@ export default function HealthConsultationForm({
       </div>
 
       {/* 2) 기본 신체 정보 */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-semibold mb-4">2) 기본 신체 정보</h3>
+      <div className="border border-gray-200 rounded p-5">
+        <h3 className="text-sm font-medium text-gray-900 mb-4">2. 기본 신체 정보</h3>
 
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm text-gray-500 mb-1">
                 현재 키 (cm) <span className="text-red-500">*</span>
               </label>
               <input
@@ -213,12 +213,12 @@ export default function HealthConsultationForm({
                 value={currentHeight}
                 onChange={(e) => setCurrentHeight(e.target.value ? Number(e.target.value) : '')}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-200 rounded focus:outline-none focus:border-gray-400"
                 placeholder="예: 170"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm text-gray-500 mb-1">
                 현재 체중 (kg) <span className="text-red-500">*</span>
               </label>
               <input
@@ -228,19 +228,19 @@ export default function HealthConsultationForm({
                 value={currentWeight}
                 onChange={(e) => setCurrentWeight(e.target.value ? Number(e.target.value) : '')}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-200 rounded focus:outline-none focus:border-gray-400"
                 placeholder="예: 70"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm text-gray-500 mb-1">
               20대 이후 체중 변화 <span className="text-red-500">*</span>
             </label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs text-gray-500 mb-1">최저체중 (kg)</label>
+                <label className="block text-xs text-gray-400 mb-1">최저체중 (kg)</label>
                 <input
                   type="number"
                   min="0"
@@ -250,12 +250,12 @@ export default function HealthConsultationForm({
                     setMinWeightSince20s(e.target.value ? Number(e.target.value) : '')
                   }
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-gray-200 rounded focus:outline-none focus:border-gray-400"
                   placeholder="예: 55"
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">최고체중 (kg)</label>
+                <label className="block text-xs text-gray-400 mb-1">최고체중 (kg)</label>
                 <input
                   type="number"
                   min="0"
@@ -265,7 +265,7 @@ export default function HealthConsultationForm({
                     setMaxWeightSince20s(e.target.value ? Number(e.target.value) : '')
                   }
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-gray-200 rounded focus:outline-none focus:border-gray-400"
                   placeholder="예: 80"
                 />
               </div>
@@ -274,7 +274,7 @@ export default function HealthConsultationForm({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm text-gray-500 mb-1">
                 희망 체중 (kg) <span className="text-red-500">*</span>
               </label>
               <input
@@ -284,12 +284,12 @@ export default function HealthConsultationForm({
                 value={targetWeight}
                 onChange={(e) => setTargetWeight(e.target.value ? Number(e.target.value) : '')}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-200 rounded focus:outline-none focus:border-gray-400"
                 placeholder="예: 60"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm text-gray-500 mb-1">
                 희망 감량 기간 <span className="text-red-500">*</span>
               </label>
               <input
@@ -297,7 +297,7 @@ export default function HealthConsultationForm({
                 value={targetWeightLossPeriod}
                 onChange={(e) => setTargetWeightLossPeriod(e.target.value)}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-200 rounded focus:outline-none focus:border-gray-400"
                 placeholder="예: 3개월, 6개월 등"
               />
             </div>
@@ -306,16 +306,16 @@ export default function HealthConsultationForm({
       </div>
 
       {/* 3) 다이어트 경험 */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-semibold mb-4">3) 다이어트 경험</h3>
+      <div className="border border-gray-200 rounded p-5">
+        <h3 className="text-sm font-medium text-gray-900 mb-4">3. 다이어트 경험</h3>
 
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-500">
             이전에 비만약 복용 경험이 있나요? (가장 최근 복용 시기와 복용 기간을 함께
-            작성해주세요.) <span className="text-red-500">*</span>
+            작성해주세요.)
           </p>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm text-gray-500 mb-1">
               양약 <span className="text-red-500">*</span>
             </label>
             <input
@@ -323,12 +323,12 @@ export default function HealthConsultationForm({
               value={previousWesternMedicine}
               onChange={(e) => setPreviousWesternMedicine(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-200 rounded focus:outline-none focus:border-gray-400"
               placeholder="예: 2023년 3월 ~ 6월 (3개월), 또는 '없음'"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm text-gray-500 mb-1">
               한약 <span className="text-red-500">*</span>
             </label>
             <input
@@ -336,12 +336,12 @@ export default function HealthConsultationForm({
               value={previousHerbalMedicine}
               onChange={(e) => setPreviousHerbalMedicine(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-200 rounded focus:outline-none focus:border-gray-400"
               placeholder="예: 2022년 1월 ~ 3월 (2개월), 또는 '없음'"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm text-gray-500 mb-1">
               기타 <span className="text-red-500">*</span>
             </label>
             <input
@@ -349,7 +349,7 @@ export default function HealthConsultationForm({
               value={previousOtherMedicine}
               onChange={(e) => setPreviousOtherMedicine(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-200 rounded focus:outline-none focus:border-gray-400"
               placeholder="예: 건강기능식품, 다이어트 보조제 등, 또는 '없음'"
             />
           </div>
@@ -357,13 +357,13 @@ export default function HealthConsultationForm({
       </div>
 
       {/* 4) 생활 패턴 */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-semibold mb-4">4) 생활 패턴</h3>
+      <div className="border border-gray-200 rounded p-5">
+        <h3 className="text-sm font-medium text-gray-900 mb-4">4. 생활 패턴</h3>
 
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm text-gray-500 mb-1">
                 직업 <span className="text-red-500">*</span>
               </label>
               <input
@@ -371,12 +371,12 @@ export default function HealthConsultationForm({
                 value={occupation}
                 onChange={(e) => setOccupation(e.target.value)}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-200 rounded focus:outline-none focus:border-gray-400"
                 placeholder="예: 사무직, 학생, 자영업 등"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm text-gray-500 mb-1">
                 근무시간 <span className="text-red-500">*</span>
               </label>
               <input
@@ -384,14 +384,14 @@ export default function HealthConsultationForm({
                 value={workHours}
                 onChange={(e) => setWorkHours(e.target.value)}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-200 rounded focus:outline-none focus:border-gray-400"
                 placeholder="예: 9시 ~ 18시"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm text-gray-500 mb-2">
               교대근무 여부 <span className="text-red-500">*</span>
             </label>
             <div className="flex gap-4">
@@ -402,9 +402,9 @@ export default function HealthConsultationForm({
                   checked={hasShiftWork === true}
                   onChange={() => setHasShiftWork(true)}
                   required
-                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  className="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-500"
                 />
-                <span className="ml-2 text-sm text-gray-700">있음</span>
+                <span className="ml-2 text-sm text-gray-600">있음</span>
               </label>
               <label className="flex items-center">
                 <input
@@ -413,16 +413,16 @@ export default function HealthConsultationForm({
                   checked={hasShiftWork === false}
                   onChange={() => setHasShiftWork(false)}
                   required
-                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  className="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-500"
                 />
-                <span className="ml-2 text-sm text-gray-700">없음</span>
+                <span className="ml-2 text-sm text-gray-600">없음</span>
               </label>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm text-gray-500 mb-1">
                 기상 시간 <span className="text-red-500">*</span>
               </label>
               <input
@@ -430,11 +430,11 @@ export default function HealthConsultationForm({
                 value={wakeUpTime}
                 onChange={(e) => setWakeUpTime(e.target.value)}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-200 rounded focus:outline-none focus:border-gray-400"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm text-gray-500 mb-1">
                 취침 시간 <span className="text-red-500">*</span>
               </label>
               <input
@@ -442,13 +442,13 @@ export default function HealthConsultationForm({
                 value={bedtime}
                 onChange={(e) => setBedtime(e.target.value)}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-200 rounded focus:outline-none focus:border-gray-400"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm text-gray-500 mb-2">
               낮 졸림 여부 <span className="text-red-500">*</span>
             </label>
             <div className="flex gap-4">
@@ -459,9 +459,9 @@ export default function HealthConsultationForm({
                   checked={hasDaytimeSleepiness === true}
                   onChange={() => setHasDaytimeSleepiness(true)}
                   required
-                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  className="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-500"
                 />
-                <span className="ml-2 text-sm text-gray-700">있음</span>
+                <span className="ml-2 text-sm text-gray-600">있음</span>
               </label>
               <label className="flex items-center">
                 <input
@@ -470,15 +470,15 @@ export default function HealthConsultationForm({
                   checked={hasDaytimeSleepiness === false}
                   onChange={() => setHasDaytimeSleepiness(false)}
                   required
-                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  className="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-500"
                 />
-                <span className="ml-2 text-sm text-gray-700">없음</span>
+                <span className="ml-2 text-sm text-gray-600">없음</span>
               </label>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm text-gray-500 mb-2">
               식사 패턴 <span className="text-red-500">*</span>
             </label>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -500,16 +500,16 @@ export default function HealthConsultationForm({
                       )
                     }
                     required
-                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                    className="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-500"
                   />
-                  <span className="ml-2 text-sm text-gray-700">{option.label}</span>
+                  <span className="ml-2 text-sm text-gray-600">{option.label}</span>
                 </label>
               ))}
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm text-gray-500 mb-2">
               음주 여부 <span className="text-red-500">*</span>
             </label>
             <div className="flex gap-4">
@@ -523,9 +523,9 @@ export default function HealthConsultationForm({
                     setAlcoholFrequency(e.target.value as 'weekly_1_or_less' | 'weekly_2_or_more')
                   }
                   required
-                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  className="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-500"
                 />
-                <span className="ml-2 text-sm text-gray-700">주 1회 이하</span>
+                <span className="ml-2 text-sm text-gray-600">주 1회 이하</span>
               </label>
               <label className="flex items-center">
                 <input
@@ -537,15 +537,15 @@ export default function HealthConsultationForm({
                     setAlcoholFrequency(e.target.value as 'weekly_1_or_less' | 'weekly_2_or_more')
                   }
                   required
-                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  className="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-500"
                 />
-                <span className="ml-2 text-sm text-gray-700">주 2회 이상</span>
+                <span className="ml-2 text-sm text-gray-600">주 2회 이상</span>
               </label>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm text-gray-500 mb-2">
               음수량 <span className="text-red-500">*</span>
             </label>
             <div className="flex gap-4">
@@ -557,9 +557,9 @@ export default function HealthConsultationForm({
                   checked={waterIntake === '1L_or_less'}
                   onChange={(e) => setWaterIntake(e.target.value as '1L_or_less' | 'over_1L')}
                   required
-                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  className="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-500"
                 />
-                <span className="ml-2 text-sm text-gray-700">1L 이하</span>
+                <span className="ml-2 text-sm text-gray-600">1L 이하</span>
               </label>
               <label className="flex items-center">
                 <input
@@ -569,9 +569,9 @@ export default function HealthConsultationForm({
                   checked={waterIntake === 'over_1L'}
                   onChange={(e) => setWaterIntake(e.target.value as '1L_or_less' | 'over_1L')}
                   required
-                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  className="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-500"
                 />
-                <span className="ml-2 text-sm text-gray-700">1L 초과</span>
+                <span className="ml-2 text-sm text-gray-600">1L 초과</span>
               </label>
             </div>
           </div>
@@ -579,12 +579,12 @@ export default function HealthConsultationForm({
       </div>
 
       {/* 5) 원하는 다이어트 방향 */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-semibold mb-4">5) 원하는 다이어트 방향</h3>
+      <div className="border border-gray-200 rounded p-5">
+        <h3 className="text-sm font-medium text-gray-900 mb-4">5. 원하는 다이어트 방향</h3>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm text-gray-500 mb-2">
               원하는 다이어트 방향 <span className="text-red-500">*</span>
             </label>
             <div className="space-y-2">
@@ -596,9 +596,9 @@ export default function HealthConsultationForm({
                   checked={dietApproach === 'sustainable'}
                   onChange={(e) => setDietApproach(e.target.value as 'sustainable' | 'fast')}
                   required
-                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 mt-0.5"
+                  className="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-500 mt-0.5"
                 />
-                <span className="ml-2 text-sm text-gray-700">
+                <span className="ml-2 text-sm text-gray-600">
                   몸에 부담 없이, 무리 없는 지속 감량
                 </span>
               </label>
@@ -610,9 +610,9 @@ export default function HealthConsultationForm({
                   checked={dietApproach === 'fast'}
                   onChange={(e) => setDietApproach(e.target.value as 'sustainable' | 'fast')}
                   required
-                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 mt-0.5"
+                  className="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-500 mt-0.5"
                 />
-                <span className="ml-2 text-sm text-gray-700">
+                <span className="ml-2 text-sm text-gray-600">
                   두근거림·항진감이 확실한 빠른 감량
                 </span>
               </label>
@@ -620,7 +620,7 @@ export default function HealthConsultationForm({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm text-gray-500 mb-2">
               희망 단계 <span className="text-red-500">*</span>
             </label>
             <div className="space-y-2">
@@ -634,9 +634,9 @@ export default function HealthConsultationForm({
                     setPreferredStage(e.target.value as 'stage1' | 'stage2' | 'stage3')
                   }
                   required
-                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 mt-0.5"
+                  className="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-500 mt-0.5"
                 />
-                <span className="ml-2 text-sm text-gray-700">
+                <span className="ml-2 text-sm text-gray-600">
                   1단계: 처음 복용 / 카페인 민감
                 </span>
               </label>
@@ -650,9 +650,9 @@ export default function HealthConsultationForm({
                     setPreferredStage(e.target.value as 'stage1' | 'stage2' | 'stage3')
                   }
                   required
-                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 mt-0.5"
+                  className="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-500 mt-0.5"
                 />
-                <span className="ml-2 text-sm text-gray-700">
+                <span className="ml-2 text-sm text-gray-600">
                   2단계: 복용 6개월 이하 / 카페인 민감
                 </span>
               </label>
@@ -666,9 +666,9 @@ export default function HealthConsultationForm({
                     setPreferredStage(e.target.value as 'stage1' | 'stage2' | 'stage3')
                   }
                   required
-                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 mt-0.5"
+                  className="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-500 mt-0.5"
                 />
-                <span className="ml-2 text-sm text-gray-700">
+                <span className="ml-2 text-sm text-gray-600">
                   3단계: 복용 6개월 이상 / 기존 처방 효과 미미
                 </span>
               </label>
@@ -678,11 +678,11 @@ export default function HealthConsultationForm({
       </div>
 
       {/* 6) 과거 병력 및 복용 약 */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-semibold mb-4">6) 과거 병력 및 복용 약</h3>
+      <div className="border border-gray-200 rounded p-5">
+        <h3 className="text-sm font-medium text-gray-900 mb-4">6. 과거 병력 및 복용 약</h3>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm text-gray-500 mb-1">
             과거 진단받았거나 현재 치료 중인 질환, 그리고 복용 중인 약을 모두 기재해주세요 <span className="text-red-500">*</span>
           </label>
           <textarea
@@ -690,7 +690,7 @@ export default function HealthConsultationForm({
             onChange={(e) => setMedicalHistory(e.target.value)}
             required
             rows={4}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 border border-gray-200 rounded focus:outline-none focus:border-gray-400"
             placeholder="예: 고혈압(혈압약 복용 중), 갑상선기능저하증(갑상선호르몬제 복용), 무릎 관절염 등, 또는 '없음'"
           />
         </div>
@@ -701,7 +701,7 @@ export default function HealthConsultationForm({
         <button
           type="submit"
           disabled={isSubmitting}
-          className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-300 disabled:cursor-not-allowed"
+          className="px-6 py-2 bg-gray-900 text-white rounded hover:bg-gray-800 transition text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
           {isSubmitting ? '저장 중...' : submitLabel || '문진 정보 저장'}
         </button>

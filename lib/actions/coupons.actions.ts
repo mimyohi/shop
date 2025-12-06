@@ -4,6 +4,108 @@ import { createClient } from '@/lib/supabaseServer'
 import { revalidatePath } from 'next/cache'
 
 /**
+ * 쿠폰 코드로 쿠폰을 찾아서 사용자에게 발급하는 서버 액션
+ */
+export async function registerCouponByCodeAction(couponCode: string) {
+  try {
+    const supabase = await createClient()
+
+    // 사용자 인증 확인
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return {
+        success: false,
+        error: '로그인이 필요합니다.',
+      }
+    }
+
+    // 쿠폰 코드로 쿠폰 조회
+    const { data: coupon, error: couponError } = await supabase
+      .from('coupons')
+      .select('*')
+      .eq('code', couponCode.toUpperCase().trim())
+      .eq('is_active', true)
+      .single()
+
+    if (couponError || !coupon) {
+      return {
+        success: false,
+        error: '유효하지 않은 쿠폰 코드입니다.',
+      }
+    }
+
+    // 쿠폰 만료 여부 확인
+    if (coupon.valid_until) {
+      const expiresAt = new Date(coupon.valid_until)
+      if (expiresAt < new Date()) {
+        return {
+          success: false,
+          error: '만료된 쿠폰입니다.',
+        }
+      }
+    }
+
+    // 이미 발급받은 쿠폰인지 확인
+    const { data: existingCoupon } = await supabase
+      .from('user_coupons')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('coupon_id', coupon.id)
+      .single()
+
+    if (existingCoupon) {
+      return {
+        success: false,
+        error: '이미 등록한 쿠폰입니다.',
+      }
+    }
+
+    // 쿠폰 발급
+    const { data, error } = await supabase
+      .from('user_coupons')
+      .insert({
+        user_id: user.id,
+        coupon_id: coupon.id,
+        is_used: false,
+      })
+      .select(
+        `
+        *,
+        coupon:coupons(*)
+      `
+      )
+      .single()
+
+    if (error) {
+      console.error('Error issuing coupon:', error)
+      return {
+        success: false,
+        error: '쿠폰 등록에 실패했습니다.',
+      }
+    }
+
+    // 캐시 무효화
+    revalidatePath('/profile')
+    revalidatePath('/checkout')
+
+    return {
+      success: true,
+      data,
+    }
+  } catch (error: any) {
+    console.error('Error in registerCouponByCodeAction:', error)
+    return {
+      success: false,
+      error: '예상치 못한 오류가 발생했습니다.',
+    }
+  }
+}
+
+/**
  * 사용자에게 쿠폰 발급 서버 액션
  */
 export async function issueCouponToUserAction(userId: string, couponId: string) {

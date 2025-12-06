@@ -58,9 +58,9 @@ function getConsultationStatusLabel(status: string | null): {
   if (!status) return { label: "-", className: "" };
   switch (status) {
     case "chatting_required":
-      return { label: "상담 필요", className: "bg-yellow-100 text-yellow-700" };
+      return { label: "접수 대기", className: "bg-yellow-100 text-yellow-700" };
     case "consultation_required":
-      return { label: "상담 대기", className: "bg-orange-100 text-orange-700" };
+      return { label: "상담 필요", className: "bg-orange-100 text-orange-700" };
     case "on_hold":
       return { label: "보류", className: "bg-gray-100 text-gray-700" };
     case "consultation_completed":

@@ -17,26 +17,15 @@ export default function ChannelTalk({ pluginKey }: ChannelTalkProps) {
       return;
     }
 
-    // 채널톡 부트 함수
-    const boot = () => {
-      (window as any).ChannelIO("boot", {
-        pluginKey: channelPluginKey,
-        // 사용자 정보를 전달하려면 아래 주석을 해제하고 수정하세요
-        // memberId: 'USER_ID',
-        // profile: {
-        //   name: 'USER_NAME',
-        //   email: 'USER_EMAIL',
-        //   mobileNumber: 'USER_PHONE',
-        // },
-      });
-    };
+    const w = window as any;
 
-    // 채널톡 스크립트 로드
-    (function () {
-      const w = window as any;
-      if (w.ChannelIO) {
-        return w.console.error("ChannelIO script included twice.");
-      }
+    // 이미 초기화된 경우 중복 실행 방지
+    if (w.ChannelIOInitialized) {
+      return;
+    }
+
+    // 채널톡 placeholder 함수 설정
+    if (!w.ChannelIO) {
       const ch: any = function () {
         ch.c(arguments);
       };
@@ -45,38 +34,25 @@ export default function ChannelTalk({ pluginKey }: ChannelTalkProps) {
         ch.q.push(args);
       };
       w.ChannelIO = ch;
-      function l() {
-        if (w.ChannelIOInitialized) {
-          return;
-        }
-        w.ChannelIOInitialized = true;
-        const s = document.createElement("script");
-        s.type = "text/javascript";
-        s.async = true;
-        s.src = "https://cdn.channel.io/plugin/ch-plugin-web.js";
-        const x = document.getElementsByTagName("script")[0];
-        if (x.parentNode) {
-          x.parentNode.insertBefore(s, x);
-        }
-      }
-      if (document.readyState === "complete") {
-        l();
-      } else {
-        w.addEventListener("DOMContentLoaded", l);
-        w.addEventListener("load", l);
-      }
-    })();
+    }
 
-    // 스크립트 로드 후 부트
-    const checkInterval = setInterval(() => {
-      if ((window as any).ChannelIO) {
-        clearInterval(checkInterval);
-        boot();
-      }
-    }, 100);
+    // 채널톡 스크립트 로드
+    w.ChannelIOInitialized = true;
+    const s = document.createElement("script");
+    s.type = "text/javascript";
+    s.async = true;
+    s.src = "https://cdn.channel.io/plugin/ch-plugin-web.js";
+    s.onload = () => {
+      w.ChannelIO("boot", {
+        pluginKey: channelPluginKey,
+      });
+    };
+    document.head.appendChild(s);
 
     return () => {
-      clearInterval(checkInterval);
+      if (w.ChannelIO) {
+        w.ChannelIO("shutdown");
+      }
     };
   }, [channelPluginKey]);
 

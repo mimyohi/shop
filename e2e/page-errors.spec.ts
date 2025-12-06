@@ -6,7 +6,6 @@ const publicPages = [
   { path: "/products", name: "상품 목록" },
   { path: "/auth/login", name: "로그인" },
   { path: "/auth/signup", name: "회원가입" },
-  { path: "/wishlist", name: "위시리스트" },
   { path: "/coupons", name: "쿠폰" },
 ];
 

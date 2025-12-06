@@ -15,8 +15,7 @@ import {
 } from "@/queries/addresses.queries";
 import { ordersQueries, type OrderWithItems } from "@/queries/orders.queries";
 import { pointsQueries } from "@/queries/points.queries";
-import { couponsQueries, useIssueCoupon } from "@/queries/coupons.queries";
-import { couponsRepository } from "@/repositories/coupons.repository";
+import { couponsQueries, useRegisterCouponByCode } from "@/queries/coupons.queries";
 import {
   userProfilesQueries,
   useUpdateUserProfile,
@@ -76,7 +75,7 @@ function ProfileContent() {
   const setDefaultAddressMutation = useSetDefaultAddress();
   const updateProfileMutation = useUpdateUserProfile();
   const upsertHealthMutation = useUpsertUserHealthConsultation();
-  const issueCouponMutation = useIssueCoupon();
+  const registerCouponMutation = useRegisterCouponByCode();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -346,50 +345,17 @@ function ProfileContent() {
 
   // 쿠폰 등록 핸들러
   const registerCouponByCode = async () => {
-    if (!user) {
-      alert("로그인이 필요합니다.");
-      return;
-    }
-
     if (!couponCode.trim()) {
       alert("쿠폰 코드를 입력해주세요.");
       return;
     }
 
     try {
-      const coupon = await couponsRepository.findByCode(couponCode.trim());
-
-      if (!coupon) {
-        alert("유효하지 않은 쿠폰 코드입니다.");
-        return;
-      }
-
-      if (coupon.valid_until) {
-        const expiresAt = new Date(coupon.valid_until);
-        if (expiresAt < new Date()) {
-          alert("만료된 쿠폰입니다.");
-          return;
-        }
-      }
-
-      const existingCoupon = myCoupons.find(
-        (uc: any) => uc.coupon_id === coupon.id
-      );
-      if (existingCoupon) {
-        alert("이미 등록한 쿠폰입니다.");
-        return;
-      }
-
-      await issueCouponMutation.mutateAsync({
-        userId: user.id,
-        couponId: coupon.id,
-      });
-
+      await registerCouponMutation.mutateAsync(couponCode.trim());
       alert("쿠폰이 등록되었습니다!");
       setCouponCode("");
-    } catch (error) {
-      console.error("쿠폰 등록 실패:", error);
-      alert("쿠폰 등록에 실패했습니다.");
+    } catch (error: any) {
+      alert(error.message || "쿠폰 등록에 실패했습니다.");
     }
   };
 
@@ -681,12 +647,12 @@ function ProfileContent() {
                           switch (status) {
                             case "chatting_required":
                               return {
-                                label: "상담 필요",
+                                label: "접수 필요",
                                 className: "text-yellow-600",
                               };
                             case "consultation_required":
                               return {
-                                label: "상담 대기",
+                                label: "상담 필요",
                                 className: "text-orange-600",
                               };
                             case "on_hold":
@@ -925,16 +891,16 @@ function ProfileContent() {
                         }}
                         placeholder="쿠폰 코드 입력"
                         className="flex-1 px-3 py-2 border border-gray-200 rounded text-sm focus:outline-none focus:border-gray-400"
-                        disabled={issueCouponMutation.isPending}
+                        disabled={registerCouponMutation.isPending}
                       />
                       <button
                         onClick={registerCouponByCode}
                         disabled={
-                          issueCouponMutation.isPending || !couponCode.trim()
+                          registerCouponMutation.isPending || !couponCode.trim()
                         }
                         className="px-4 py-2 bg-gray-900 text-white text-sm rounded hover:bg-gray-800 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
                       >
-                        {issueCouponMutation.isPending ? "등록 중..." : "등록"}
+                        {registerCouponMutation.isPending ? "등록 중..." : "등록"}
                       </button>
                     </div>
                   </div>
@@ -1189,25 +1155,27 @@ function ProfileContent() {
             {activeTab === "health" && (
               <div>
                 <div className="flex justify-between items-center mb-6">
-                  <div>
-                    <h2 className="text-xl font-medium text-gray-900">
-                      문진 관리
-                    </h2>
-                    <p className="text-sm text-gray-400 mt-1">
-                      한 번 저장해두면 주문/결제 시 문진 정보가 자동으로
-                      채워집니다.
-                    </p>
-                  </div>
+                  <h2 className="text-xl font-medium text-gray-900">
+                    문진 관리
+                  </h2>
                   {savedHealthConsultation?.updated_at && (
-                    <p className="text-xs text-gray-400">
-                      마지막 업데이트:{" "}
+                    <p className="text-sm text-gray-500">
+                      마지막 수정{" "}
                       {new Date(
                         savedHealthConsultation.updated_at
-                      ).toLocaleString("ko-KR")}
+                      ).toLocaleDateString("ko-KR")}
                     </p>
                   )}
                 </div>
                 <div className="border-t border-gray-200 pt-6">
+                  {/* 안내 문구 */}
+                  <div className="mb-6 p-4 bg-gray-50 rounded">
+                    <p className="text-sm text-gray-600">
+                      한 번 저장해두면 주문/결제 시 문진 정보가 자동으로
+                      채워집니다.
+                    </p>
+                  </div>
+
                   <HealthConsultationForm
                     initialData={savedHealthConsultation || undefined}
                     onSubmit={handleSaveHealthConsultation}

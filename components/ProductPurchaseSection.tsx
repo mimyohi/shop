@@ -1,10 +1,17 @@
-'use client'
+"use client";
 
-import { useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import { Product, VisitType, SelectedOptionSetting, ProductOption } from '@/models'
-import { useOrderStore } from '@/store/orderStore'
-import ProductNewOptionsSelector from './ProductNewOptionsSelector'
+import { useState, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  Product,
+  VisitType,
+  SelectedOptionSetting,
+  ProductOption,
+} from "@/models";
+import { useOrderStore } from "@/store/orderStore";
+import ProductNewOptionsSelector from "./ProductNewOptionsSelector";
+import { supabaseAuth } from "@/lib/supabaseAuth";
 
 // ProductNewOptionsSelector에서 반환하는 타입
 interface ProductOptionWithSettings {
@@ -30,49 +37,84 @@ interface ProductOptionWithSettings {
 // 방문 타입 한글 변환
 function getVisitTypeLabel(visitType: VisitType): string {
   switch (visitType) {
-    case 'first': return '초진';
-    case 'revisit_with_consult': return '재진(상담)';
-    case 'revisit_no_consult': return '재진(상담X)';
-    default: return visitType;
+    case "first":
+      return "초진";
+    case "revisit_with_consult":
+      return "재진(상담)";
+    case "revisit_no_consult":
+      return "재진(상담X)";
+    default:
+      return visitType;
   }
 }
 
 interface Props {
-  product: Product
+  product: Product;
 }
 
 export default function ProductPurchaseSection({ product }: Props) {
-  const router = useRouter()
+  const router = useRouter();
+
+  // 로그인 상태
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
 
   // 현재 선택 중인 옵션 상태 (선택 UI용)
-  const [selectedOption, setSelectedOption] = useState<ProductOptionWithSettings | null>(null)
-  const [selectedVisitType, setSelectedVisitType] = useState<VisitType | null>(null)
-  const [selectedSettings, setSelectedSettings] = useState<SelectedOptionSetting[]>([])
-  const [quantity, setQuantity] = useState(1)
+  const [selectedOption, setSelectedOption] =
+    useState<ProductOptionWithSettings | null>(null);
+  const [selectedVisitType, setSelectedVisitType] = useState<VisitType | null>(
+    null
+  );
+  const [selectedSettings, setSelectedSettings] = useState<
+    SelectedOptionSetting[]
+  >([]);
+  const [quantity, setQuantity] = useState(1);
 
   // 주문 스토어
-  const setOrderItem = useOrderStore((state) => state.setOrderItem)
+  const setOrderItem = useOrderStore((state) => state.setOrderItem);
 
-  const handleOptionSelectionChange = useCallback((
-    option: ProductOptionWithSettings | null,
-    visitType: VisitType | null,
-    settings: SelectedOptionSetting[]
-  ) => {
-    setSelectedOption(option)
-    setSelectedVisitType(visitType)
-    setSelectedSettings(settings)
-  }, [])
+  // 로그인 상태 확인
+  useEffect(() => {
+    const checkAuth = async () => {
+      const {
+        data: { user },
+      } = await supabaseAuth.auth.getUser();
+      setIsLoggedIn(!!user);
+    };
+    checkAuth();
+
+    // 로그인 상태 변경 감지
+    const {
+      data: { subscription },
+    } = supabaseAuth.auth.onAuthStateChange((event, session) => {
+      setIsLoggedIn(!!session?.user);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleOptionSelectionChange = useCallback(
+    (
+      option: ProductOptionWithSettings | null,
+      visitType: VisitType | null,
+      settings: SelectedOptionSetting[]
+    ) => {
+      setSelectedOption(option);
+      setSelectedVisitType(visitType);
+      setSelectedSettings(settings);
+    },
+    []
+  );
 
   // 설정이 필요한지 확인
   const shouldShowSettings = useCallback(() => {
     if (!selectedOption || !selectedVisitType) return false;
 
     switch (selectedVisitType) {
-      case 'first':
+      case "first":
         return selectedOption.use_settings_on_first;
-      case 'revisit_with_consult':
+      case "revisit_with_consult":
         return selectedOption.use_settings_on_revisit_with_consult;
-      case 'revisit_no_consult':
+      case "revisit_no_consult":
         return selectedOption.use_settings_on_revisit_no_consult;
       default:
         return false;
@@ -110,13 +152,13 @@ export default function ProductPurchaseSection({ product }: Props) {
   // 바로 구매 (선택 완료 후)
   const handleBuyNow = () => {
     if (!selectedOption || !selectedVisitType) {
-      alert('옵션을 선택해주세요.')
-      return
+      alert("옵션을 선택해주세요.");
+      return;
     }
 
     if (!isSelectionComplete()) {
-      alert('모든 설정을 선택해주세요.')
-      return
+      alert("모든 설정을 선택해주세요.");
+      return;
     }
 
     // ProductOptionWithSettings를 ProductOption으로 변환
@@ -130,8 +172,10 @@ export default function ProductPurchaseSection({ product }: Props) {
       detail_images: selectedOption.detail_images,
       price: selectedOption.price,
       use_settings_on_first: selectedOption.use_settings_on_first,
-      use_settings_on_revisit_with_consult: selectedOption.use_settings_on_revisit_with_consult,
-      use_settings_on_revisit_no_consult: selectedOption.use_settings_on_revisit_no_consult,
+      use_settings_on_revisit_with_consult:
+        selectedOption.use_settings_on_revisit_with_consult,
+      use_settings_on_revisit_no_consult:
+        selectedOption.use_settings_on_revisit_no_consult,
       is_new_badge: selectedOption.is_new_badge,
       is_sale_badge: selectedOption.is_sale_badge,
       display_order: selectedOption.display_order,
@@ -140,14 +184,29 @@ export default function ProductPurchaseSection({ product }: Props) {
     };
 
     // 주문 스토어에 저장
-    setOrderItem(optionForOrder, quantity, selectedVisitType, selectedSettings)
+    setOrderItem(optionForOrder, quantity, selectedVisitType, selectedSettings);
 
     // 결제 페이지로 이동
-    router.push('/checkout')
+    router.push("/checkout");
+  };
+
+  const totalPrice = calculateTotalPrice();
+  const canBuy = isSelectionComplete();
+
+  // 로그인 상태 확인 중
+  if (isLoggedIn === null) {
+    return (
+      <div className="space-y-4">
+        <div className="h-12 bg-gray-100 rounded animate-pulse" />
+        <div className="h-12 bg-gray-100 rounded animate-pulse" />
+      </div>
+    );
   }
 
-  const totalPrice = calculateTotalPrice()
-  const canBuy = isSelectionComplete()
+  // 비로그인 상태: 로그인 유도
+  if (!isLoggedIn) {
+    return null;
+  }
 
   return (
     <div className="space-y-4">
@@ -166,7 +225,10 @@ export default function ProductPurchaseSection({ product }: Props) {
               <p className="text-xs text-gray-500 mt-0.5">
                 {getVisitTypeLabel(selectedVisitType)}
                 {selectedSettings.length > 0 && (
-                  <span> / {selectedSettings.map(s => s.type_name).join(', ')}</span>
+                  <span>
+                    {" "}
+                    / {selectedSettings.map((s) => s.type_name).join(", ")}
+                  </span>
                 )}
               </p>
             </div>
@@ -177,17 +239,39 @@ export default function ProductPurchaseSection({ product }: Props) {
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
                   className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-700"
                 >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                  <svg
+                    className="w-3 h-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M20 12H4"
+                    />
                   </svg>
                 </button>
-                <span className="w-8 text-center text-sm font-medium">{quantity}</span>
+                <span className="w-8 text-center text-sm font-medium">
+                  {quantity}
+                </span>
                 <button
                   onClick={() => setQuantity(quantity + 1)}
                   className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-700"
                 >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  <svg
+                    className="w-3 h-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4v16m8-8H4"
+                    />
                   </svg>
                 </button>
               </div>
@@ -200,8 +284,18 @@ export default function ProductPurchaseSection({ product }: Props) {
                 onClick={handleRemoveItem}
                 className="text-gray-400 hover:text-gray-600"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
@@ -227,13 +321,13 @@ export default function ProductPurchaseSection({ product }: Props) {
           disabled={!canBuy}
           className={`w-full py-4 rounded text-sm font-medium transition ${
             canBuy
-              ? 'bg-[#5a8a87] text-white hover:bg-[#4a7a77]'
-              : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+              ? "bg-[#5a8a87] text-white hover:bg-[#4a7a77]"
+              : "bg-gray-200 text-gray-400 cursor-not-allowed"
           }`}
         >
           구매하기
         </button>
       </div>
     </div>
-  )
+  );
 }

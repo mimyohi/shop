@@ -27,7 +27,10 @@ export async function POST(request: NextRequest) {
     // 1. Request Body 파싱
     const body = await request.json();
     const { phone, otp, flow: rawFlow } = body;
-    const flow: 'login' | 'signup' = rawFlow === 'signup' ? 'signup' : 'login';
+    const flow: 'login' | 'signup' | 'find-id' | 'reset-password' =
+      rawFlow === 'signup' ? 'signup' :
+      rawFlow === 'find-id' ? 'find-id' :
+      rawFlow === 'reset-password' ? 'reset-password' : 'login';
 
     if (!phone || !otp) {
       return NextResponse.json(
@@ -134,6 +137,18 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      return NextResponse.json({
+        success: true,
+        flow,
+        verificationId: otpRecord.id,
+        phone: e164Phone,
+        expiresAt: otpRecord.expires_at,
+        message: '전화번호 인증이 완료되었습니다.',
+      });
+    }
+
+    // 8-2. 아이디 찾기 또는 비밀번호 재설정 플로우
+    if (flow === 'find-id' || flow === 'reset-password') {
       return NextResponse.json({
         success: true,
         flow,

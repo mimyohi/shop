@@ -143,7 +143,10 @@ export default function Navigation() {
           {/* 오른쪽: 아이콘들 */}
           <div className="flex items-center space-x-5">
             {/* 검색 아이콘 */}
-            <button className="text-gray-600 hover:text-gray-900 transition">
+            <Link
+              href="/search"
+              className="text-gray-600 hover:text-gray-900 transition"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
@@ -158,7 +161,7 @@ export default function Navigation() {
                   d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
                 />
               </svg>
-            </button>
+            </Link>
 
             {/* 사용자 아이콘 / 로그인 */}
             {!mounted ? (
@@ -258,13 +261,11 @@ export default function Navigation() {
             MIMYOHI
           </Link>
 
-          {/* 오른쪽: 사용자 아이콘 */}
-          {!mounted ? (
-            <div className="w-5 h-5 bg-gray-200 rounded-full animate-pulse mr-2"></div>
-          ) : user ? (
+          {/* 오른쪽: 검색 + 사용자 아이콘 */}
+          <div className="flex items-center space-x-2">
             <Link
-              href="/profile"
-              className="p-2 -mr-2 text-gray-600 hover:text-gray-900"
+              href="/search"
+              className="p-2 text-gray-600 hover:text-gray-900"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -277,31 +278,55 @@ export default function Navigation() {
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
+                  d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
                 />
               </svg>
             </Link>
-          ) : (
-            <Link
-              href="/auth/login"
-              className="p-2 -mr-2 text-gray-600 hover:text-gray-900"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-5 h-5"
+            {/* 사용자 아이콘 */}
+            {!mounted ? (
+              <div className="w-5 h-5 bg-gray-200 rounded-full animate-pulse"></div>
+            ) : user ? (
+              <Link
+                href="/profile"
+                className="p-2 -mr-2 text-gray-600 hover:text-gray-900"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
-                />
-              </svg>
-            </Link>
-          )}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                  className="w-5 h-5"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
+                  />
+                </svg>
+              </Link>
+            ) : (
+              <Link
+                href="/auth/login"
+                className="p-2 -mr-2 text-gray-600 hover:text-gray-900"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                  className="w-5 h-5"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
+                  />
+                </svg>
+              </Link>
+            )}
+          </div>
         </div>
       </nav>
 

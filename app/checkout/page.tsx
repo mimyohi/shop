@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useOrderStore } from "@/store/orderStore";
 import * as PortOne from "@portone/browser-sdk/v2";
@@ -13,6 +13,7 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import AddressSearch from "@/components/AddressSearch";
 import { useCreateOrder } from "@/queries/orders.queries";
+import { deleteOrderByOrderIdAction, updateOrderStatusAction } from "@/lib/actions/orders.actions";
 import { couponsQueries } from "@/queries/coupons.queries";
 import { pointsQueries } from "@/queries/points.queries";
 import { addressesQueries } from "@/queries/addresses.queries";
@@ -43,7 +44,7 @@ const storeId = NEXT_PUBLIC_PORTONE_STORE_ID;
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { item, getTotalPrice, updateQuantity, clearOrder } = useOrderStore();
+  const { item, getTotalPrice, updateQuantity, clearOrder, _hasHydrated } = useOrderStore();
   const createOrderMutation = useCreateOrder();
 
   const [user, setUser] = useState<any>(null);
@@ -127,12 +128,22 @@ export default function CheckoutPage() {
     enabled: !!currentZipcode && currentZipcode.length === 5,
   });
 
+  // 리다이렉트 여부를 추적하는 ref (한 번만 실행되도록)
+  const hasRedirected = useRef(false);
+
+  // 주문 정보가 없으면 리다이렉트 (hydration 완료 후 최초 1회만 체크)
   useEffect(() => {
-    if (!item) {
+    // 이미 리다이렉트했거나, hydration이 완료되지 않았으면 무시
+    if (hasRedirected.current || !_hasHydrated) return;
+
+    // store에서 직접 최신 item 값을 가져와서 체크
+    const currentItem = useOrderStore.getState().item;
+    if (!currentItem) {
+      hasRedirected.current = true;
       alert("주문 정보가 없습니다.");
       router.push("/products");
     }
-  }, [item, router]);
+  }, [_hasHydrated, router]);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -347,6 +358,9 @@ export default function CheckoutPage() {
       });
 
       if (response?.code != null) {
+        // 결제 실패 시 생성된 주문 삭제
+        console.log("결제 실패, 주문 삭제 시도:", orderId);
+        await deleteOrderByOrderIdAction(orderId);
         alert(`결제 실패: ${response.message}`);
         router.push("/checkout/fail");
         return;
@@ -355,9 +369,14 @@ export default function CheckoutPage() {
       // 결제 성공
       clearOrder();
       router.push(`/checkout/success?paymentId=${orderId}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error("결제 요청 실패:", error);
-      alert("결제 요청에 실패했습니다.");
+      // 주문이 생성된 후 에러 발생 시 주문 삭제 시도
+      if (orderId) {
+        console.log("결제 중 에러 발생, 주문 삭제 시도:", orderId);
+        await deleteOrderByOrderIdAction(orderId);
+      }
+      alert(error?.message || "결제 요청에 실패했습니다.");
     } finally {
       setIsLoading(false);
     }
@@ -365,7 +384,9 @@ export default function CheckoutPage() {
 
   // 테스트 결제 핸들러
   const handleTestPayment = async () => {
-    if (!item) {
+    // store에서 최신 item 값을 직접 가져옴
+    const currentItem = useOrderStore.getState().item;
+    if (!currentItem) {
       alert("주문 정보가 없습니다.");
       return;
     }
@@ -439,15 +460,15 @@ export default function CheckoutPage() {
         }),
         items: [
           {
-            product_id: item.option.product_id || undefined,
-            product_name: product?.name || item.option.name,
-            product_price: item.option.price,
-            quantity: item.quantity,
-            option_id: item.option.id,
-            option_name: item.option.name,
-            option_price: item.option.price,
-            visit_type: item.visit_type,
-            selected_option_settings: item.selected_settings,
+            product_id: currentItem.option.product_id || undefined,
+            product_name: product?.name || currentItem.option.name,
+            product_price: currentItem.option.price,
+            quantity: currentItem.quantity,
+            option_id: currentItem.option.id,
+            option_name: currentItem.option.name,
+            option_price: currentItem.option.price,
+            visit_type: currentItem.visit_type,
+            selected_option_settings: currentItem.selected_settings,
           },
         ],
         health_consultation: healthConsultation
@@ -458,19 +479,39 @@ export default function CheckoutPage() {
           : undefined,
       });
 
-      // 테스트 결제 완료
-      clearOrder();
+      // 테스트 결제 완료 - 주문 상태를 paid로 업데이트
+      await updateOrderStatusAction(orderId, "paid", `TEST_PAYMENT_${Date.now()}`);
+
+      useOrderStore.getState().clearOrder();
       router.push(`/checkout/test-success?orderId=${orderId}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error("테스트 주문 생성 실패:", error);
-      alert("테스트 주문 생성에 실패했습니다.");
+      // 주문 생성 중 에러 발생 시 롤백은 createOrderAction 내부에서 처리됨
+      // 추가로 주문이 생성되었다면 삭제 시도
+      if (orderId) {
+        console.log("테스트 결제 중 에러 발생, 주문 삭제 시도:", orderId);
+        await deleteOrderByOrderIdAction(orderId);
+      }
+      alert(error?.message || "테스트 주문 생성에 실패했습니다.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (!item) {
-    return null;
+  // Hydration 완료 전이거나 item이 없으면 로딩 또는 빈 화면 표시
+  if (!_hasHydrated || !item) {
+    return (
+      <div className="min-h-screen bg-white">
+        <Navigation />
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+            <p className="text-gray-500">로딩 중...</p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
   }
 
   return (
@@ -771,18 +812,22 @@ export default function CheckoutPage() {
                 {NODE_ENV === "development" && (
                   <button
                     onClick={() => {
+                      // 현재 유저 정보 사용
+                      const userName = customerName || profile?.display_name || "테스트 사용자";
+                      const userPhone = customerPhone || profile?.phone || "010-0000-0000";
+
                       setUseNewAddress(true);
                       setNewAddress({
-                        recipient: "홍길동",
-                        phone: "010-1234-5678",
+                        recipient: userName,
+                        phone: userPhone,
                         postal_code: "06234",
                         address: "서울특별시 강남구 테헤란로 123",
                         address_detail: "101동 1001호",
                       });
                       setHealthConsultation({
-                        name: "홍길동",
+                        name: userName,
                         resident_number: "900101-1234567",
-                        phone: "010-1234-5678",
+                        phone: userPhone,
                         current_height: 170,
                         current_weight: 75,
                         min_weight_since_20s: 60,
@@ -1045,8 +1090,8 @@ export default function CheckoutPage() {
                       이름: {healthConsultation.name}
                     </p>
                   )}
-                  {healthConsultation.current_height &&
-                    healthConsultation.current_weight && (
+                  {healthConsultation.current_height != null &&
+                    healthConsultation.current_weight != null && (
                       <p className="text-xs text-green-700">
                         신체정보: {healthConsultation.current_height}cm /{" "}
                         {healthConsultation.current_weight}kg

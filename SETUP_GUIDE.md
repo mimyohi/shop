@@ -31,10 +31,7 @@ Supabase 대시보드에서 SQL Editor를 열고 다음 파일들을 순서대�
 -- 1. 기존 스키마 (이미 실행했다면 스킵)
 supabase/schema.sql
 
--- 2. 위시리스트 스키마 (이미 실행했다면 스킵)
-supabase/wishlist_schema.sql
-
--- 3. ⭐ 새로운 인증 및 보상 시스템 스키마
+-- 2. ⭐ 새로운 인증 및 보상 시스템 스키마
 supabase/auth_and_rewards_schema.sql
 ```
 

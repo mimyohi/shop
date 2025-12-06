@@ -408,48 +408,6 @@ $$ LANGUAGE plpgsql;
 COMMENT ON FUNCTION get_option_price IS 'Option의 판매 가격을 반환합니다. Type 선택과 무관하게 Option 가격이 적용됩니다.';
 
 -- ----------------------------------------------------------------------------
--- Wishlist
--- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS wishlist (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_email VARCHAR(255) NOT NULL,
-  product_id UUID REFERENCES products(id) ON DELETE CASCADE,
-  created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW()),
-  UNIQUE(user_email, product_id)
-);
-
-CREATE INDEX IF NOT EXISTS idx_wishlist_user_email ON wishlist(user_email);
-CREATE INDEX IF NOT EXISTS idx_wishlist_product_id ON wishlist(product_id);
-
-ALTER TABLE wishlist ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "wishlist_select_own"
-  ON wishlist FOR SELECT
-  USING (
-    auth.uid() IS NOT NULL AND
-    user_email = (auth.jwt() ->> 'email')
-  );
-
-CREATE POLICY "wishlist_insert_own"
-  ON wishlist FOR INSERT
-  WITH CHECK (
-    auth.uid() IS NOT NULL AND
-    user_email = (auth.jwt() ->> 'email')
-  );
-
-CREATE POLICY "wishlist_delete_own"
-  ON wishlist FOR DELETE
-  USING (
-    auth.uid() IS NOT NULL AND
-    user_email = (auth.jwt() ->> 'email')
-  );
-
-CREATE POLICY "wishlist_service_role_all"
-  ON wishlist FOR ALL
-  USING (auth.role() = 'service_role')
-  WITH CHECK (auth.role() = 'service_role');
-
--- ----------------------------------------------------------------------------
 -- User profiles, shipping, rewards, coupons
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS user_profiles (
@@ -1023,8 +981,36 @@ CREATE POLICY "orders_select_own"
 CREATE POLICY "orders_insert_authenticated"
   ON orders FOR INSERT
   WITH CHECK (
-    (auth.uid() IS NOT NULL AND user_id = auth.uid()) OR
-    (auth.uid() IS NULL)
+    -- 로그인 사용자: user_id가 자신의 ID이거나 NULL
+    (auth.uid() IS NOT NULL AND (user_id = auth.uid() OR user_id IS NULL))
+    OR
+    -- 비로그인 사용자: user_id가 NULL이어야 함
+    (auth.uid() IS NULL AND user_id IS NULL)
+  );
+
+CREATE POLICY "orders_delete_own"
+  ON orders FOR DELETE
+  USING (
+    -- 로그인 사용자: 자신의 주문 또는 user_id가 NULL인 주문 (이메일로 확인)
+    (auth.uid() IS NOT NULL AND (
+      user_id = auth.uid()
+      OR (user_id IS NULL AND user_email = (SELECT email FROM auth.users WHERE id = auth.uid()))
+    ))
+    OR
+    -- service_role은 모든 주문 삭제 가능
+    auth.role() = 'service_role'
+  );
+
+-- 주문 상태 업데이트 정책 (결제 완료 등)
+CREATE POLICY "orders_update_own"
+  ON orders FOR UPDATE
+  USING (
+    (auth.uid() IS NOT NULL AND user_id = auth.uid())
+    OR auth.role() = 'service_role'
+  )
+  WITH CHECK (
+    (auth.uid() IS NOT NULL AND user_id = auth.uid())
+    OR auth.role() = 'service_role'
   );
 
 CREATE POLICY "orders_service_role_all"
@@ -1081,8 +1067,22 @@ CREATE POLICY "order_items_insert_own"
       SELECT 1 FROM orders o
       WHERE o.id = order_items.order_id
       AND (
-        (auth.uid() IS NOT NULL AND o.user_id = auth.uid()) OR
+        (auth.uid() IS NOT NULL AND (o.user_id = auth.uid() OR o.user_id IS NULL)) OR
         (auth.uid() IS NULL)
+      )
+    )
+  );
+
+CREATE POLICY "order_items_delete_own"
+  ON order_items FOR DELETE
+  USING (
+    EXISTS (
+      SELECT 1 FROM orders
+      WHERE orders.id = order_items.order_id
+      AND (
+        orders.user_id = auth.uid()
+        OR (orders.user_id IS NULL AND orders.user_email = (SELECT email FROM auth.users WHERE id = auth.uid()))
+        OR auth.role() = 'service_role'
       )
     )
   );
@@ -1307,8 +1307,22 @@ CREATE POLICY "order_health_consultation_insert_own"
       SELECT 1 FROM orders o
       WHERE o.id = order_health_consultation.order_id
       AND (
-        (auth.uid() IS NOT NULL AND o.user_id = auth.uid()) OR
+        (auth.uid() IS NOT NULL AND (o.user_id = auth.uid() OR o.user_id IS NULL)) OR
         (auth.uid() IS NULL)
+      )
+    )
+  );
+
+CREATE POLICY "order_health_consultation_delete_own"
+  ON order_health_consultation FOR DELETE
+  USING (
+    EXISTS (
+      SELECT 1 FROM orders
+      WHERE orders.id = order_health_consultation.order_id
+      AND (
+        orders.user_id = auth.uid()
+        OR (orders.user_id IS NULL AND orders.user_email = (SELECT email FROM auth.users WHERE id = auth.uid()))
+        OR auth.role() = 'service_role'
       )
     )
   );
