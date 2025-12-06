@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
-import { validateAndFormatPhone } from '@/lib/phone/validation';
-import { createOTP } from '@/lib/phone/otp';
-import { sendOTP } from '@/lib/kakao/alimtalk';
+import { NextRequest, NextResponse } from "next/server";
+import { supabase } from "@/lib/supabase";
+import { validateAndFormatPhone } from "@/lib/phone/validation";
+import { createOTP } from "@/lib/phone/otp";
+import { sendOTP } from "@/lib/kakao/alimtalk";
 import {
   checkOTPSendRateLimit,
   checkIPRateLimit,
   getClientIP,
-} from '@/lib/ratelimit';
+} from "@/lib/ratelimit";
 
 /**
  * POST /api/auth/phone/send-otp
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     if (!phone) {
       return NextResponse.json(
-        { success: false, error: '전화번호를 입력해주세요.' },
+        { success: false, error: "전화번호를 입력해주세요." },
         { status: 400 }
       );
     }
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: phoneValidation.error || '올바른 전화번호 형식이 아닙니다.',
+          error: phoneValidation.error || "올바른 전화번호 형식이 아닙니다.",
         },
         { status: 400 }
       );
@@ -80,16 +80,16 @@ export async function POST(request: NextRequest) {
 
     // 5. 기존 미검증 OTP 삭제 (동일 전화번호)
     await supabase
-      .from('phone_otps')
+      .from("phone_otps")
       .delete()
-      .eq('phone', e164Phone)
-      .eq('verified', false);
+      .eq("phone", e164Phone)
+      .eq("verified", false);
 
     // 6. OTP 생성
     const { otp, hash, expiresAt } = await createOTP();
 
     // 7. OTP 저장 (해시만 저장!)
-    const { error: dbError } = await supabase.from('phone_otps').insert({
+    const { error: dbError } = await supabase.from("phone_otps").insert({
       phone: e164Phone,
       otp_hash: hash,
       attempts: 0,
@@ -98,9 +98,9 @@ export async function POST(request: NextRequest) {
     });
 
     if (dbError) {
-      console.error('Failed to save OTP:', dbError);
+      console.error("Failed to save OTP:", dbError);
       return NextResponse.json(
-        { success: false, error: 'OTP 저장에 실패했습니다.' },
+        { success: false, error: "OTP 저장에 실패했습니다." },
         { status: 500 }
       );
     }
@@ -111,15 +111,15 @@ export async function POST(request: NextRequest) {
     if (!alimtalkResult.success) {
       // 알림톡 발송 실패 시 DB에서 OTP 삭제
       await supabase
-        .from('phone_otps')
+        .from("phone_otps")
         .delete()
-        .eq('phone', e164Phone)
-        .eq('verified', false);
+        .eq("phone", e164Phone)
+        .eq("verified", false);
 
       return NextResponse.json(
         {
           success: false,
-          error: alimtalkResult.error || '알림톡 발송에 실패했습니다.',
+          error: alimtalkResult.error || "알림톡 발송에 실패했습니다.",
         },
         { status: 500 }
       );
@@ -129,12 +129,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       expiresIn: 300, // 5분 = 300초
-      message: '인증번호가 발송되었습니다.',
+      message: "인증번호가 발송되었습니다.",
     });
   } catch (error) {
-    console.error('Send OTP error:', error);
+    console.error("Send OTP error:", error);
     return NextResponse.json(
-      { success: false, error: '서버 오류가 발생했습니다.' },
+      { success: false, error: "서버 오류가 발생했습니다." },
       { status: 500 }
     );
   }

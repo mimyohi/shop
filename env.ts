@@ -15,7 +15,7 @@ export const PORTONE_WEBHOOK_SECRET = process.env.PORTONE_WEBHOOK_SECRET;
 export const SOLAPI_API_KEY = process.env.SOLAPI_API_KEY!;
 export const SOLAPI_API_SECRET = process.env.SOLAPI_API_SECRET!;
 
-export const KAKAO_SENDER_KEY = process.env.KAKAO_SENDER_KEY;
+export const KAKAO_PF_ID = process.env.KAKAO_PF_ID;
 export const KAKAO_TEMPLATE_OTP =
   process.env.KAKAO_TEMPLATE_OTP ?? "otp_auth";
 export const KAKAO_TEMPLATE_ORDER_CONFIRM =
@@ -40,7 +40,7 @@ type Env = {
   readonly PORTONE_WEBHOOK_SECRET?: string;
   readonly SOLAPI_API_KEY: string;
   readonly SOLAPI_API_SECRET: string;
-  readonly KAKAO_SENDER_KEY?: string;
+  readonly KAKAO_PF_ID?: string;
   readonly KAKAO_TEMPLATE_OTP: string;
   readonly KAKAO_TEMPLATE_ORDER_CONFIRM: string;
   readonly KAKAO_TEMPLATE_SHIPPING: string;
@@ -59,7 +59,7 @@ export const env: Env = {
   PORTONE_WEBHOOK_SECRET,
   SOLAPI_API_KEY,
   SOLAPI_API_SECRET,
-  KAKAO_SENDER_KEY,
+  KAKAO_PF_ID,
   KAKAO_TEMPLATE_OTP,
   KAKAO_TEMPLATE_ORDER_CONFIRM,
   KAKAO_TEMPLATE_SHIPPING,
