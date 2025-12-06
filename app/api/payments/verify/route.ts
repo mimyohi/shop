@@ -1,0 +1,187 @@
+import { NextRequest, NextResponse } from "next/server";
+import { supabase } from "@/lib/supabase";
+import { env } from "@/env";
+import { recalculateShippingFeeForValidation } from "@/lib/shipping/calculate-shipping-fee";
+import { calculateProductAmount } from "@/lib/utils/price-calculation";
+
+const portoneApiSecret = env.PORTONE_API_SECRET;
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { paymentId } = body;
+
+    if (!paymentId) {
+      return NextResponse.json(
+        { error: "결제 ID가 필요합니다." },
+        { status: 400 }
+      );
+    }
+
+    // API Secret 확인
+    if (!portoneApiSecret) {
+      console.error("PORTONE_API_SECRET 환경 변수가 설정되지 않았습니다.");
+      return NextResponse.json(
+        { error: "포트원 API 설정이 올바르지 않습니다." },
+        { status: 500 }
+      );
+    }
+
+    console.log("포트원 결제 조회 시작:", paymentId);
+    console.log("포트원 API 시크릿:", portoneApiSecret);
+
+    // 포트원 V2 API로 결제 정보 조회
+    const response = await fetch(
+      `https://api.portone.io/payments/${encodeURIComponent(paymentId)}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `PortOne ${portoneApiSecret}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("포트원 결제 조회 실패:", errorData);
+      return NextResponse.json(
+        { error: errorData.message || "결제 정보 조회에 실패했습니다." },
+        { status: response.status }
+      );
+    }
+
+    const paymentData = await response.json();
+
+    // 결제 상태 확인
+    if (paymentData.status !== "PAID") {
+      return NextResponse.json(
+        { error: `결제가 완료되지 않았습니다. 상태: ${paymentData.status}` },
+        { status: 400 }
+      );
+    }
+
+    // 주문 정보 조회 (금액 검증을 위해)
+    const { data: orderData, error: orderError } = await supabase
+      .from("orders")
+      .select("*")
+      .eq("order_id", paymentId)
+      .single();
+
+    if (orderError || !orderData) {
+      console.error("주문 정보 조회 실패:", orderError);
+      return NextResponse.json(
+        { error: "주문 정보를 찾을 수 없습니다." },
+        { status: 404 }
+      );
+    }
+
+    // order_items 조회하여 상품 금액 계산
+    const { data: orderItems, error: itemsError } = await supabase
+      .from("order_items")
+      .select("*")
+      .eq("order_id", orderData.id);
+
+    if (itemsError || !orderItems) {
+      console.error("주문 항목 조회 실패:", itemsError);
+      return NextResponse.json(
+        { error: "주문 항목을 찾을 수 없습니다." },
+        { status: 404 }
+      );
+    }
+
+    // 상품 금액 계산 (상품 가격 + 옵션 + 애드온)
+    const productAmount = calculateProductAmount(orderItems);
+
+    const zipcode = orderData.shipping_postal_code;
+
+    if (!zipcode) {
+      console.error("우편번호 정보가 없습니다.");
+      return NextResponse.json(
+        { error: "배송지 정보가 올바르지 않습니다." },
+        { status: 400 }
+      );
+    }
+
+    // 서버에서 배송비 재계산
+    const recalculatedShippingFee = await recalculateShippingFeeForValidation(
+      productAmount,
+      zipcode
+    );
+
+    // 쿠폰 할인 금액 (있다면)
+    const couponDiscount = orderData.coupon_discount || 0;
+
+    // 포인트 사용 금액 (있다면)
+    const pointsUsed = orderData.points_used || 0;
+
+    // 최종 금액 계산
+    const expectedTotalAmount =
+      productAmount + recalculatedShippingFee - couponDiscount - pointsUsed;
+
+    // PG사에서 받은 결제 금액
+    const paidAmount = paymentData.amount?.total || 0;
+
+    // 금액 검증
+    if (Math.abs(expectedTotalAmount - paidAmount) > 1) {
+      // 1원 이하 오차 허용
+      console.error("금액 불일치:", {
+        expected: expectedTotalAmount,
+        paid: paidAmount,
+        productAmount,
+        shippingFee: recalculatedShippingFee,
+        couponDiscount,
+        pointsUsed,
+      });
+
+      return NextResponse.json(
+        {
+          error: "결제 금액이 일치하지 않습니다. 다시 시도해주세요.",
+          details: {
+            expected: expectedTotalAmount,
+            paid: paidAmount,
+          },
+        },
+        { status: 400 }
+      );
+    }
+
+    // 주문 상태 업데이트 (검증된 배송비 정보 포함)
+    const { error: updateError } = await supabase
+      .from("orders")
+      .update({
+        status: "completed",
+        payment_key: paymentData.id,
+        shipping_fee: recalculatedShippingFee, // 검증된 배송비
+        total_amount: paidAmount,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("order_id", paymentId);
+
+    if (updateError) {
+      console.error("주문 상태 업데이트 실패:", updateError);
+      return NextResponse.json(
+        { error: "주문 상태 업데이트에 실패했습니다." },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      payment: paymentData,
+      verification: {
+        productAmount,
+        shippingFee: recalculatedShippingFee,
+        couponDiscount,
+        pointsUsed,
+        totalAmount: paidAmount,
+      },
+    });
+  } catch (error) {
+    console.error("결제 확인 처리 중 오류:", error);
+    return NextResponse.json(
+      { error: "결제 확인 처리 중 오류가 발생했습니다." },
+      { status: 500 }
+    );
+  }
+}

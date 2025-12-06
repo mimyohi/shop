@@ -1,0 +1,100 @@
+{
+  "description": "제주 및 도서산간 지역 우편번호 샘플 데이터",
+  "last_updated": "2025-01-22",
+  "regions": {
+    "jeju": {
+      "name": "제주도",
+      "additional_fee": 3000,
+      "zipcodes": [
+        { "zipcode": "63000", "region_name": "제주시" },
+        { "zipcode": "63001", "region_name": "제주시" },
+        { "zipcode": "63002", "region_name": "제주시" },
+        { "zipcode": "63100", "region_name": "제주시 애월읍" },
+        { "zipcode": "63101", "region_name": "제주시 애월읍" },
+        { "zipcode": "63200", "region_name": "제주시 한림읍" },
+        { "zipcode": "63201", "region_name": "제주시 한림읍" },
+        { "zipcode": "63300", "region_name": "제주시 추자면" },
+        { "zipcode": "63357", "region_name": "제주시 우도면" },
+        { "zipcode": "63500", "region_name": "서귀포시" },
+        { "zipcode": "63501", "region_name": "서귀포시" },
+        { "zipcode": "63502", "region_name": "서귀포시" },
+        { "zipcode": "63600", "region_name": "서귀포시 성산읍" },
+        { "zipcode": "63601", "region_name": "서귀포시 남원읍" },
+        { "zipcode": "63602", "region_name": "서귀포시 안덕면" },
+        { "zipcode": "63603", "region_name": "서귀포시 대정읍" },
+        { "zipcode": "63604", "region_name": "서귀포시 표선면" }
+      ]
+    },
+    "mountain": {
+      "name": "도서산간 지역",
+      "additional_fee": 5000,
+      "regions": [
+        {
+          "name": "울릉군",
+          "zipcodes": [
+            { "zipcode": "40200", "region_name": "울릉군" },
+            { "zipcode": "40205", "region_name": "울릉군 울릉읍" },
+            { "zipcode": "40240", "region_name": "울릉군 서면" },
+            { "zipcode": "40260", "region_name": "울릉군 북면" }
+          ]
+        },
+        {
+          "name": "옹진군 (백령도/대청도)",
+          "zipcodes": [
+            { "zipcode": "23100", "region_name": "옹진군 백령면" },
+            { "zipcode": "23116", "region_name": "옹진군 연평면" },
+            { "zipcode": "23124", "region_name": "옹진군 대청면" },
+            { "zipcode": "23125", "region_name": "옹진군 소청면" }
+          ]
+        },
+        {
+          "name": "완도군",
+          "zipcodes": [
+            { "zipcode": "59100", "region_name": "완도군 완도읍" },
+            { "zipcode": "59102", "region_name": "완도군 금일읍" },
+            { "zipcode": "59127", "region_name": "완도군 노화읍" },
+            { "zipcode": "59137", "region_name": "완도군 소안면" },
+            { "zipcode": "59142", "region_name": "완도군 청산면" }
+          ]
+        },
+        {
+          "name": "진도군",
+          "zipcodes": [
+            { "zipcode": "58900", "region_name": "진도군 진도읍" },
+            { "zipcode": "58919", "region_name": "진도군 임회면" },
+            { "zipcode": "58927", "region_name": "진도군 조도면" }
+          ]
+        },
+        {
+          "name": "남해군",
+          "zipcodes": [
+            { "zipcode": "52400", "region_name": "남해군 남해읍" },
+            { "zipcode": "52422", "region_name": "남해군 이동면" },
+            { "zipcode": "52430", "region_name": "남해군 삼동면" }
+          ]
+        },
+        {
+          "name": "고흥군",
+          "zipcodes": [
+            { "zipcode": "59500", "region_name": "고흥군 고흥읍" },
+            { "zipcode": "59563", "region_name": "고흥군 금산면" },
+            { "zipcode": "59565", "region_name": "고흥군 봉래면" }
+          ]
+        },
+        {
+          "name": "거제시 (일부 도서지역)",
+          "zipcodes": [
+            { "zipcode": "53331", "region_name": "거제시 동부면" },
+            { "zipcode": "53332", "region_name": "거제시 동부면 학동리" }
+          ]
+        }
+      ]
+    }
+  },
+  "notes": [
+    "제주도는 우편번호 범위 63000-63644로 자동 판별 가능",
+    "도서산간 지역은 DB 또는 JSON 데이터로 관리 필요",
+    "추가 배송비는 배송사 정책에 따라 조정 가능",
+    "전체 도서산간 지역 리스트는 우체국 또는 택배사 공식 자료 참고"
+  ]
+}
