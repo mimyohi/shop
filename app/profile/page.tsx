@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import AddressSearch from "@/components/AddressSearch";
+import { useAuth } from "@/hooks/useAuth";
 import { supabaseAuth } from "@/lib/supabaseAuth";
 import {
   addressesQueries,
@@ -56,13 +57,14 @@ const initialAddressForm = {
 function ProfileContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [user, setUser] = useState<any>(null);
-  const [checkingUser, setCheckingUser] = useState(true);
+
+  // 공통 인증 훅 사용 (카카오 프로필 미완성 시 자동 리다이렉트)
+  const { user, isLoading: checkingUser, isAuthenticated } = useAuth();
+
   const [activeTab, setActiveTab] = useState<TabType>("info");
   const [isEditing, setIsEditing] = useState(false);
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [displayName, setDisplayName] = useState("");
-  const [phone, setPhone] = useState("");
   const [addressForm, setAddressForm] = useState(initialAddressForm);
 
   // 쿠폰 관련 상태
@@ -80,24 +82,6 @@ function ProfileContent() {
   const upsertHealthMutation = useUpsertUserHealthConsultation();
   const registerCouponMutation = useRegisterCouponByCode();
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      const {
-        data: { user },
-      } = await supabaseAuth.auth.getUser();
-
-      if (!user) {
-        alert("로그인이 필요합니다.");
-        router.push("/auth/login");
-        return;
-      }
-
-      setUser(user);
-    };
-
-    fetchUser().finally(() => setCheckingUser(false));
-  }, [router]);
-
   const tabParam = searchParams?.get("tab");
   useEffect(() => {
     if (!tabParam) return;
@@ -109,10 +93,11 @@ function ProfileContent() {
       "addresses",
       "health",
     ];
-    if (allowedTabs.includes(tabParam as TabType) && activeTab !== tabParam) {
+    if (allowedTabs.includes(tabParam as TabType)) {
       setActiveTab(tabParam as TabType);
     }
-  }, [tabParam, activeTab]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tabParam]);
 
   const { data: profile, isLoading: profileLoading } = useQuery({
     ...userProfilesQueries.byUserId(user?.id || ""),
@@ -171,7 +156,6 @@ function ProfileContent() {
   useEffect(() => {
     if (profile) {
       setDisplayName(profile.display_name || "");
-      setPhone(profile.phone || "");
     }
   }, [profile]);
 
@@ -252,7 +236,6 @@ function ProfileContent() {
         userId: user.id,
         data: {
           display_name: displayName,
-          phone,
         },
       });
       alert("프로필이 업데이트되었습니다.");
@@ -541,18 +524,9 @@ function ProfileContent() {
                     </div>
                     <div>
                       <p className="text-sm text-gray-500 mb-1">전화번호</p>
-                      {isEditing ? (
-                        <input
-                          type="tel"
-                          value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-200 rounded focus:outline-none focus:border-gray-400"
-                        />
-                      ) : (
-                        <p className="text-gray-900">
-                          {profile?.phone || "미등록"}
-                        </p>
-                      )}
+                      <p className="text-gray-900">
+                        {profile?.phone || "미등록"}
+                      </p>
                     </div>
                   </div>
 
@@ -597,56 +571,6 @@ function ProfileContent() {
                   ) : (
                     <div className="space-y-4">
                       {orders.map((order: OrderWithItems) => {
-                        const getStatusInfo = (status: string) => {
-                          switch (status) {
-                            case "pending":
-                              return {
-                                label: "결제 대기",
-                                className: "text-yellow-600",
-                              };
-                            case "paid":
-                              return {
-                                label: "결제 완료",
-                                className: "text-green-600",
-                              };
-                            case "preparing":
-                              return {
-                                label: "상품 준비중",
-                                className: "text-blue-600",
-                              };
-                            case "shipped":
-                              return {
-                                label: "배송중",
-                                className: "text-indigo-600",
-                              };
-                            case "delivered":
-                              return {
-                                label: "배송 완료",
-                                className: "text-teal-600",
-                              };
-                            case "completed":
-                              return {
-                                label: "구매 확정",
-                                className: "text-emerald-600",
-                              };
-                            case "cancelled":
-                              return {
-                                label: "취소됨",
-                                className: "text-red-600",
-                              };
-                            case "refunded":
-                              return {
-                                label: "환불됨",
-                                className: "text-gray-600",
-                              };
-                            default:
-                              return {
-                                label: status,
-                                className: "text-gray-600",
-                              };
-                          }
-                        };
-
                         const getConsultationStatusInfo = (
                           status: string | null
                         ) => {
@@ -654,48 +578,39 @@ function ProfileContent() {
                           switch (status) {
                             case "chatting_required":
                               return {
-                                label: "접수 필요",
-                                className: "text-yellow-600",
+                                label: "상담 필요",
                               };
                             case "consultation_required":
                               return {
                                 label: "상담 필요",
-                                className: "text-orange-600",
                               };
                             case "on_hold":
                               return {
-                                label: "보류",
-                                className: "text-gray-600",
+                                label: "상담 필요",
                               };
                             case "consultation_completed":
                               return {
                                 label: "상담 완료",
-                                className: "text-green-600",
                               };
                             case "shipping_on_hold":
                               return {
                                 label: "배송 보류",
-                                className: "text-red-600",
                               };
                             case "shipped":
                               return {
                                 label: "배송됨",
-                                className: "text-blue-600",
                               };
                             case "cancelled":
                               return {
                                 label: "취소됨",
-                                className: "text-red-600",
                               };
                             default:
                               return {
                                 label: status,
-                                className: "text-gray-600",
                               };
                           }
                         };
 
-                        const statusInfo = getStatusInfo(order.status);
                         const consultationStatusInfo =
                           getConsultationStatusInfo(order.consultation_status);
 
@@ -717,15 +632,8 @@ function ProfileContent() {
                                 </p>
                               </div>
                               <div className="flex flex-col items-end gap-1">
-                                <span
-                                  className={`text-sm font-medium ${statusInfo.className}`}
-                                >
-                                  {statusInfo.label}
-                                </span>
                                 {consultationStatusInfo && (
-                                  <span
-                                    className={`text-xs ${consultationStatusInfo.className}`}
-                                  >
+                                  <span className={`text-sm`}>
                                     {consultationStatusInfo.label}
                                   </span>
                                 )}

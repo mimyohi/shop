@@ -84,7 +84,7 @@ function ProductsContent() {
         <Navigation />
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center py-12">
-            <p className="text-red-500 text-lg mb-4">
+            <p className="text-gray-700 text-lg mb-4">
               상품 목록을 불러오는데 실패했습니다.
             </p>
             <button
@@ -136,11 +136,9 @@ function ProductsContent() {
               onChange={(e) => handleSortChange(e.target.value as SortOption)}
               className="appearance-none bg-white border border-gray-200 rounded px-4 py-2 pr-8 text-sm text-gray-700 focus:outline-none focus:border-gray-400"
             >
-              <option value="latest">정렬방식</option>
               <option value="latest">최신순</option>
               <option value="price_asc">낮은 가격순</option>
               <option value="price_desc">높은 가격순</option>
-              <option value="name">이름순</option>
             </select>
             <svg
               className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"

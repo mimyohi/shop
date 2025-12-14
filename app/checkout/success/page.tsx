@@ -72,8 +72,8 @@ function CheckoutSuccessContent() {
         <Navigation />
         <div className="max-w-md mx-auto px-4 py-24">
           <div className="text-center">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <span className="text-3xl text-red-500">✕</span>
+            <div className="w-16 h-16 border-2 border-gray-400 rounded-full flex items-center justify-center mx-auto mb-6">
+              <span className="text-2xl text-gray-500">✕</span>
             </div>
             <h1 className="text-xl font-medium text-gray-900 mb-3">
               결제 실패
@@ -81,7 +81,7 @@ function CheckoutSuccessContent() {
             <p className="text-gray-500 mb-8">{error}</p>
             <Link
               href="/products"
-              className="inline-block bg-gray-900 text-white px-6 py-3 rounded hover:bg-gray-800 transition text-sm"
+              className="inline-block border border-gray-900 text-gray-900 px-6 py-3 hover:bg-gray-900 hover:text-white transition text-sm"
             >
               상품 목록으로 돌아가기
             </Link>
@@ -108,8 +108,8 @@ function CheckoutSuccessContent() {
 
       <main className="max-w-md mx-auto px-4 py-12">
         <div className="text-center">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <span className="text-3xl text-green-600">✓</span>
+          <div className="w-16 h-16 border-2 border-gray-900 rounded-full flex items-center justify-center mx-auto mb-6">
+            <span className="text-2xl text-gray-900">✓</span>
           </div>
           <h2 className="text-xl font-medium text-gray-900 mb-2">
             주문이 완료되었습니다
@@ -124,19 +124,19 @@ function CheckoutSuccessContent() {
           <div className="space-y-3">
             <Link
               href="/profile?tab=orders"
-              className="block w-full bg-gray-900 text-white py-3 rounded hover:bg-gray-800 transition text-sm"
+              className="block w-full border border-gray-900 text-gray-900 py-3 hover:bg-gray-900 hover:text-white transition text-sm"
             >
               주문 내역 확인
             </Link>
             <Link
               href="/products"
-              className="block w-full border border-gray-200 text-gray-700 py-3 rounded hover:bg-gray-50 transition text-sm"
+              className="block w-full border border-gray-300 text-gray-700 py-3 hover:border-gray-900 hover:text-gray-900 transition text-sm"
             >
               쇼핑 계속하기
             </Link>
             <Link
               href="/"
-              className="block text-sm text-gray-500 hover:text-gray-900 mt-4"
+              className="block text-sm text-gray-400 hover:text-gray-900 mt-4 underline underline-offset-4"
             >
               홈으로 돌아가기
             </Link>

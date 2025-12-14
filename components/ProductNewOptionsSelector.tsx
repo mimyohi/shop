@@ -47,18 +47,25 @@ interface Props {
     visitType: VisitType | null,
     selectedSettings: SelectedOptionSetting[]
   ) => void;
+  onOptionsLoaded?: (hasOptions: boolean) => void;
   resetTrigger?: number;
 }
 
 export default function ProductNewOptionsSelector({
   productId,
   onSelectionChange,
+  onOptionsLoaded,
   resetTrigger,
 }: Props) {
   // 방문 타입을 먼저 선택
-  const [selectedVisitType, setSelectedVisitType] = useState<VisitType | null>(null);
-  const [selectedOption, setSelectedOption] = useState<ProductOptionWithSettings | null>(null);
-  const [selectedSettings, setSelectedSettings] = useState<Record<string, string>>({});
+  const [selectedVisitType, setSelectedVisitType] = useState<VisitType | null>(
+    null
+  );
+  const [selectedOption, setSelectedOption] =
+    useState<ProductOptionWithSettings | null>(null);
+  const [selectedSettings, setSelectedSettings] = useState<
+    Record<string, string>
+  >({});
 
   // resetTrigger가 변경되면 선택 초기화
   useEffect(() => {
@@ -119,6 +126,13 @@ export default function ProductNewOptionsSelector({
     },
   });
 
+  // 옵션 로드 완료 시 부모에게 알림
+  useEffect(() => {
+    if (!isLoading && onOptionsLoaded) {
+      onOptionsLoaded(options.length > 0);
+    }
+  }, [isLoading, options.length, onOptionsLoaded]);
+
   // Check if settings should be shown based on visit type
   const shouldShowSettings = () => {
     if (!selectedOption || !selectedVisitType) return false;
@@ -169,7 +183,7 @@ export default function ProductNewOptionsSelector({
 
   const handleOptionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const optionId = e.target.value;
-    const option = options.find(o => o.id === optionId);
+    const option = options.find((o) => o.id === optionId);
     if (option) {
       setSelectedOption(option);
       setSelectedSettings({});
@@ -200,7 +214,7 @@ export default function ProductNewOptionsSelector({
   const visibleSettings = showSettings ? selectedOption?.settings || [] : [];
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 border-t border-gray-200 pt-6">
       {/* 방문 타입 선택 (드롭다운) */}
       <div className="relative">
         <select
@@ -219,7 +233,12 @@ export default function ProductNewOptionsSelector({
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 9l-7 7-7-7"
+          />
         </svg>
       </div>
 
@@ -244,36 +263,47 @@ export default function ProductNewOptionsSelector({
             stroke="currentColor"
             viewBox="0 0 24 24"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 9l-7 7-7-7"
+            />
           </svg>
         </div>
       )}
 
       {/* 상세 설정 (드롭다운) - 옵션 선택 후 설정이 필요한 경우 */}
-      {showSettings && visibleSettings.map((setting) => (
-        <div key={setting.id} className="relative">
-          <select
-            value={selectedSettings[setting.id] || ""}
-            onChange={(e) => handleSettingChange(setting.id, e.target.value)}
-            className="w-full appearance-none bg-white border border-gray-300 rounded px-4 py-3 pr-10 text-sm text-gray-700 focus:outline-none focus:border-gray-400"
-          >
-            <option value="">{setting.name}을(를) 선택해주세요</option>
-            {setting.types?.map((type) => (
-              <option key={type.id} value={type.id}>
-                {type.name}
-              </option>
-            ))}
-          </select>
-          <svg
-            className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </div>
-      ))}
+      {showSettings &&
+        visibleSettings.map((setting) => (
+          <div key={setting.id} className="relative">
+            <select
+              value={selectedSettings[setting.id] || ""}
+              onChange={(e) => handleSettingChange(setting.id, e.target.value)}
+              className="w-full appearance-none bg-white border border-gray-300 rounded px-4 py-3 pr-10 text-sm text-gray-700 focus:outline-none focus:border-gray-400"
+            >
+              <option value="">{setting.name}을(를) 선택해주세요</option>
+              {setting.types?.map((type) => (
+                <option key={type.id} value={type.id}>
+                  {type.name}
+                </option>
+              ))}
+            </select>
+            <svg
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </div>
+        ))}
     </div>
   );
 }

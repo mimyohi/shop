@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
-import { validateAndFormatPhone } from "@/lib/phone/validation";
+import { createServiceClient } from "@/lib/supabaseServiceServer";
 import { createOTP } from "@/lib/phone/otp";
 import { sendOTP } from "@/lib/kakao/alimtalk";
 import {
@@ -10,48 +9,58 @@ import {
 } from "@/lib/ratelimit";
 
 /**
- * POST /api/auth/phone/send-otp
- * OTP 발송 API
+ * POST /api/auth/lookup-by-email
+ * 이메일로 사용자 조회 후 전화번호로 OTP 발송
  *
  * Request Body:
  * {
- *   "phone": "010-1234-5678"
+ *   "email": "user@example.com"
  * }
  *
  * Response:
  * {
  *   "success": true,
- *   "expiresIn": 300 // 초 단위
+ *   "phone": "+821012345678",
+ *   "expiresIn": 300
  * }
  */
 export async function POST(request: NextRequest) {
   try {
-    // 1. Request Body 파싱
+    const supabase = await createServiceClient();
     const body = await request.json();
-    const { phone } = body;
+    const { email } = body;
 
-    if (!phone) {
+    if (!email) {
       return NextResponse.json(
-        { success: false, error: "전화번호를 입력해주세요." },
+        { success: false, error: "이메일을 입력해주세요." },
         { status: 400 }
       );
     }
 
-    // 2. 전화번호 형식 검증 및 변환
-    const phoneValidation = validateAndFormatPhone(phone);
-    if (!phoneValidation.valid || !phoneValidation.e164) {
+    // 이메일로 사용자 조회
+    const { data: userProfile, error: profileError } = await supabase
+      .from("user_profiles")
+      .select("user_id, email, phone, phone_verified")
+      .eq("email", email.toLowerCase().trim())
+      .single();
+
+    if (profileError || !userProfile) {
       return NextResponse.json(
-        {
-          success: false,
-          error: phoneValidation.error || "올바른 전화번호 형식이 아닙니다.",
-        },
+        { success: false, error: "해당 이메일로 가입된 계정이 없습니다." },
+        { status: 404 }
+      );
+    }
+
+    if (!userProfile.phone) {
+      return NextResponse.json(
+        { success: false, error: "등록된 전화번호가 없습니다. 고객센터에 문의해주세요." },
         { status: 400 }
       );
     }
 
-    const e164Phone = phoneValidation.e164;
+    const e164Phone = userProfile.phone;
 
-    // 3. Rate Limiting - 전화번호당
+    // Rate Limiting - 전화번호당
     const phoneRateLimit = checkOTPSendRateLimit(e164Phone);
     if (!phoneRateLimit.allowed) {
       return NextResponse.json(
@@ -64,7 +73,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 4. Rate Limiting - IP당
+    // Rate Limiting - IP당
     const clientIP = getClientIP(request.headers);
     const ipRateLimit = checkIPRateLimit(clientIP);
     if (!ipRateLimit.allowed) {
@@ -78,14 +87,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 5. 기존 미검증 OTP 삭제 (동일 전화번호)
+    // 기존 미검증 OTP 삭제 (동일 전화번호)
     await supabase
       .from("phone_otps")
       .delete()
       .eq("phone", e164Phone)
       .eq("verified", false);
 
-    // 6. OTP 생성
+    // OTP 생성
     const { otp, hash, expiresAt } = await createOTP();
 
     // 개발 환경에서만 OTP 출력 (테스트용)
@@ -93,7 +102,7 @@ export async function POST(request: NextRequest) {
       console.log(`[DEV] OTP for ${e164Phone}: ${otp}`);
     }
 
-    // 7. OTP 저장 (해시만 저장!)
+    // OTP 저장 (해시만 저장!)
     const { error: dbError } = await supabase.from("phone_otps").insert({
       phone: e164Phone,
       otp_hash: hash,
@@ -110,7 +119,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 8. 카카오톡 알림톡 발송
+    // 카카오톡 알림톡 발송
     const alimtalkResult = await sendOTP(e164Phone, otp);
 
     if (!alimtalkResult.success) {
@@ -130,9 +139,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 9. 성공 응답 (OTP는 절대 포함하지 않음!)
+    // 성공 응답 (전화번호 포함)
     return NextResponse.json({
       success: true,
+      phone: e164Phone,
       expiresIn: 300, // 5분 = 300초
       message: "인증번호가 발송되었습니다.",
     });

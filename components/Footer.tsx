@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
+import Link from "next/link";
 
 export default function Footer() {
   return (
@@ -8,7 +8,10 @@ export default function Footer() {
       {/* 로고 섹션 */}
       <div className="py-12 border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <Link href="/" className="text-2xl font-semibold tracking-widest text-gray-900 font-montserrat">
+          <Link
+            href="/"
+            className="text-2xl font-semibold tracking-widest text-gray-900 font-montserrat"
+          >
             MIMYOHI
           </Link>
         </div>
@@ -23,26 +26,47 @@ export default function Footer() {
             <div className="mb-6">
               <p className="font-medium text-gray-700 mb-2">쇼핑몰 기본정보</p>
               <p>
-                <span className="font-medium text-gray-600">상호명</span> 미묘히 · <span className="font-medium text-gray-600">대표자명</span> 정상원
+                <span className="font-medium text-gray-600">상호명</span> 미묘히
+                · <span className="font-medium text-gray-600">대표자명</span>{" "}
+                정상원
               </p>
               <p>
-                <span className="font-medium text-gray-600">사업장 주소</span> 06628 서울 서초구 효령로 429 1414호 (서초동)
+                <span className="font-medium text-gray-600">사업장 주소</span>{" "}
+                06628 서울 서초구 효령로 429 1414호 (서초동)
               </p>
               <p>
-                <span className="font-medium text-gray-600">대표 전화</span> 070-8655-2959 · <span className="font-medium text-gray-600">사업자 등록번호</span> 431-87-03798
+                <span className="font-medium text-gray-600">대표 전화</span>{" "}
+                070-8655-2959 ·{" "}
+                <span className="font-medium text-gray-600">
+                  사업자 등록번호
+                </span>{" "}
+                431-87-03798
               </p>
               <p>
-                <span className="font-medium text-gray-600">통신판매업 신고번호</span> 기타 · <span className="font-medium text-gray-600">개인정보보호책임자</span> 정상원
+                <span className="font-medium text-gray-600">
+                  통신판매업 신고번호
+                </span>{" "}
+                기타 ·{" "}
+                <span className="font-medium text-gray-600">
+                  개인정보보호책임자
+                </span>{" "}
+                정상원
               </p>
             </div>
 
             <div className="mb-6">
               <p className="font-medium text-gray-700 mb-2">고객센터 정보</p>
               <p>
-                <span className="font-medium text-gray-600">상담/주문 전화</span> 070-8655-2959
+                <span className="font-medium text-gray-600">
+                  상담/주문 전화
+                </span>{" "}
+                070-8655-2959
               </p>
               <p>
-                <span className="font-medium text-gray-600">상담/주문 이메일</span> official.mimyohi@gmail.com
+                <span className="font-medium text-gray-600">
+                  상담/주문 이메일
+                </span>{" "}
+                official.mimyohi@gmail.com
               </p>
               <p className="font-medium text-gray-600 mt-2">CS운영시간</p>
               <p>평일 : 10:00~18:00</p>
@@ -60,21 +84,24 @@ export default function Footer() {
           <div className="grid grid-cols-3 gap-8 pl-8">
             {/* NAVIGATE */}
             <div>
-              <h4 className="text-xs font-medium text-gray-700 mb-4 tracking-wide">NAVIGATE</h4>
+              <h4 className="text-xs font-medium text-gray-700 mb-4 tracking-wide">
+                NAVIGATE
+              </h4>
               <ul className="space-y-3 text-xs text-gray-500">
                 <li>
-                  <Link href="/brand" className="hover:text-gray-900 transition">
+                  <Link
+                    href="/brand"
+                    className="hover:text-gray-900 transition"
+                  >
                     Brand
                   </Link>
                 </li>
                 <li>
-                  <Link href="/products" className="hover:text-gray-900 transition">
+                  <Link
+                    href="/products"
+                    className="hover:text-gray-900 transition"
+                  >
                     Shop
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/community" className="hover:text-gray-900 transition">
-                    Community
                   </Link>
                 </li>
               </ul>
@@ -82,7 +109,9 @@ export default function Footer() {
 
             {/* SOCIAL */}
             <div>
-              <h4 className="text-xs font-medium text-gray-700 mb-4 tracking-wide">SOCIAL</h4>
+              <h4 className="text-xs font-medium text-gray-700 mb-4 tracking-wide">
+                SOCIAL
+              </h4>
               <ul className="space-y-3 text-xs text-gray-500">
                 <li>
                   <a
@@ -99,25 +128,39 @@ export default function Footer() {
 
             {/* OFFICIAL */}
             <div>
-              <h4 className="text-xs font-medium text-gray-700 mb-4 tracking-wide">OFFICIAL</h4>
+              <h4 className="text-xs font-medium text-gray-700 mb-4 tracking-wide">
+                OFFICIAL
+              </h4>
               <ul className="space-y-3 text-xs text-gray-500">
                 <li>
-                  <Link href="/about" className="hover:text-gray-900 transition">
+                  <Link
+                    href="/about"
+                    className="hover:text-gray-900 transition"
+                  >
                     회사소개
                   </Link>
                 </li>
                 <li>
-                  <Link href="/terms" className="hover:text-gray-900 transition">
+                  <Link
+                    href="/terms"
+                    className="hover:text-gray-900 transition"
+                  >
                     이용약관
                   </Link>
                 </li>
                 <li>
-                  <Link href="/privacy" className="hover:text-gray-900 transition">
+                  <Link
+                    href="/privacy"
+                    className="hover:text-gray-900 transition"
+                  >
                     개인정보처리방침
                   </Link>
                 </li>
                 <li>
-                  <Link href="/guide" className="hover:text-gray-900 transition">
+                  <Link
+                    href="/guide"
+                    className="hover:text-gray-900 transition"
+                  >
                     이용안내
                   </Link>
                 </li>
@@ -137,21 +180,24 @@ export default function Footer() {
           <div className="grid grid-cols-3 gap-4 pb-8 border-b border-gray-200">
             {/* NAVIGATE */}
             <div>
-              <h4 className="text-xs font-medium text-gray-700 mb-3 tracking-wide">NAVIGATE</h4>
+              <h4 className="text-xs font-medium text-gray-700 mb-3 tracking-wide">
+                NAVIGATE
+              </h4>
               <ul className="space-y-2 text-xs text-gray-500">
                 <li>
-                  <Link href="/brand" className="hover:text-gray-900 transition">
+                  <Link
+                    href="/brand"
+                    className="hover:text-gray-900 transition"
+                  >
                     Brand
                   </Link>
                 </li>
                 <li>
-                  <Link href="/products" className="hover:text-gray-900 transition">
+                  <Link
+                    href="/products"
+                    className="hover:text-gray-900 transition"
+                  >
                     Shop
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/community" className="hover:text-gray-900 transition">
-                    Community
                   </Link>
                 </li>
               </ul>
@@ -159,7 +205,9 @@ export default function Footer() {
 
             {/* SOCIAL */}
             <div>
-              <h4 className="text-xs font-medium text-gray-700 mb-3 tracking-wide">SOCIAL</h4>
+              <h4 className="text-xs font-medium text-gray-700 mb-3 tracking-wide">
+                SOCIAL
+              </h4>
               <ul className="space-y-2 text-xs text-gray-500">
                 <li>
                   <a
@@ -176,25 +224,39 @@ export default function Footer() {
 
             {/* OFFICIAL */}
             <div>
-              <h4 className="text-xs font-medium text-gray-700 mb-3 tracking-wide">OFFICIAL</h4>
+              <h4 className="text-xs font-medium text-gray-700 mb-3 tracking-wide">
+                OFFICIAL
+              </h4>
               <ul className="space-y-2 text-xs text-gray-500">
                 <li>
-                  <Link href="/about" className="hover:text-gray-900 transition">
+                  <Link
+                    href="/about"
+                    className="hover:text-gray-900 transition"
+                  >
                     회사소개
                   </Link>
                 </li>
                 <li>
-                  <Link href="/terms" className="hover:text-gray-900 transition">
+                  <Link
+                    href="/terms"
+                    className="hover:text-gray-900 transition"
+                  >
                     이용약관
                   </Link>
                 </li>
                 <li>
-                  <Link href="/privacy" className="hover:text-gray-900 transition">
+                  <Link
+                    href="/privacy"
+                    className="hover:text-gray-900 transition"
+                  >
                     개인정보처리방침
                   </Link>
                 </li>
                 <li>
-                  <Link href="/guide" className="hover:text-gray-900 transition">
+                  <Link
+                    href="/guide"
+                    className="hover:text-gray-900 transition"
+                  >
                     이용안내
                   </Link>
                 </li>
@@ -212,26 +274,47 @@ export default function Footer() {
             <div className="mb-6">
               <p className="font-medium text-gray-700 mb-2">쇼핑몰 기본정보</p>
               <p>
-                <span className="font-medium text-gray-600">상호명</span> 미묘히 · <span className="font-medium text-gray-600">대표자명</span> 정상원
+                <span className="font-medium text-gray-600">상호명</span> 미묘히
+                · <span className="font-medium text-gray-600">대표자명</span>{" "}
+                정상원
               </p>
               <p>
-                <span className="font-medium text-gray-600">사업장 주소</span> 06628 서울 서초구 효령로 429 1414호 (서초동)
+                <span className="font-medium text-gray-600">사업장 주소</span>{" "}
+                06628 서울 서초구 효령로 429 1414호 (서초동)
               </p>
               <p>
-                <span className="font-medium text-gray-600">대표 전화</span> 070-8655-2959 · <span className="font-medium text-gray-600">사업자 등록번호</span> 431-87-03798
+                <span className="font-medium text-gray-600">대표 전화</span>{" "}
+                070-8655-2959 ·{" "}
+                <span className="font-medium text-gray-600">
+                  사업자 등록번호
+                </span>{" "}
+                431-87-03798
               </p>
               <p>
-                <span className="font-medium text-gray-600">통신판매업 신고번호</span> 기타 · <span className="font-medium text-gray-600">개인정보보호책임자</span> 정상원
+                <span className="font-medium text-gray-600">
+                  통신판매업 신고번호
+                </span>{" "}
+                기타 ·{" "}
+                <span className="font-medium text-gray-600">
+                  개인정보보호책임자
+                </span>{" "}
+                정상원
               </p>
             </div>
 
             <div className="mb-6">
               <p className="font-medium text-gray-700 mb-2">고객센터 정보</p>
               <p>
-                <span className="font-medium text-gray-600">상담/주문 전화</span> 070-8655-2959
+                <span className="font-medium text-gray-600">
+                  상담/주문 전화
+                </span>{" "}
+                070-8655-2959
               </p>
               <p>
-                <span className="font-medium text-gray-600">상담/주문 이메일</span> official.mimyohi@gmail.com
+                <span className="font-medium text-gray-600">
+                  상담/주문 이메일
+                </span>{" "}
+                official.mimyohi@gmail.com
               </p>
               <p className="font-medium text-gray-600 mt-2">CS운영시간</p>
               <p>평일 : 10:00~18:00</p>

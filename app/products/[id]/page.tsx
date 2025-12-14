@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { Product } from "@/models";
 import { notFound } from "next/navigation";
 import ProductPurchaseSection from "@/components/ProductPurchaseSection";
+import ProductInfoSections from "@/components/ProductInfoSections";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 
@@ -23,6 +24,9 @@ async function getProduct(idOrSlug: string): Promise<Product | null> {
   } else {
     query = query.eq("slug", idOrSlug);
   }
+
+  // 삭제된 상품 제외
+  query = query.is("deleted_at", null);
 
   const { data, error } = await query.single();
 
@@ -78,7 +82,7 @@ export default async function ProductDetailPage({
             </h1>
 
             {/* 가격 정보 */}
-            <div className="border-b border-gray-200 pb-6 mb-6">
+            <div className="mb-6">
               <div className="flex items-center gap-3 mb-3">
                 <span className="text-sm text-gray-500 w-16">판매가</span>
                 <div className="flex items-baseline gap-2">
@@ -124,6 +128,9 @@ export default async function ProductDetailPage({
             </div>
           </div>
         )}
+
+        {/* 결제/배송/교환/서비스 정보 */}
+        <ProductInfoSections />
       </main>
 
       <Footer />

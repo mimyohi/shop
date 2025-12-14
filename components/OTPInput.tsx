@@ -91,7 +91,7 @@ export default function OTPInput({
             disabled={disabled}
             className={`w-12 h-14 text-center text-2xl font-bold border-2 rounded-lg transition focus:outline-none ${
               error
-                ? 'border-red-500'
+                ? 'border-gray-900'
                 : focusedIndex === index
                 ? 'border-black'
                 : 'border-gray-300'
@@ -99,7 +99,7 @@ export default function OTPInput({
           />
         ))}
       </div>
-      {error && <p className="mt-2 text-sm text-red-600 text-center">{error}</p>}
+      {error && <p className="mt-2 text-sm text-gray-700 text-center">{error}</p>}
     </div>
   );
 }

@@ -48,11 +48,11 @@ function SearchContent() {
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="검색어를 입력하세요"
-              className="w-full px-4 py-3 pr-12 border-b border-gray-300 focus:border-[#8B8B73] focus:outline-none text-sm"
+              className="w-full px-4 py-3 pr-12 border-b border-gray-300 focus:border-[#222222] focus:outline-none text-sm"
             />
             <button
               type="submit"
-              className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-[#8B8B73]"
+              className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-[#222222]"
             >
               <svg
                 className="w-5 h-5"
@@ -78,7 +78,7 @@ function SearchContent() {
           <div className="mb-6">
             <p className="text-sm text-gray-500">
               &apos;{searchQuery}&apos; 검색 결과
-              <span className="ml-1 text-[#8B8B73]">
+              <span className="ml-1 text-[#222222]">
                 ({totalCount}개)
               </span>
             </p>
@@ -86,7 +86,7 @@ function SearchContent() {
 
           {isLoading ? (
             <div className="flex justify-center py-20">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8B8B73]"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#222222]"></div>
             </div>
           ) : products.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
@@ -126,7 +126,7 @@ export default function SearchPage() {
             <Suspense
               fallback={
                 <div className="flex justify-center py-20">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8B8B73]"></div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#222222]"></div>
                 </div>
               }
             >

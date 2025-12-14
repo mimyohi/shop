@@ -127,16 +127,6 @@ export async function POST(request: NextRequest) {
 
     // 8-1. 회원가입 플로우라면 사용자 생성 대신 검증 토큰 반환
     if (flow === 'signup') {
-      if (existingProfiles && existingProfiles.length > 0) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: '이미 가입된 전화번호입니다. 다른 번호를 사용하거나 로그인해주세요.',
-          },
-          { status: 400 }
-        );
-      }
-
       return NextResponse.json({
         success: true,
         flow,

@@ -16,8 +16,7 @@ export default function FindIdPage() {
   const [step, setStep] = useState<"phone" | "otp" | "result">("phone");
   const [otpCountdown, setOtpCountdown] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [foundEmail, setFoundEmail] = useState<string | null>(null);
-  const [createdAt, setCreatedAt] = useState<string | null>(null);
+  const [foundAccounts, setFoundAccounts] = useState<Array<{ email: string; createdAt: string }>>([]);
 
   useEffect(() => {
     if (otpCountdown > 0) {
@@ -103,8 +102,15 @@ export default function FindIdPage() {
         return;
       }
 
-      setFoundEmail(findData.email);
-      setCreatedAt(findData.createdAt);
+      // 여러 계정이 있는 경우
+      if (findData.accounts) {
+        setFoundAccounts(findData.accounts);
+      } else if (findData.email) {
+        // 단일 계정인 경우
+        setFoundAccounts([{ email: findData.email, createdAt: findData.createdAt }]);
+      } else {
+        setFoundAccounts([]);
+      }
       setStep("result");
     } catch (err) {
       console.error("Find ID error:", err);
@@ -144,24 +150,37 @@ export default function FindIdPage() {
           <div className="max-w-[360px] mx-auto px-4">
             <h1 className="text-center text-base font-medium mb-8">아이디 찾기</h1>
 
-            {foundEmail ? (
+            {foundAccounts.length > 0 ? (
               <div className="text-center">
                 <div className="bg-gray-50 rounded-lg p-6 mb-6">
-                  <p className="text-sm text-gray-600 mb-2">가입된 아이디</p>
-                  <p className="text-lg font-semibold text-gray-900">
-                    {maskEmail(foundEmail)}
+                  <p className="text-sm text-gray-600 mb-4">
+                    {foundAccounts.length > 1
+                      ? `${foundAccounts.length}개의 계정이 발견되었습니다.`
+                      : "가입된 아이디"}
                   </p>
-                  {createdAt && (
-                    <p className="text-xs text-gray-500 mt-2">
-                      가입일: {formatDate(createdAt)}
-                    </p>
-                  )}
+                  <div className="space-y-4">
+                    {foundAccounts.map((account, index) => (
+                      <div
+                        key={index}
+                        className={`${foundAccounts.length > 1 ? "pb-4 border-b border-gray-200 last:border-0 last:pb-0" : ""}`}
+                      >
+                        <p className="text-lg font-semibold text-gray-900">
+                          {maskEmail(account.email)}
+                        </p>
+                        {account.createdAt && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            가입일: {formatDate(account.createdAt)}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="space-y-3">
                   <Link
                     href="/auth/login"
-                    className="block w-full py-3 bg-[#8B8B73] text-white text-sm font-medium rounded hover:bg-[#7a7a65] transition-colors text-center"
+                    className="block w-full py-3 bg-[#222222] text-white text-sm font-medium rounded hover:bg-[#111111] transition-colors text-center"
                   >
                     로그인하기
                   </Link>
@@ -194,7 +213,7 @@ export default function FindIdPage() {
                   </button>
                   <Link
                     href="/auth/signup"
-                    className="block w-full py-3 bg-[#8B8B73] text-white text-sm font-medium rounded hover:bg-[#7a7a65] transition-colors text-center"
+                    className="block w-full py-3 bg-[#222222] text-white text-sm font-medium rounded hover:bg-[#111111] transition-colors text-center"
                   >
                     회원가입하기
                   </Link>
@@ -227,7 +246,7 @@ export default function FindIdPage() {
                 <button
                   onClick={handleSendOTP}
                   disabled={loading || !phone}
-                  className="w-full py-3 bg-[#8B8B73] text-white text-sm font-medium rounded hover:bg-[#7a7a65] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  className="w-full py-3 bg-[#222222] text-white text-sm font-medium rounded hover:bg-[#111111] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
                   {loading ? "발송 중..." : "인증번호 받기"}
                 </button>
@@ -240,7 +259,7 @@ export default function FindIdPage() {
                   <span>{phone}</span>
                   <button
                     type="button"
-                    className="text-[#8B8B73] hover:underline"
+                    className="text-[#222222] hover:underline"
                     onClick={() => {
                       setStep("phone");
                       setOtp("");
@@ -272,7 +291,7 @@ export default function FindIdPage() {
                   <button
                     onClick={handleVerifyOTP}
                     disabled={loading || otp.length !== 6}
-                    className="flex-1 py-3 bg-[#8B8B73] text-white text-sm font-medium rounded hover:bg-[#7a7a65] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    className="flex-1 py-3 bg-[#222222] text-white text-sm font-medium rounded hover:bg-[#111111] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                   >
                     {loading ? "확인 중..." : "확인"}
                   </button>

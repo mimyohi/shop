@@ -2,9 +2,10 @@ import { supabase } from "@/lib/supabase";
 import Navigation from "@/components/Navigation";
 import MainBanner from "@/components/MainBanner";
 import ProductBanner from "@/components/ProductBanner";
-import ProductCard from "@/components/ProductCard";
+import BestItemSection from "@/components/BestItemSection";
+import BrandIntroSection from "@/components/BrandIntroSection";
+import InstagramSection from "@/components/InstagramSection";
 import Footer from "@/components/Footer";
-import Link from "next/link";
 
 interface MainBannerType {
   id: string;
@@ -47,6 +48,14 @@ interface HomeProduct {
   created_at: string;
 }
 
+interface InstagramImageType {
+  id: string;
+  image_url: string;
+  link_url: string | null;
+  display_order: number;
+  is_active: boolean;
+}
+
 async function getMainBanners(): Promise<MainBannerType[]> {
   const { data, error } = await supabase
     .from("main_banners")
@@ -78,6 +87,7 @@ async function getProductBanners(): Promise<ProductBannerType[]> {
 }
 
 async function getHomeProducts(): Promise<HomeProduct[]> {
+  // 삭제된 상품(deleted_at이 설정된 상품)은 제외
   const { data, error } = await supabase
     .from("home_products")
     .select(
@@ -85,7 +95,7 @@ async function getHomeProducts(): Promise<HomeProduct[]> {
       id,
       product_id,
       display_order,
-      products (
+      products!inner (
         id,
         name,
         slug,
@@ -95,10 +105,12 @@ async function getHomeProducts(): Promise<HomeProduct[]> {
         image_url,
         is_new_badge,
         is_sale_badge,
-        created_at
+        created_at,
+        deleted_at
       )
     `
     )
+    .is("products.deleted_at", null)
     .order("display_order", { ascending: true })
     .limit(6);
 
@@ -123,11 +135,28 @@ async function getHomeProducts(): Promise<HomeProduct[]> {
   }));
 }
 
+async function getInstagramImages(): Promise<InstagramImageType[]> {
+  const { data, error } = await supabase
+    .from("instagram_images")
+    .select("*")
+    .eq("is_active", true)
+    .order("display_order", { ascending: true })
+    .limit(6);
+
+  if (error) {
+    console.error("Error fetching instagram images:", error);
+    return [];
+  }
+
+  return data || [];
+}
+
 export default async function Home() {
-  const [mainBanners, productBanners, homeProducts] = await Promise.all([
+  const [mainBanners, productBanners, homeProducts, instagramImages] = await Promise.all([
     getMainBanners(),
     getProductBanners(),
     getHomeProducts(),
+    getInstagramImages(),
   ]);
 
   const products = homeProducts.map((hp) => ({
@@ -154,37 +183,13 @@ export default async function Home() {
       <ProductBanner banners={productBanners} />
 
       {/* BEST ITEM 섹션 */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {products.length > 0 && (
-            <>
-              {/* 데스크톱: 3열 그리드 */}
-              <div className="hidden md:grid md:grid-cols-3 gap-x-6 gap-y-10">
-                {products.map((product) => (
-                  <ProductCard key={product.id} product={product as any} />
-                ))}
-              </div>
+      <BestItemSection products={products} />
 
-              {/* 모바일: 2열 그리드 */}
-              <div className="md:hidden grid grid-cols-2 gap-x-4 gap-y-8">
-                {products.slice(0, 4).map((product) => (
-                  <ProductCard key={product.id} product={product as any} />
-                ))}
-              </div>
+      {/* 브랜드 소개 섹션 */}
+      <BrandIntroSection />
 
-              {/* 더보기 버튼 */}
-              <div className="text-center mt-10">
-                <Link
-                  href="/products"
-                  className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 border-b border-gray-400 pb-0.5 transition"
-                >
-                  제품 더보기 +
-                </Link>
-              </div>
-            </>
-          )}
-        </div>
-      </section>
+      {/* 인스타그램 섹션 */}
+      <InstagramSection images={instagramImages} />
 
       {/* Footer */}
       <Footer />

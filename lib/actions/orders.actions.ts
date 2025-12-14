@@ -37,6 +37,12 @@ export async function createOrderAction(data: CreateOrderData) {
         shipping_postal_code: data.shipping_postal_code,
         shipping_address: data.shipping_address,
         shipping_address_detail: data.shipping_address_detail,
+        // 포인트/쿠폰
+        used_points: data.used_points || 0,
+        user_coupon_id: data.user_coupon_id || null,
+        coupon_discount: data.coupon_discount || 0,
+        // 배송비
+        shipping_fee: data.shipping_fee || 0,
       })
       .select()
       .single();
@@ -84,11 +90,14 @@ export async function createOrderAction(data: CreateOrderData) {
 
     // 3. 건강 상담 정보 생성 (있는 경우)
     if (data.health_consultation) {
+      // id, created_at, updated_at 필드 제외 (새 레코드 생성 시 자동 생성됨)
+      const { id: _id, created_at: _createdAt, updated_at: _updatedAt, ...healthConsultationData } = data.health_consultation;
+
       const { error: consultationError } = await supabase
         .from("order_health_consultation")
         .insert({
           order_id: order.id,
-          ...data.health_consultation,
+          ...healthConsultationData,
         });
 
       if (consultationError) {
@@ -442,6 +451,124 @@ export async function updateOrderStatusAction(
     };
   } catch (error: any) {
     console.error("Error in updateOrderStatusAction:", error);
+    return {
+      success: false,
+      error: error.message || "An unexpected error occurred",
+    };
+  }
+}
+
+/**
+ * 테스트 결제 완료 후 포인트/쿠폰 처리 서버 액션
+ */
+export async function processTestPaymentBenefitsAction(order_id: string) {
+  try {
+    const supabase = await createClient();
+
+    // 주문 조회
+    const { data: order, error: findError } = await supabase
+      .from("orders")
+      .select("id, order_id, user_id, used_points, user_coupon_id, total_amount")
+      .eq("order_id", order_id)
+      .single();
+
+    if (findError || !order) {
+      return {
+        success: false,
+        error: "Order not found",
+      };
+    }
+
+    // 포인트 사용 처리
+    if (order.used_points > 0 && order.user_id) {
+      // user_points 업데이트
+      const { data: userPoints } = await supabase
+        .from("user_points")
+        .select("points, total_used")
+        .eq("user_id", order.user_id)
+        .single();
+
+      if (userPoints) {
+        await supabase
+          .from("user_points")
+          .update({
+            points: userPoints.points - order.used_points,
+            total_used: userPoints.total_used + order.used_points,
+          })
+          .eq("user_id", order.user_id);
+      }
+
+      // 포인트 사용 내역 기록 (order_id는 UUID 타입이므로 order.id 사용)
+      await supabase.from("point_history").insert({
+        user_id: order.user_id,
+        points: -order.used_points,
+        type: "use",
+        reason: `주문 결제 (${order.order_id})`,
+        order_id: order.id,
+      });
+    }
+
+    // 쿠폰 사용 처리
+    if (order.user_coupon_id) {
+      await supabase
+        .from("user_coupons")
+        .update({
+          is_used: true,
+          used_at: new Date().toISOString(),
+          order_id: order.id,
+        })
+        .eq("id", order.user_coupon_id);
+    }
+
+    // 포인트 적립 (결제 금액의 5%)
+    if (order.user_id && order.total_amount > 0) {
+      const earnedPoints = Math.floor(order.total_amount * 0.05);
+
+      if (earnedPoints > 0) {
+        // user_points 업데이트
+        const { data: userPoints } = await supabase
+          .from("user_points")
+          .select("points, total_earned")
+          .eq("user_id", order.user_id)
+          .single();
+
+        if (userPoints) {
+          await supabase
+            .from("user_points")
+            .update({
+              points: userPoints.points + earnedPoints,
+              total_earned: userPoints.total_earned + earnedPoints,
+            })
+            .eq("user_id", order.user_id);
+        } else {
+          // user_points가 없으면 새로 생성
+          await supabase.from("user_points").insert({
+            user_id: order.user_id,
+            points: earnedPoints,
+            total_earned: earnedPoints,
+            total_used: 0,
+          });
+        }
+
+        // 포인트 적립 내역 기록 (order_id는 UUID 타입이므로 order.id 사용)
+        await supabase.from("point_history").insert({
+          user_id: order.user_id,
+          points: earnedPoints,
+          type: "earn",
+          reason: `주문 적립 (${order.order_id})`,
+          order_id: order.id,
+        });
+      }
+    }
+
+    // 캐시 무효화
+    revalidatePath("/profile");
+
+    return {
+      success: true,
+    };
+  } catch (error: any) {
+    console.error("Error in processTestPaymentBenefitsAction:", error);
     return {
       success: false,
       error: error.message || "An unexpected error occurred",

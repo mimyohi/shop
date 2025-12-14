@@ -84,18 +84,3 @@ export async function signInWithKakao() {
   return { data, error };
 }
 
-// 비밀번호 재설정 이메일 발송
-export async function resetPassword(email: string) {
-  const { data, error } = await supabaseAuth.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/auth/reset-password`,
-  });
-  return { data, error };
-}
-
-// 비밀번호 업데이트
-export async function updatePassword(newPassword: string) {
-  const { data, error } = await supabaseAuth.auth.updateUser({
-    password: newPassword,
-  });
-  return { data, error };
-}

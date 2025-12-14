@@ -121,7 +121,7 @@ function LoginForm() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-[#8B8B73] text-white text-sm font-medium rounded hover:bg-[#7a7a65] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+              className="w-full py-3 bg-[#222222] text-white text-sm font-medium rounded hover:bg-[#111111] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
               {loading ? "로그인 중..." : "로그인"}
             </button>
@@ -160,7 +160,7 @@ function LoginForm() {
         <div className="mt-10 text-center">
           <p className="text-sm text-gray-500">
             아직 회원이 아니신가요?{" "}
-            <Link href="/auth/signup" className="text-[#8B8B73] font-medium hover:underline">
+            <Link href="/auth/signup" className="text-[#222222] font-medium hover:underline">
               회원가입
             </Link>
           </p>

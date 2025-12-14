@@ -22,6 +22,12 @@ export interface CreateOrderData {
   shipping_postal_code?: string;
   shipping_address?: string;
   shipping_address_detail?: string;
+  // 포인트/쿠폰
+  used_points?: number;
+  user_coupon_id?: string;
+  coupon_discount?: number;
+  // 배송비
+  shipping_fee?: number;
   items: {
     product_id?: string;
     product_name: string;
@@ -107,11 +113,14 @@ export const ordersRepository = {
     }
 
     // 3. 건강 상담 정보 생성 (필수)
+    // id, created_at, updated_at 필드 제외 (새 레코드 생성 시 자동 생성됨)
+    const { id: _id, created_at: _createdAt, updated_at: _updatedAt, ...healthConsultationData } = data.health_consultation || {};
+
     const { error: consultationError } = await supabaseAuth
       .from("order_health_consultation")
       .insert({
         order_id: order.id,
-        ...data.health_consultation,
+        ...healthConsultationData,
       });
 
     if (consultationError) {

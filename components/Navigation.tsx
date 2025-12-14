@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useUserStore } from "@/store/userStore";
 import { supabaseAuth, signOut } from "@/lib/supabaseAuth";
+import { useOptionalAuth } from "@/hooks/useAuth";
 
 export default function Navigation() {
   const pathname = usePathname();
@@ -12,74 +14,52 @@ export default function Navigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
+  // 공통 인증 훅 사용 (카카오 프로필 미완성 = 미인증 처리)
   const {
-    user,
-    userProfile,
-    setUser,
-    setUserProfile,
-    clearUser,
-    setIsLoading,
-  } = useUserStore();
+    user: authUser,
+    profile,
+    isLoading: authLoading,
+    isAuthenticated,
+  } = useOptionalAuth();
+
+  const { setUser, setUserProfile, clearUser, setIsLoading } = useUserStore();
 
   // 표시할 사용자 이름 결정
   const displayName =
-    userProfile?.display_name ||
-    user?.user_metadata?.name ||
-    user?.user_metadata?.full_name ||
-    user?.email?.split("@")[0] ||
+    profile?.display_name ||
+    authUser?.user_metadata?.name ||
+    authUser?.user_metadata?.full_name ||
+    authUser?.email?.split("@")[0] ||
     "사용자";
 
+  // 인증 상태를 userStore에 동기화
   useEffect(() => {
     setMounted(true);
-    setIsLoading(true);
+  }, []);
 
-    // 현재 사용자 정보 가져오기
-    supabaseAuth.auth.getUser().then(async ({ data: { user }, error }) => {
-      setUser(user);
+  useEffect(() => {
+    setIsLoading(authLoading);
 
-      // UserProfile 정보도 함께 로드
-      if (user) {
-        const { data: profile, error: profileError } = await supabaseAuth
-          .from("user_profiles")
-          .select("*")
-          .eq("user_id", user.id)
-          .single();
-
-        if (profile) {
-          setUserProfile(profile);
-        }
-      }
-
-      setIsLoading(false);
-    });
-
-    // 인증 상태 변경 감지
-    const {
-      data: { subscription },
-    } = supabaseAuth.auth.onAuthStateChange(async (event, session) => {
-      setUser(session?.user ?? null);
-
-      // 로그인 시 UserProfile 로드
-      if (session?.user) {
-        const { data: profile, error: profileError } = await supabaseAuth
-          .from("user_profiles")
-          .select("*")
-          .eq("user_id", session.user.id)
-          .single();
-
+    if (!authLoading) {
+      if (isAuthenticated && authUser) {
+        setUser(authUser);
         if (profile) {
           setUserProfile(profile);
         }
       } else {
-        // 로그아웃 시 모든 정보 클리어
         clearUser();
       }
-
-      setIsLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [setUser, setUserProfile, clearUser, setIsLoading]);
+    }
+  }, [
+    authLoading,
+    isAuthenticated,
+    authUser,
+    profile,
+    setUser,
+    setUserProfile,
+    clearUser,
+    setIsLoading,
+  ]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -92,13 +72,12 @@ export default function Navigation() {
   const leftNavLinks = [
     { href: "/brand", label: "Brand" },
     { href: "/products", label: "Shop" },
-    { href: "/community", label: "Community" },
   ];
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
       {/* 메인 네비게이션 */}
-      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center">
+      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[70px] md:h-[87px] flex items-center">
         {/* PC Navigation */}
         <div className="hidden md:flex items-center justify-between w-full">
           {/* 왼쪽: 메뉴 */}
@@ -121,9 +100,16 @@ export default function Navigation() {
           {/* 가운데: 로고 */}
           <Link
             href="/"
-            className="absolute left-1/2 transform -translate-x-1/2 text-xl font-semibold text-gray-900 tracking-widest font-montserrat"
+            className="absolute left-1/2 transform -translate-x-1/2"
           >
-            MIMYOHI
+            <Image
+              src="/images/logo.png"
+              alt="MIMYOHI"
+              width={153}
+              height={37}
+              className="h-[37px] w-auto"
+              priority
+            />
           </Link>
 
           {/* 오른쪽: 아이콘들 */}
@@ -152,10 +138,10 @@ export default function Navigation() {
             {/* 사용자 아이콘 / 로그인 */}
             {!mounted ? (
               <div className="w-5 h-5 bg-gray-200 rounded-full animate-pulse"></div>
-            ) : user ? (
+            ) : isAuthenticated ? (
               <div className="relative">
                 <button
-                  onClick={() => router.push("profile")}
+                  onClick={() => router.push("/profile")}
                   className="text-gray-600 hover:text-gray-900 transition"
                 >
                   <svg
@@ -240,11 +226,15 @@ export default function Navigation() {
           </button>
 
           {/* 가운데: 로고 */}
-          <Link
-            href="/"
-            className="text-lg font-semibold text-gray-900 tracking-widest font-montserrat"
-          >
-            MIMYOHI
+          <Link href="/">
+            <Image
+              src="/images/logo.png"
+              alt="MIMYOHI"
+              width={123}
+              height={30}
+              className="h-[30px] w-auto"
+              priority
+            />
           </Link>
 
           {/* 오른쪽: 검색 + 사용자 아이콘 */}
@@ -271,7 +261,7 @@ export default function Navigation() {
             {/* 사용자 아이콘 */}
             {!mounted ? (
               <div className="w-5 h-5 bg-gray-200 rounded-full animate-pulse"></div>
-            ) : user ? (
+            ) : isAuthenticated ? (
               <Link
                 href="/profile"
                 className="p-2 -mr-2 text-gray-600 hover:text-gray-900"
@@ -327,8 +317,8 @@ export default function Navigation() {
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={`block px-4 py-3 text-sm font-medium rounded-lg ${
                   isActive(link.href)
-                    ? "bg-gray-900 text-white"
-                    : "text-gray-700 hover:bg-gray-50"
+                    ? "text-gray-900"
+                    : "text-gray-600 hover:bg-gray-50"
                 } transition`}
               >
                 {link.label}
@@ -337,7 +327,7 @@ export default function Navigation() {
 
             {/* Mobile 로그인 상태 */}
             <div className="pt-3 mt-3 border-t border-gray-200">
-              {user ? (
+              {isAuthenticated ? (
                 <>
                   <div className="px-4 py-2 text-sm font-medium text-gray-900">
                     {displayName}
@@ -345,21 +335,21 @@ export default function Navigation() {
                   <Link
                     href="/profile"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 rounded-lg"
+                    className="block px-4 py-3 text-sm text-gray-600 hover:bg-gray-50 rounded-lg"
                   >
                     마이페이지
                   </Link>
                   <Link
                     href="/profile/points"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 rounded-lg"
+                    className="block px-4 py-3 text-sm text-gray-600 hover:bg-gray-50 rounded-lg"
                   >
                     포인트
                   </Link>
                   <Link
                     href="/coupons"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 rounded-lg"
+                    className="block px-4 py-3 text-sm text-gray-600 hover:bg-gray-50 rounded-lg"
                   >
                     쿠폰
                   </Link>

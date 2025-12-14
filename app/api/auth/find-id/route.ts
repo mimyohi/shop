@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createServiceClient } from '@/lib/supabaseServiceServer';
 import { validateAndFormatPhone } from '@/lib/phone/validation';
 
 /**
@@ -21,6 +21,7 @@ import { validateAndFormatPhone } from '@/lib/phone/validation';
  */
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createServiceClient();
     const body = await request.json();
     const { phone, verificationId } = body;
 
@@ -73,15 +74,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 전화번호로 사용자 조회
-    const { data: userProfile, error: profileError } = await supabase
+    // 전화번호로 사용자 조회 (여러 계정이 있을 수 있음)
+    const { data: userProfiles, error: profileError } = await supabase
       .from('user_profiles')
       .select('user_id, email, phone_verified, created_at')
       .eq('phone', e164Phone)
       .eq('phone_verified', true)
-      .single();
+      .order('created_at', { ascending: false });
 
-    if (profileError || !userProfile) {
+    if (profileError || !userProfiles || userProfiles.length === 0) {
       return NextResponse.json({
         success: true,
         email: null,
@@ -89,11 +90,23 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 이메일 반환 (전체 노출)
+    // 여러 계정이 있는 경우 모두 반환
+    if (userProfiles.length > 1) {
+      return NextResponse.json({
+        success: true,
+        accounts: userProfiles.map((profile) => ({
+          email: profile.email,
+          createdAt: profile.created_at,
+        })),
+        message: `${userProfiles.length}개의 계정이 발견되었습니다.`,
+      });
+    }
+
+    // 단일 계정인 경우
     return NextResponse.json({
       success: true,
-      email: userProfile.email,
-      createdAt: userProfile.created_at,
+      email: userProfiles[0].email,
+      createdAt: userProfiles[0].created_at,
     });
   } catch (error) {
     console.error('Find ID error:', error);

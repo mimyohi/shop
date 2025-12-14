@@ -2,22 +2,21 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import PhoneInput from "@/components/PhoneInput";
 import OTPInput from "@/components/OTPInput";
-import { validateAndFormatPhone } from "@/lib/phone/validation";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 
 export default function ForgotPasswordPage() {
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [maskedPhone, setMaskedPhone] = useState("");
   const [otp, setOtp] = useState("");
-  const [phoneError, setPhoneError] = useState("");
+  const [emailError, setEmailError] = useState("");
   const [otpError, setOtpError] = useState("");
-  const [step, setStep] = useState<"phone" | "otp" | "reset" | "success">("phone");
+  const [step, setStep] = useState<"email" | "otp" | "reset" | "success">("email");
   const [otpCountdown, setOtpCountdown] = useState(0);
   const [loading, setLoading] = useState(false);
   const [verificationId, setVerificationId] = useState<string | null>(null);
-  const [foundEmail, setFoundEmail] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
@@ -35,36 +34,72 @@ export default function ForgotPasswordPage() {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const handleSendOTP = async () => {
-    setPhoneError("");
-    setOtpError("");
+  const maskPhone = (phoneNumber: string) => {
+    // +821012345678 -> 010-****-5678
+    const national = phoneNumber.replace("+82", "0");
+    if (national.length === 11) {
+      return `${national.slice(0, 3)}-****-${national.slice(7)}`;
+    }
+    return phoneNumber;
+  };
 
-    const validation = validateAndFormatPhone(phone);
-    if (!validation.valid) {
-      setPhoneError(validation.error || "올바른 전화번호를 입력해주세요.");
+  const handleEmailSubmit = async () => {
+    setEmailError("");
+
+    if (!email || !email.includes("@")) {
+      setEmailError("올바른 이메일 주소를 입력해주세요.");
       return;
     }
 
     setLoading(true);
     try {
-      const response = await fetch("/api/auth/phone/send-otp", {
+      // 이메일로 사용자 조회 및 전화번호로 OTP 발송
+      const response = await fetch("/api/auth/lookup-by-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone }),
+        body: JSON.stringify({ email }),
       });
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-        setPhoneError(data.error || "OTP 발송에 실패했습니다.");
+        setEmailError(data.error || "계정을 찾을 수 없습니다.");
         return;
       }
 
+      setPhone(data.phone);
+      setMaskedPhone(maskPhone(data.phone));
       setStep("otp");
       setOtpCountdown(data.expiresIn || 300);
       setOtp("");
     } catch (err) {
       console.error("Send OTP error:", err);
-      setPhoneError("인증번호 발송 중 오류가 발생했습니다.");
+      setEmailError("인증번호 발송 중 오류가 발생했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOTP = async () => {
+    setOtpError("");
+    setLoading(true);
+    try {
+      const response = await fetch("/api/auth/lookup-by-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        setOtpError(data.error || "OTP 발송에 실패했습니다.");
+        return;
+      }
+
+      setOtpCountdown(data.expiresIn || 300);
+      setOtp("");
+    } catch (err) {
+      console.error("Resend OTP error:", err);
+      setOtpError("인증번호 재발송 중 오류가 발생했습니다.");
     } finally {
       setLoading(false);
     }
@@ -93,26 +128,7 @@ export default function ForgotPasswordPage() {
         return;
       }
 
-      // 해당 전화번호로 가입된 계정 확인
-      const findResponse = await fetch("/api/auth/find-id", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, verificationId: verifyData.verificationId }),
-      });
-      const findData = await findResponse.json();
-
-      if (!findResponse.ok || !findData.success) {
-        setOtpError(findData.error || "계정 조회에 실패했습니다.");
-        return;
-      }
-
-      if (!findData.email) {
-        setOtpError("해당 전화번호로 가입된 계정이 없습니다.");
-        return;
-      }
-
       setVerificationId(verifyData.verificationId);
-      setFoundEmail(findData.email);
       setStep("reset");
     } catch (err) {
       console.error("Verify OTP error:", err);
@@ -141,6 +157,7 @@ export default function ForgotPasswordPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          email,
           phone,
           verificationId,
           newPassword,
@@ -162,9 +179,9 @@ export default function ForgotPasswordPage() {
     }
   };
 
-  const maskEmail = (email: string) => {
-    const [local, domain] = email.split("@");
-    if (!domain) return email;
+  const maskEmail = (emailStr: string) => {
+    const [local, domain] = emailStr.split("@");
+    if (!domain) return emailStr;
 
     if (local.length <= 3) {
       return `${local[0]}${"*".repeat(local.length - 1)}@${domain}`;
@@ -181,9 +198,9 @@ export default function ForgotPasswordPage() {
       return (
         <div className="py-16 md:py-24">
           <div className="max-w-[360px] mx-auto px-4 text-center">
-            <div className="bg-green-50 rounded-lg p-6 mb-6">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="bg-gray-50 rounded-lg p-6 mb-6">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
@@ -195,7 +212,7 @@ export default function ForgotPasswordPage() {
 
             <Link
               href="/auth/login"
-              className="block w-full py-3 bg-[#8B8B73] text-white text-sm font-medium rounded hover:bg-[#7a7a65] transition-colors text-center"
+              className="block w-full py-3 bg-[#222222] text-white text-sm font-medium rounded hover:bg-[#111111] transition-colors text-center"
             >
               로그인하기
             </Link>
@@ -211,7 +228,7 @@ export default function ForgotPasswordPage() {
           <div className="max-w-[360px] mx-auto px-4">
             <h1 className="text-center text-base font-medium mb-2">비밀번호 재설정</h1>
             <p className="text-center text-sm text-gray-500 mb-8">
-              {foundEmail && maskEmail(foundEmail)} 계정의 새 비밀번호를 입력해주세요.
+              {maskEmail(email)} 계정의 새 비밀번호를 입력해주세요.
             </p>
 
             {passwordError && (
@@ -251,7 +268,7 @@ export default function ForgotPasswordPage() {
                 <button
                   onClick={handleResetPassword}
                   disabled={loading}
-                  className="w-full py-3 bg-[#8B8B73] text-white text-sm font-medium rounded hover:bg-[#7a7a65] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  className="w-full py-3 bg-[#222222] text-white text-sm font-medium rounded hover:bg-[#111111] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
                   {loading ? "변경 중..." : "비밀번호 변경"}
                 </button>
@@ -271,94 +288,127 @@ export default function ForgotPasswordPage() {
       );
     }
 
-    // 기본 화면 (phone, otp)
+    // OTP 입력 화면
+    if (step === "otp") {
+      return (
+        <div className="py-16 md:py-24">
+          <div className="max-w-[360px] mx-auto px-4">
+            <h1 className="text-center text-base font-medium mb-2">비밀번호 찾기</h1>
+            <p className="text-center text-sm text-gray-500 mb-8">
+              {maskedPhone}로 발송된 인증번호를 입력해주세요.
+            </p>
+
+            <div className="space-y-4">
+              <div className="flex justify-between items-center text-sm text-gray-600 mb-2">
+                <span>{maskEmail(email)}</span>
+                <button
+                  type="button"
+                  className="text-[#222222] hover:underline"
+                  onClick={() => {
+                    setStep("email");
+                    setOtp("");
+                    setOtpError("");
+                    setOtpCountdown(0);
+                  }}
+                >
+                  이메일 변경
+                </button>
+              </div>
+
+              <OTPInput
+                value={otp}
+                onChange={setOtp}
+                disabled={loading}
+                error={otpError}
+              />
+
+              {otpCountdown > 0 && (
+                <p className="text-center text-sm text-gray-500">
+                  남은 시간:{" "}
+                  <span className="font-semibold text-gray-900">
+                    {formatCountdown(otpCountdown)}
+                  </span>
+                </p>
+              )}
+
+              <div className="flex gap-2">
+                <button
+                  onClick={handleVerifyOTP}
+                  disabled={loading || otp.length !== 6}
+                  className="flex-1 py-3 bg-[#222222] text-white text-sm font-medium rounded hover:bg-[#111111] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                  {loading ? "확인 중..." : "확인"}
+                </button>
+                <button
+                  onClick={handleResendOTP}
+                  disabled={loading || otpCountdown > 240}
+                  className="flex-1 py-3 border border-gray-300 text-gray-700 text-sm font-medium rounded hover:bg-gray-50 transition-colors disabled:bg-gray-100 disabled:text-gray-400"
+                >
+                  {otpCountdown > 240
+                    ? `재발송 (${formatCountdown(otpCountdown - 240)})`
+                    : "재발송"}
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-8 text-center">
+              <Link
+                href="/auth/login"
+                className="text-sm text-gray-500 hover:text-gray-700"
+              >
+                로그인으로 돌아가기
+              </Link>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // 이메일 입력 화면 (기본)
     return (
       <div className="py-16 md:py-24">
         <div className="max-w-[360px] mx-auto px-4">
           <h1 className="text-center text-base font-medium mb-2">비밀번호 찾기</h1>
           <p className="text-center text-sm text-gray-500 mb-8">
-            가입 시 등록한 전화번호로 비밀번호를 재설정할 수 있습니다.
+            가입한 이메일을 입력하면 등록된 전화번호로 인증번호가 발송됩니다.
           </p>
 
+          {emailError && (
+            <div className="mb-4 rounded-md bg-red-50 p-3">
+              <div className="text-sm text-red-800">{emailError}</div>
+            </div>
+          )}
+
           <div className="space-y-4">
-            {step === "phone" && (
-              <>
-                <PhoneInput
-                  value={phone}
-                  onChange={setPhone}
-                  disabled={loading}
-                  error={phoneError}
-                />
-                <button
-                  onClick={handleSendOTP}
-                  disabled={loading || !phone}
-                  className="w-full py-3 bg-[#8B8B73] text-white text-sm font-medium rounded hover:bg-[#7a7a65] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-                >
-                  {loading ? "발송 중..." : "인증번호 받기"}
-                </button>
-              </>
-            )}
-
-            {step === "otp" && (
-              <>
-                <div className="flex justify-between items-center text-sm text-gray-600 mb-2">
-                  <span>{phone}</span>
-                  <button
-                    type="button"
-                    className="text-[#8B8B73] hover:underline"
-                    onClick={() => {
-                      setStep("phone");
-                      setOtp("");
-                      setOtpError("");
-                      setOtpCountdown(0);
-                    }}
-                  >
-                    번호 변경
-                  </button>
-                </div>
-
-                <OTPInput
-                  value={otp}
-                  onChange={setOtp}
-                  disabled={loading}
-                  error={otpError}
-                />
-
-                {otpCountdown > 0 && (
-                  <p className="text-center text-sm text-gray-500">
-                    남은 시간:{" "}
-                    <span className="font-semibold text-gray-900">
-                      {formatCountdown(otpCountdown)}
-                    </span>
-                  </p>
-                )}
-
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleVerifyOTP}
-                    disabled={loading || otp.length !== 6}
-                    className="flex-1 py-3 bg-[#8B8B73] text-white text-sm font-medium rounded hover:bg-[#7a7a65] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-                  >
-                    {loading ? "확인 중..." : "확인"}
-                  </button>
-                  <button
-                    onClick={handleSendOTP}
-                    disabled={loading || otpCountdown > 240}
-                    className="flex-1 py-3 border border-gray-300 text-gray-700 text-sm font-medium rounded hover:bg-gray-50 transition-colors disabled:bg-gray-100 disabled:text-gray-400"
-                  >
-                    {otpCountdown > 240
-                      ? `재발송 (${formatCountdown(otpCountdown - 240)})`
-                      : "재발송"}
-                  </button>
-                </div>
-              </>
-            )}
+            <div>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
+                className="w-full px-3 py-3 border-b border-gray-200 text-sm placeholder-gray-400 focus:outline-none focus:border-gray-400 bg-transparent"
+                placeholder="이메일 주소"
+              />
+            </div>
+            <button
+              onClick={handleEmailSubmit}
+              disabled={loading || !email}
+              className="w-full py-3 bg-[#222222] text-white text-sm font-medium rounded hover:bg-[#111111] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+            >
+              {loading ? "확인 중..." : "인증번호 받기"}
+            </button>
           </div>
 
-          <div className="mt-8 text-center">
+          <div className="mt-8 text-center space-y-2">
+            <Link
+              href="/auth/find-id"
+              className="block text-sm text-gray-500 hover:text-gray-700"
+            >
+              아이디(이메일)를 모르시나요?
+            </Link>
             <Link
               href="/auth/login"
-              className="text-sm text-gray-500 hover:text-gray-700"
+              className="block text-sm text-gray-500 hover:text-gray-700"
             >
               로그인으로 돌아가기
             </Link>

@@ -42,6 +42,7 @@ export const productsRepository = {
       .from('products')
       .select('*', { count: 'exact' })
       .eq('is_visible_on_main', true)
+      .is('deleted_at', null) // Soft delete된 상품 제외
 
     // 검색 필터
     if (search) {
@@ -98,6 +99,7 @@ export const productsRepository = {
       .from('products')
       .select('category')
       .eq('is_visible_on_main', true)
+      .is('deleted_at', null)
       .not('category', 'is', null)
 
     if (error) {
@@ -120,6 +122,7 @@ export const productsRepository = {
       .from('products')
       .select('*')
       .eq('id', id)
+      .is('deleted_at', null)
       .single()
 
     if (error) {
@@ -138,6 +141,7 @@ export const productsRepository = {
       .from('products')
       .select('*')
       .eq('slug', slug)
+      .is('deleted_at', null)
       .single()
 
     if (error) {
@@ -156,6 +160,7 @@ export const productsRepository = {
       .from('products')
       .select('*')
       .eq('is_visible_on_main', true)
+      .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(limit)
 
@@ -175,6 +180,7 @@ export const productsRepository = {
       .from('products')
       .select('*')
       .eq('is_visible_on_main', true)
+      .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(limit)
 
@@ -198,6 +204,7 @@ export const productsRepository = {
       .from('products')
       .select('*')
       .in('id', ids)
+      .is('deleted_at', null)
 
     if (error) {
       console.error('Error fetching products by ids:', error)

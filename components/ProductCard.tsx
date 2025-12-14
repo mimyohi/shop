@@ -26,6 +26,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   // DB에서 설정된 뱃지 여부 사용
   const isNew = product.is_new_badge ?? false;
   const isSale = product.is_sale_badge ?? false;
+  const isOutOfStock = product.is_out_of_stock ?? false;
 
   return (
     <Link href={productUrl}>
@@ -36,8 +37,19 @@ export default function ProductCard({ product }: ProductCardProps) {
             src={product.image_url || "https://via.placeholder.com/400"}
             alt={product.name}
             fill
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            className={`object-cover group-hover:scale-105 transition-transform duration-300 ${
+              isOutOfStock ? "opacity-50" : ""
+            }`}
           />
+
+          {/* 품절 오버레이 */}
+          {isOutOfStock && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-black text-sm px-4 py-2 font-medium">
+                품절
+              </span>
+            </div>
+          )}
 
           {/* 배지들 */}
           <div className="absolute top-3 left-3 flex gap-1.5">

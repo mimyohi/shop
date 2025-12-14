@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useOrderStore } from "@/store/orderStore";
 import * as PortOne from "@portone/browser-sdk/v2";
-import { supabaseAuth } from "@/lib/supabaseAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import type { Coupon, HealthConsultationDetails, Product } from "@/models";
 import { productsQueries } from "@/queries/products.queries";
@@ -16,10 +16,14 @@ import { useCreateOrder } from "@/queries/orders.queries";
 import {
   deleteOrderByOrderIdAction,
   updateOrderStatusAction,
+  processTestPaymentBenefitsAction,
 } from "@/lib/actions/orders.actions";
 import { couponsQueries } from "@/queries/coupons.queries";
 import { pointsQueries } from "@/queries/points.queries";
-import { addressesQueries } from "@/queries/addresses.queries";
+import {
+  addressesQueries,
+  useCreateAddress,
+} from "@/queries/addresses.queries";
 import { userProfilesQueries } from "@/queries/user-profiles.queries";
 import { userHealthConsultationsQueries } from "@/queries/user-health-consultations.queries";
 import { useShippingFee } from "@/hooks/useShippingFee";
@@ -50,8 +54,11 @@ export default function CheckoutPage() {
   const { item, getTotalPrice, updateQuantity, clearOrder, _hasHydrated } =
     useOrderStore();
   const createOrderMutation = useCreateOrder();
+  const createAddressMutation = useCreateAddress();
 
-  const [user, setUser] = useState<any>(null);
+  // 공통 인증 훅 사용 (카카오 프로필 미완성 시 자동 리다이렉트)
+  const { user, isLoading: authLoading, isAuthenticated } = useAuth();
+
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
@@ -59,8 +66,9 @@ export default function CheckoutPage() {
 
   // 배송지 정보
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
-  const [useNewAddress, setUseNewAddress] = useState(false);
+  const [showAddAddressModal, setShowAddAddressModal] = useState(false);
   const [newAddress, setNewAddress] = useState({
+    name: "",
     recipient: "",
     phone: "",
     postal_code: "",
@@ -100,30 +108,30 @@ export default function CheckoutPage() {
   const [showHealthForm, setShowHealthForm] = useState(true);
 
   // 상품 정보 조회 (옵션의 product_id가 있는 경우)
-  const productId = item?.option?.product_id;
+  const productId = item?.option?.product_id || item?.product?.id;
   const { data: latestProducts } = useQuery({
     ...productsQueries.byIds(productId ? [productId] : []),
     enabled: !!productId,
   });
 
-  // 상품 정보
+  // 상품 정보 (옵션 없는 경우 item.product 사용)
   const product = useMemo(() => {
+    // 옵션이 없는 상품인 경우 item.product 사용
+    if (item?.product) return item.product;
     if (!productId || !latestProducts) return null;
     return latestProducts.find((p) => p.id === productId) || null;
-  }, [productId, latestProducts]);
+  }, [productId, latestProducts, item?.product]);
 
   // 우편번호 추출 (배송비 계산용)
   const currentZipcode = useMemo(() => {
-    if (useNewAddress) {
-      return newAddress.postal_code;
-    } else if (selectedAddressId) {
+    if (selectedAddressId) {
       const selectedAddress = addresses.find(
         (addr) => addr.id === selectedAddressId
       );
       return selectedAddress?.postal_code || "";
     }
     return "";
-  }, [useNewAddress, newAddress.postal_code, selectedAddressId, addresses]);
+  }, [selectedAddressId, addresses]);
 
   // 배송비 실시간 계산
   const { shippingFee, isLoading: isCalculatingShipping } = useShippingFee({
@@ -149,19 +157,12 @@ export default function CheckoutPage() {
     }
   }, [_hasHydrated, router]);
 
+  // 사용자 이메일 설정
   useEffect(() => {
-    const fetchUser = async () => {
-      const {
-        data: { user },
-      } = await supabaseAuth.auth.getUser();
-      setUser(user);
-      if (user) {
-        setCustomerEmail(user.email || "");
-      }
-    };
-
-    fetchUser();
-  }, []);
+    if (user?.email) {
+      setCustomerEmail(user.email);
+    }
+  }, [user?.email]);
 
   // 기본 배송지 자동 선택
   useEffect(() => {
@@ -243,23 +244,82 @@ export default function CheckoutPage() {
     }
   };
 
+  // 새 배송지 저장 핸들러
+  const handleSaveNewAddress = async () => {
+    if (!user) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+
+    if (
+      !newAddress.name ||
+      !newAddress.recipient ||
+      !newAddress.phone ||
+      !newAddress.postal_code ||
+      !newAddress.address
+    ) {
+      alert("필수 정보를 모두 입력해주세요.");
+      return;
+    }
+
+    try {
+      const savedAddress = await createAddressMutation.mutateAsync({
+        user_id: user.id,
+        name: newAddress.name,
+        recipient: newAddress.recipient,
+        phone: newAddress.phone,
+        postal_code: newAddress.postal_code,
+        address: newAddress.address,
+        address_detail: newAddress.address_detail || "",
+        is_default: addresses.length === 0, // 첫 배송지면 기본으로 설정
+      });
+
+      // 새로 저장된 배송지 자동 선택
+      if (savedAddress?.id) {
+        setSelectedAddressId(savedAddress.id);
+      }
+
+      // 모달 닫기 및 입력 초기화
+      setShowAddAddressModal(false);
+      setNewAddress({
+        name: "",
+        recipient: "",
+        phone: "",
+        postal_code: "",
+        address: "",
+        address_detail: "",
+      });
+    } catch (error: any) {
+      console.error("배송지 저장 실패:", error);
+      alert(error?.message || "배송지 저장에 실패했습니다.");
+    }
+  };
+
   const handlePayment = async () => {
     if (!item) {
       alert("주문 정보가 없습니다.");
       return;
     }
 
-    // 배송지 정보 체크
-    if (!useNewAddress && !selectedAddressId) {
-      alert("배송지를 선택해주세요.");
+    // 상품 상태 확인 (삭제 또는 품절)
+    if (!product) {
+      alert(
+        "상품 정보를 찾을 수 없습니다. 삭제되었거나 일시적으로 판매 중지된 상품입니다."
+      );
+      router.push("/products");
       return;
     }
 
-    if (useNewAddress) {
-      if (!newAddress.recipient || !newAddress.phone || !newAddress.address) {
-        alert("배송지 정보를 모두 입력해주세요.");
-        return;
-      }
+    if (product.is_out_of_stock) {
+      alert("품절된 상품입니다. 다른 상품을 선택해주세요.");
+      router.push("/products");
+      return;
+    }
+
+    // 배송지 정보 체크
+    if (!selectedAddressId) {
+      alert("배송지를 선택해주세요.");
+      return;
     }
 
     // 문진 정보 체크
@@ -274,38 +334,33 @@ export default function CheckoutPage() {
     }
 
     const orderId = `ORDER_${Date.now()}`;
-    const orderName = item.option.name;
+    const orderName = item.option?.name || product?.name || "상품";
 
     setIsLoading(true);
 
     try {
       // 배송지 정보 준비
       let shippingInfo;
-      if (user) {
-        if (useNewAddress) {
+      if (user && selectedAddressId) {
+        const selectedAddress = addresses.find(
+          (addr) => addr.id === selectedAddressId
+        );
+        if (selectedAddress) {
           shippingInfo = {
-            shipping_name: newAddress.recipient,
-            shipping_phone: newAddress.phone,
-            shipping_postal_code: newAddress.postal_code,
-            shipping_address: newAddress.address,
-            shipping_address_detail: newAddress.address_detail,
+            shipping_address_id: selectedAddress.id,
+            shipping_name: selectedAddress.recipient,
+            shipping_phone: selectedAddress.phone,
+            shipping_postal_code: selectedAddress.postal_code,
+            shipping_address: selectedAddress.address,
+            shipping_address_detail: selectedAddress.address_detail,
           };
-        } else if (selectedAddressId) {
-          const selectedAddress = addresses.find(
-            (addr) => addr.id === selectedAddressId
-          );
-          if (selectedAddress) {
-            shippingInfo = {
-              shipping_address_id: selectedAddress.id,
-              shipping_name: selectedAddress.recipient,
-              shipping_phone: selectedAddress.phone,
-              shipping_postal_code: selectedAddress.postal_code,
-              shipping_address: selectedAddress.address,
-              shipping_address_detail: selectedAddress.address_detail,
-            };
-          }
         }
       }
+
+      // 선택한 쿠폰의 user_coupon_id 찾기
+      const selectedUserCouponForPayment = selectedCoupon
+        ? availableCoupons.find((uc: any) => uc.id === selectedCoupon)
+        : null;
 
       // 주문 정보 저장
       const order = await createOrderMutation.mutateAsync({
@@ -323,16 +378,23 @@ export default function CheckoutPage() {
           shipping_address_detail: shippingInfo.shipping_address_detail,
           zipcode: currentZipcode,
         }),
+        // 포인트/쿠폰 정보
+        used_points: usePoints,
+        user_coupon_id: selectedUserCouponForPayment?.id || undefined,
+        coupon_discount: calculateDiscount(),
+        // 배송비
+        shipping_fee: shippingFee?.totalShippingFee || 0,
         items: [
           {
-            product_id: item.option.product_id || undefined,
-            product_name: product?.name || item.option.name,
-            product_price: item.option.price,
+            product_id:
+              item.option?.product_id || item.product?.id || undefined,
+            product_name: product?.name || item.option?.name || "상품",
+            product_price: item.option?.price ?? item.product?.price ?? 0,
             quantity: item.quantity,
-            option_id: item.option.id,
-            option_name: item.option.name,
-            option_price: item.option.price,
-            visit_type: item.visit_type,
+            option_id: item.option?.id,
+            option_name: item.option?.name,
+            option_price: item.option?.price,
+            visit_type: item.visit_type ?? undefined,
             selected_option_settings: item.selected_settings,
           },
         ],
@@ -394,22 +456,25 @@ export default function CheckoutPage() {
       return;
     }
 
-    // 배송지 검증
-    if (!useNewAddress && !selectedAddressId) {
-      alert("배송지를 선택해주세요.");
+    // 상품 상태 확인 (삭제 또는 품절)
+    if (!product) {
+      alert(
+        "상품 정보를 찾을 수 없습니다. 삭제되었거나 일시적으로 판매 중지된 상품입니다."
+      );
+      router.push("/products");
       return;
     }
 
-    if (useNewAddress) {
-      if (
-        !newAddress.recipient ||
-        !newAddress.phone ||
-        !newAddress.postal_code ||
-        !newAddress.address
-      ) {
-        alert("배송지 정보를 모두 입력해주세요.");
-        return;
-      }
+    if (product.is_out_of_stock) {
+      alert("품절된 상품입니다. 다른 상품을 선택해주세요.");
+      router.push("/products");
+      return;
+    }
+
+    // 배송지 검증
+    if (!selectedAddressId) {
+      alert("배송지를 선택해주세요.");
+      return;
     }
 
     const orderId = `TEST_ORDER_${Date.now()}`;
@@ -419,31 +484,26 @@ export default function CheckoutPage() {
     try {
       // 배송지 정보 준비
       let shippingInfo;
-      if (user) {
-        if (useNewAddress) {
+      if (user && selectedAddressId) {
+        const selectedAddress = addresses.find(
+          (addr) => addr.id === selectedAddressId
+        );
+        if (selectedAddress) {
           shippingInfo = {
-            shipping_name: newAddress.recipient,
-            shipping_phone: newAddress.phone,
-            shipping_postal_code: newAddress.postal_code,
-            shipping_address: newAddress.address,
-            shipping_address_detail: newAddress.address_detail,
+            shipping_address_id: selectedAddress.id,
+            shipping_name: selectedAddress.recipient,
+            shipping_phone: selectedAddress.phone,
+            shipping_postal_code: selectedAddress.postal_code,
+            shipping_address: selectedAddress.address,
+            shipping_address_detail: selectedAddress.address_detail,
           };
-        } else if (selectedAddressId) {
-          const selectedAddress = addresses.find(
-            (addr) => addr.id === selectedAddressId
-          );
-          if (selectedAddress) {
-            shippingInfo = {
-              shipping_address_id: selectedAddress.id,
-              shipping_name: selectedAddress.recipient,
-              shipping_phone: selectedAddress.phone,
-              shipping_postal_code: selectedAddress.postal_code,
-              shipping_address: selectedAddress.address,
-              shipping_address_detail: selectedAddress.address_detail,
-            };
-          }
         }
       }
+
+      // 선택한 쿠폰의 user_coupon_id 찾기
+      const selectedUserCoupon = selectedCoupon
+        ? availableCoupons.find((uc: any) => uc.id === selectedCoupon)
+        : null;
 
       // 주문 정보 저장
       const order = await createOrderMutation.mutateAsync({
@@ -461,16 +521,26 @@ export default function CheckoutPage() {
           shipping_address_detail: shippingInfo.shipping_address_detail,
           zipcode: currentZipcode,
         }),
+        // 포인트/쿠폰 정보
+        used_points: usePoints,
+        user_coupon_id: selectedUserCoupon?.id || undefined,
+        coupon_discount: calculateDiscount(),
+        // 배송비
+        shipping_fee: shippingFee?.totalShippingFee || 0,
         items: [
           {
-            product_id: currentItem.option.product_id || undefined,
-            product_name: product?.name || currentItem.option.name,
-            product_price: currentItem.option.price,
+            product_id:
+              currentItem.option?.product_id ||
+              currentItem.product?.id ||
+              undefined,
+            product_name: product?.name || currentItem.option?.name || "상품",
+            product_price:
+              currentItem.option?.price ?? currentItem.product?.price ?? 0,
             quantity: currentItem.quantity,
-            option_id: currentItem.option.id,
-            option_name: currentItem.option.name,
-            option_price: currentItem.option.price,
-            visit_type: currentItem.visit_type,
+            option_id: currentItem.option?.id,
+            option_name: currentItem.option?.name,
+            option_price: currentItem.option?.price,
+            visit_type: currentItem.visit_type ?? undefined,
             selected_option_settings: currentItem.selected_settings,
           },
         ],
@@ -488,6 +558,9 @@ export default function CheckoutPage() {
         "paid",
         `TEST_PAYMENT_${Date.now()}`
       );
+
+      // 포인트/쿠폰 사용 처리
+      await processTestPaymentBenefitsAction(orderId);
 
       useOrderStore.getState().clearOrder();
       router.push(`/checkout/test-success?orderId=${orderId}`);
@@ -545,16 +618,20 @@ export default function CheckoutPage() {
               <div className="flex justify-between items-start gap-4">
                 <div className="flex-1">
                   <p className="text-gray-900 font-medium">
-                    {product?.name || item.option.name}
+                    {product?.name || item.option?.name || "상품"}
                   </p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    옵션: {item.option.name}
-                  </p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="inline-block text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">
-                      {getVisitTypeLabel(item.visit_type)}
-                    </span>
-                  </div>
+                  {item.option && (
+                    <p className="text-sm text-gray-500 mt-1">
+                      옵션: {item.option.name}
+                    </p>
+                  )}
+                  {item.visit_type && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="inline-block text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">
+                        {getVisitTypeLabel(item.visit_type)}
+                      </span>
+                    </div>
+                  )}
 
                   {/* 선택된 설정들 표시 */}
                   {item.selected_settings &&
@@ -618,7 +695,7 @@ export default function CheckoutPage() {
                     <span className="text-gray-400">계산 중...</span>
                   ) : shippingFee ? (
                     shippingFee.totalShippingFee === 0 ? (
-                      <span className="text-green-600">무료</span>
+                      <span className="text-grey-400">무료</span>
                     ) : (
                       `+${shippingFee.totalShippingFee.toLocaleString()}원`
                     )
@@ -637,13 +714,13 @@ export default function CheckoutPage() {
               )}
 
               {calculateDiscount() > 0 && (
-                <div className="flex justify-between text-red-500">
+                <div className="flex justify-between text-gray-500">
                   <span>쿠폰 할인</span>
                   <span>-{calculateDiscount().toLocaleString()}원</span>
                 </div>
               )}
               {usePoints > 0 && (
-                <div className="flex justify-between text-blue-600">
+                <div className="flex justify-between text-gray-500">
                   <span>포인트 사용</span>
                   <span>-{usePoints.toLocaleString()}P</span>
                 </div>
@@ -796,11 +873,6 @@ export default function CheckoutPage() {
                         </div>
                         <p className="text-xs text-gray-500">
                           {coupon.min_purchase.toLocaleString()}원 이상 구매 시
-                          {!isAvailable && (
-                            <span className="text-red-500 ml-1">
-                              (조건 미달)
-                            </span>
-                          )}
                         </p>
                       </button>
                     );
@@ -815,58 +887,6 @@ export default function CheckoutPage() {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-medium text-gray-900">배송지 정보</h2>
               <div className="flex items-center gap-3">
-                {NODE_ENV === "development" && (
-                  <button
-                    onClick={() => {
-                      // 현재 유저 정보 사용
-                      const userName =
-                        customerName ||
-                        profile?.display_name ||
-                        "테스트 사용자";
-                      const userPhone =
-                        customerPhone || profile?.phone || "010-0000-0000";
-
-                      setUseNewAddress(true);
-                      setNewAddress({
-                        recipient: userName,
-                        phone: userPhone,
-                        postal_code: "06234",
-                        address: "서울특별시 강남구 테헤란로 123",
-                        address_detail: "101동 1001호",
-                      });
-                      setHealthConsultation({
-                        name: userName,
-                        resident_number: "900101-1234567",
-                        phone: userPhone,
-                        current_height: 170,
-                        current_weight: 75,
-                        min_weight_since_20s: 60,
-                        max_weight_since_20s: 80,
-                        target_weight: 65,
-                        target_weight_loss_period: "3개월",
-                        previous_western_medicine: "없음",
-                        previous_herbal_medicine: "없음",
-                        previous_other_medicine: "없음",
-                        occupation: "사무직",
-                        work_hours: "09:00 ~ 18:00",
-                        has_shift_work: false,
-                        wake_up_time: "07:00",
-                        bedtime: "23:00",
-                        has_daytime_sleepiness: false,
-                        meal_pattern: "3meals",
-                        alcohol_frequency: "weekly_1_or_less",
-                        water_intake: "over_1L",
-                        diet_approach: "sustainable",
-                        preferred_stage: "stage1",
-                        medical_history: "없음",
-                      });
-                      setShowHealthForm(false);
-                    }}
-                    className="px-3 py-1.5 bg-purple-100 text-purple-700 rounded text-xs hover:bg-purple-200 transition"
-                  >
-                    테스트 데이터
-                  </button>
-                )}
                 {user && (
                   <a
                     href="/profile?tab=addresses"
@@ -880,7 +900,7 @@ export default function CheckoutPage() {
 
             <div className="border border-gray-200 rounded p-4">
               {/* 로그인 사용자: 저장된 배송지 목록 표시 */}
-              {user && addresses.length > 0 && !useNewAddress && (
+              {user && addresses.length > 0 && (
                 <div className="space-y-2 mb-4">
                   {addresses.map((address) => (
                     <button
@@ -916,28 +936,80 @@ export default function CheckoutPage() {
                 </div>
               )}
 
-              {/* 로그인 사용자: 저장된 배송지/새 배송지 토글 버튼 */}
-              {user && addresses.length > 0 && (
+              {/* 새 배송지 추가 버튼 */}
+              {user && (
                 <button
-                  onClick={() => {
-                    setUseNewAddress(!useNewAddress);
-                    if (!useNewAddress) {
-                      setSelectedAddressId("");
-                    }
-                  }}
-                  className="w-full px-3 py-2 border border-gray-200 rounded text-gray-600 hover:bg-gray-50 transition text-sm mb-4"
+                  onClick={() => setShowAddAddressModal(true)}
+                  className="w-full px-3 py-2.5 border border-dashed border-gray-300 rounded text-gray-600 hover:bg-gray-50 hover:border-gray-400 transition text-sm flex items-center justify-center gap-2"
                 >
-                  {useNewAddress ? "저장된 배송지 선택" : "새 배송지 입력"}
+                  <span className="text-lg">+</span>새 배송지 추가
                 </button>
               )}
 
-              {/* 새 배송지 입력 폼 */}
-              {(!user || useNewAddress) && (
-                <div
-                  className={`space-y-3 ${
-                    user ? "pt-4 border-t border-gray-100" : ""
-                  }`}
-                >
+              {/* 저장된 배송지 없을 때 안내 */}
+              {user && addresses.length === 0 && (
+                <p className="text-center text-sm text-gray-500 mt-3">
+                  등록된 배송지가 없습니다. 새 배송지를 추가해주세요.
+                </p>
+              )}
+
+              {/* 비로그인 사용자 안내 */}
+              {!user && (
+                <div className="text-center py-6 text-gray-500">
+                  <p className="text-sm mb-2">
+                    배송지를 등록하려면 로그인이 필요합니다.
+                  </p>
+                  <a
+                    href="/auth/login"
+                    className="text-sm text-gray-900 hover:underline"
+                  >
+                    로그인하기
+                  </a>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* 새 배송지 추가 모달 */}
+          {showAddAddressModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+                <div className="flex justify-between items-center p-4 border-b border-gray-200">
+                  <h3 className="text-lg font-medium">새 배송지 추가</h3>
+                  <button
+                    onClick={() => {
+                      setShowAddAddressModal(false);
+                      setNewAddress({
+                        name: "",
+                        recipient: "",
+                        phone: "",
+                        postal_code: "",
+                        address: "",
+                        address_detail: "",
+                      });
+                    }}
+                    className="text-gray-400 hover:text-gray-600 text-xl"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div className="p-4 space-y-4">
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">
+                      배송지명 <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={newAddress.name}
+                      onChange={(e) =>
+                        setNewAddress({ ...newAddress, name: e.target.value })
+                      }
+                      placeholder="예: 집, 회사"
+                      className="w-full px-3 py-2 border border-gray-200 rounded text-sm focus:outline-none focus:border-gray-400"
+                    />
+                  </div>
+
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">
                       받는 분 <span className="text-red-500">*</span>
@@ -954,6 +1026,7 @@ export default function CheckoutPage() {
                       className="w-full px-3 py-2 border border-gray-200 rounded text-sm focus:outline-none focus:border-gray-400"
                     />
                   </div>
+
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">
                       연락처 <span className="text-red-500">*</span>
@@ -968,6 +1041,7 @@ export default function CheckoutPage() {
                       className="w-full px-3 py-2 border border-gray-200 rounded text-sm focus:outline-none focus:border-gray-400"
                     />
                   </div>
+
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">
                       우편번호 <span className="text-red-500">*</span>
@@ -991,6 +1065,7 @@ export default function CheckoutPage() {
                       />
                     </div>
                   </div>
+
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">
                       주소 <span className="text-red-500">*</span>
@@ -1003,6 +1078,7 @@ export default function CheckoutPage() {
                       className="w-full px-3 py-2 border border-gray-200 rounded text-sm bg-gray-50"
                     />
                   </div>
+
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">
                       상세 주소
@@ -1016,57 +1092,46 @@ export default function CheckoutPage() {
                           address_detail: e.target.value,
                         })
                       }
+                      placeholder="상세 주소 입력"
                       className="w-full px-3 py-2 border border-gray-200 rounded text-sm focus:outline-none focus:border-gray-400"
                     />
                   </div>
                 </div>
-              )}
 
-              {/* 로그인 사용자: 저장된 배송지 없을 때 안내 */}
-              {user && addresses.length === 0 && !useNewAddress && (
-                <div className="text-center py-6 text-gray-500">
-                  <p className="text-sm mb-2">등록된 배송지가 없습니다.</p>
+                <div className="p-4 border-t border-gray-200 flex gap-2">
                   <button
-                    onClick={() => setUseNewAddress(true)}
-                    className="text-sm text-gray-600 hover:text-gray-900 border-b border-gray-400 pb-0.5"
+                    onClick={() => {
+                      setShowAddAddressModal(false);
+                      setNewAddress({
+                        name: "",
+                        recipient: "",
+                        phone: "",
+                        postal_code: "",
+                        address: "",
+                        address_detail: "",
+                      });
+                    }}
+                    className="flex-1 px-4 py-2.5 border border-gray-200 rounded text-gray-600 hover:bg-gray-50 transition text-sm"
                   >
-                    새 배송지 입력하기
+                    취소
+                  </button>
+                  <button
+                    onClick={handleSaveNewAddress}
+                    disabled={createAddressMutation.isPending}
+                    className="flex-1 px-4 py-2.5 bg-gray-900 text-white rounded hover:bg-gray-800 transition text-sm disabled:bg-gray-300"
+                  >
+                    {createAddressMutation.isPending ? "저장 중..." : "저장"}
                   </button>
                 </div>
-              )}
-
-              {/* 배송비 정보 표시 */}
-              {currentZipcode && currentZipcode.length === 5 && shippingFee && (
-                <div className="mt-4 p-3 bg-gray-50 rounded text-sm">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">배송비</span>
-                    {shippingFee.isFreeShipping &&
-                    shippingFee.totalShippingFee === 0 ? (
-                      <span className="text-green-600 font-medium">
-                        무료배송
-                      </span>
-                    ) : (
-                      <span className="text-gray-900 font-medium">
-                        {shippingFee.totalShippingFee.toLocaleString()}원
-                      </span>
-                    )}
-                  </div>
-                  {shippingFee.message && (
-                    <p className="text-xs text-gray-400 mt-1">
-                      {shippingFee.message}
-                    </p>
-                  )}
-                </div>
-              )}
+              </div>
             </div>
-          </section>
+          )}
 
           {/* 문진 정보 (필수) */}
           <section>
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-medium text-gray-900 flex items-center gap-2">
                 문진 정보
-                <span className="text-red-500 text-sm">*필수</span>
               </h2>
               {healthConsultation && (
                 <button
@@ -1091,23 +1156,23 @@ export default function CheckoutPage() {
               )}
 
               {!showHealthForm && healthConsultation && (
-                <div className="bg-green-50 border border-green-200 rounded p-3">
-                  <p className="text-sm text-green-800 font-medium flex items-center gap-1">
+                <>
+                  <p className="text-sm text-gray-900 font-medium flex items-center gap-1">
                     <span>✓</span> 문진 정보가 작성되었습니다
                   </p>
                   {healthConsultation.name && (
-                    <p className="text-xs text-green-700 mt-1">
+                    <p className="text-xs text-gray-800 mt-1">
                       이름: {healthConsultation.name}
                     </p>
                   )}
                   {healthConsultation.current_height != null &&
                     healthConsultation.current_weight != null && (
-                      <p className="text-xs text-green-700">
+                      <p className="text-xs text-gray-800">
                         신체정보: {healthConsultation.current_height}cm /{" "}
                         {healthConsultation.current_weight}kg
                       </p>
                     )}
-                </div>
+                </>
               )}
 
               {showHealthForm && (

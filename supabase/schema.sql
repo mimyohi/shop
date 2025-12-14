@@ -127,12 +127,14 @@ CREATE TABLE IF NOT EXISTS products (
   sale_start_at TIMESTAMPTZ,
   sale_end_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW()),
-  updated_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
+  updated_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW()),
+  deleted_at TIMESTAMPTZ DEFAULT NULL
 );
 
 COMMENT ON COLUMN products.discount_rate IS '할인률 (0-100%, 0이면 할인 없음)';
 COMMENT ON COLUMN products.is_new_badge IS 'NEW 뱃지 표시 여부';
 COMMENT ON COLUMN products.is_sale_badge IS 'SALE 뱃지 표시 여부';
+COMMENT ON COLUMN products.deleted_at IS 'Soft delete timestamp. NULL means the product is active.';
 
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
 CREATE INDEX IF NOT EXISTS idx_products_slug ON products(slug);
@@ -144,6 +146,8 @@ CREATE INDEX IF NOT EXISTS idx_products_name_gin ON products USING gin(to_tsvect
 CREATE INDEX IF NOT EXISTS idx_products_description_gin ON products USING gin(to_tsvector('simple', description));
 CREATE INDEX IF NOT EXISTS idx_products_new_badge ON products(is_new_badge) WHERE is_new_badge = true;
 CREATE INDEX IF NOT EXISTS idx_products_sale_badge ON products(is_sale_badge) WHERE is_sale_badge = true;
+CREATE INDEX IF NOT EXISTS idx_products_deleted_at ON products(deleted_at);
+CREATE INDEX IF NOT EXISTS idx_products_active ON products(id) WHERE deleted_at IS NULL;
 
 DROP TRIGGER IF EXISTS trigger_update_products_updated_at ON products;
 CREATE TRIGGER trigger_update_products_updated_at
@@ -425,9 +429,6 @@ CREATE TABLE IF NOT EXISTS user_profiles (
 CREATE INDEX IF NOT EXISTS idx_user_profiles_user_id ON user_profiles(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_profiles_email ON user_profiles(email);
 CREATE INDEX IF NOT EXISTS idx_user_profiles_phone ON user_profiles(phone);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_user_profiles_verified_phone
-  ON user_profiles(phone)
-  WHERE phone_verified = true;
 
 DROP TRIGGER IF EXISTS update_user_profiles_updated_at ON user_profiles;
 CREATE TRIGGER update_user_profiles_updated_at

@@ -52,12 +52,8 @@ export function toE164(phone: string, countryCode: CountryCode = 'KR'): string |
     // +82 추가
     const e164 = `+82${numberWithoutLeadingZero}`;
 
-    // libphonenumber-js로 최종 검증
-    if (isValidPhoneNumber(e164, countryCode)) {
-      return e164;
-    }
-
-    return null;
+    // 정규식 검증을 통과했으므로 바로 반환
+    return e164;
   } catch (error) {
     console.error('Error converting to E.164:', error);
     return null;

@@ -127,12 +127,14 @@ CREATE TABLE IF NOT EXISTS products (
   sale_start_at TIMESTAMPTZ,
   sale_end_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW()),
-  updated_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
+  updated_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW()),
+  deleted_at TIMESTAMPTZ DEFAULT NULL
 );
 
 COMMENT ON COLUMN products.discount_rate IS '할인률 (0-100%, 0이면 할인 없음)';
 COMMENT ON COLUMN products.is_new_badge IS 'NEW 뱃지 표시 여부';
 COMMENT ON COLUMN products.is_sale_badge IS 'SALE 뱃지 표시 여부';
+COMMENT ON COLUMN products.deleted_at IS 'Soft delete timestamp. NULL means the product is active.';
 
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
 CREATE INDEX IF NOT EXISTS idx_products_slug ON products(slug);
@@ -144,6 +146,8 @@ CREATE INDEX IF NOT EXISTS idx_products_name_gin ON products USING gin(to_tsvect
 CREATE INDEX IF NOT EXISTS idx_products_description_gin ON products USING gin(to_tsvector('simple', description));
 CREATE INDEX IF NOT EXISTS idx_products_new_badge ON products(is_new_badge) WHERE is_new_badge = true;
 CREATE INDEX IF NOT EXISTS idx_products_sale_badge ON products(is_sale_badge) WHERE is_sale_badge = true;
+CREATE INDEX IF NOT EXISTS idx_products_deleted_at ON products(deleted_at);
+CREATE INDEX IF NOT EXISTS idx_products_active ON products(id) WHERE deleted_at IS NULL;
 
 DROP TRIGGER IF EXISTS trigger_update_products_updated_at ON products;
 CREATE TRIGGER trigger_update_products_updated_at
@@ -418,6 +422,9 @@ CREATE TABLE IF NOT EXISTS user_profiles (
   phone VARCHAR(50),
   phone_verified BOOLEAN DEFAULT false,
   phone_verified_at TIMESTAMPTZ,
+  marketing_consent BOOLEAN DEFAULT false,
+  sms_consent BOOLEAN DEFAULT false,
+  email_consent BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW()),
   updated_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
 );
@@ -425,9 +432,6 @@ CREATE TABLE IF NOT EXISTS user_profiles (
 CREATE INDEX IF NOT EXISTS idx_user_profiles_user_id ON user_profiles(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_profiles_email ON user_profiles(email);
 CREATE INDEX IF NOT EXISTS idx_user_profiles_phone ON user_profiles(phone);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_user_profiles_verified_phone
-  ON user_profiles(phone)
-  WHERE phone_verified = true;
 
 DROP TRIGGER IF EXISTS update_user_profiles_updated_at ON user_profiles;
 CREATE TRIGGER update_user_profiles_updated_at
@@ -921,6 +925,7 @@ CREATE TABLE IF NOT EXISTS orders (
   used_points INTEGER DEFAULT 0 CHECK (used_points >= 0),
   user_coupon_id UUID REFERENCES user_coupons(id) ON DELETE SET NULL,
   coupon_discount INTEGER DEFAULT 0 CHECK (coupon_discount >= 0),
+  shipping_fee INTEGER DEFAULT 0,
   shipping_address_id UUID REFERENCES shipping_addresses(id) ON DELETE SET NULL,
   shipping_name VARCHAR(255),
   shipping_phone VARCHAR(50),
@@ -3053,6 +3058,90 @@ ON CONFLICT DO NOTHING;
 INSERT INTO product_banners (title, description, image_url, mobile_image_url, link_url, device_type, display_order, is_active) VALUES
 ('베스트셀러 한약', '가장 많이 선택된 다이어트 한약', 'https://via.placeholder.com/800x300?text=Best+Seller', 'https://via.placeholder.com/400x500?text=Best+Seller+Mobile', '/products/diet-stage2', 'both', 0, true),
 ('한방차 기획전', '체질에 맞는 한방차 찾기', 'https://via.placeholder.com/800x300?text=Herbal+Tea+Collection', NULL, '/category/tea', 'pc', 1, true)
+ON CONFLICT DO NOTHING;
+
+-- ----------------------------------------------------------------------------
+-- 인스타그램 이미지 테이블
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS instagram_images (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  image_url TEXT NOT NULL,
+  link_url TEXT,
+  display_order INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_instagram_images_is_active ON instagram_images(is_active);
+CREATE INDEX IF NOT EXISTS idx_instagram_images_display_order ON instagram_images(display_order);
+
+ALTER TABLE instagram_images ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "instagram_images_select_policy" ON instagram_images
+  FOR SELECT USING (true);
+
+CREATE POLICY "instagram_images_insert_policy" ON instagram_images
+  FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "instagram_images_update_policy" ON instagram_images
+  FOR UPDATE USING (true);
+
+CREATE POLICY "instagram_images_delete_policy" ON instagram_images
+  FOR DELETE USING (true);
+
+-- 인스타그램 이미지 테스트 데이터
+INSERT INTO instagram_images (image_url, link_url, display_order, is_active) VALUES
+('https://via.placeholder.com/300x300?text=Instagram+1', 'https://instagram.com/p/1', 0, true),
+('https://via.placeholder.com/300x300?text=Instagram+2', 'https://instagram.com/p/2', 1, true),
+('https://via.placeholder.com/300x300?text=Instagram+3', 'https://instagram.com/p/3', 2, true),
+('https://via.placeholder.com/300x300?text=Instagram+4', 'https://instagram.com/p/4', 3, true),
+('https://via.placeholder.com/300x300?text=Instagram+5', 'https://instagram.com/p/5', 4, true),
+('https://via.placeholder.com/300x300?text=Instagram+6', 'https://instagram.com/p/6', 5, true)
+ON CONFLICT DO NOTHING;
+
+-- ----------------------------------------------------------------------------
+-- FAQ 테이블
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS faqs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  question TEXT NOT NULL,
+  answer TEXT NOT NULL,
+  category VARCHAR(50),
+  display_order INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_faqs_is_active ON faqs(is_active);
+CREATE INDEX IF NOT EXISTS idx_faqs_display_order ON faqs(display_order);
+CREATE INDEX IF NOT EXISTS idx_faqs_category ON faqs(category);
+
+ALTER TABLE faqs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "faqs_select_policy" ON faqs
+  FOR SELECT USING (true);
+
+CREATE POLICY "faqs_insert_policy" ON faqs
+  FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "faqs_update_policy" ON faqs
+  FOR UPDATE USING (true);
+
+CREATE POLICY "faqs_delete_policy" ON faqs
+  FOR DELETE USING (true);
+
+-- FAQ 기본 데이터
+INSERT INTO faqs (question, answer, display_order, is_active) VALUES
+('쿠폰을 어떻게 사용하나요?', '주문서 작성 시 쿠폰 적용란에서 보유한 쿠폰을 선택하여 사용하실 수 있습니다. 쿠폰마다 사용 조건(최소 주문금액, 적용 가능 상품 등)이 다를 수 있으니 확인 후 사용해 주세요.', 0, true),
+('발급 받은 쿠폰은 어디서 확인할 수 있나요?', '마이페이지 > 쿠폰함에서 보유하신 쿠폰을 확인하실 수 있습니다. 쿠폰의 유효기간과 사용 조건도 함께 확인 가능합니다.', 1, true),
+('상품 반품/교환 진행 시, 배송비가 부과되나요?', '고객님의 단순 변심으로 인한 반품/교환 시에는 왕복 배송비(7,000원)가 부과됩니다. 상품 불량이나 오배송의 경우에는 미묘히에서 배송비를 부담합니다.', 2, true),
+('주문 내역 조회는 어디서 하나요?', '로그인 후 마이페이지 > 주문 내역에서 확인하실 수 있습니다. 주문 상태, 배송 현황, 결제 정보 등을 조회할 수 있습니다.', 3, true),
+('아이디, 비밀번호가 기억이 나지 않습니다.', '로그인 페이지에서 "아이디 찾기" 또는 "비밀번호 찾기"를 이용해 주세요. 가입 시 등록한 휴대폰 번호 또는 이메일을 통해 확인 가능합니다.', 4, true),
+('회원정보를 수정하고 싶습니다.', '마이페이지 > 회원정보 수정에서 비밀번호, 연락처, 배송지 등의 정보를 수정하실 수 있습니다.', 5, true),
+('회원 탈퇴는 어떻게 하나요?', '마이페이지 > 회원정보 수정 > 회원 탈퇴에서 진행하실 수 있습니다. 탈퇴 시 보유하신 쿠폰, 적립금 등은 모두 소멸되며 복구가 불가능합니다.', 6, true),
+('비회원 구매 가능한가요?', '미묘히는 회원 전용 서비스로, 비회원 구매는 지원하지 않습니다. 간단한 회원가입 후 다양한 혜택과 함께 편리하게 쇼핑해 주세요.', 7, true)
 ON CONFLICT DO NOTHING;
 
 COMMIT;

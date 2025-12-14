@@ -1,15 +1,9 @@
 import type { Metadata } from "next";
-import { Noto_Sans_KR, Montserrat } from "next/font/google";
+import { Montserrat } from "next/font/google";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import "./globals.css";
 import ChannelTalk from "@/components/ChannelTalk";
 import ReactQueryProvider from "@/providers/ReactQueryProvider";
-
-const notoSansKr = Noto_Sans_KR({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "700"],
-  variable: "--font-noto-sans-kr",
-});
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -28,9 +22,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body
-        className={`${notoSansKr.variable} ${montserrat.variable} font-sans`}
-      >
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
+        />
+      </head>
+      <body className={`${montserrat.variable}`}>
         <NuqsAdapter>
           <ReactQueryProvider>
             {children}

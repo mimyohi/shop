@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
 import { createServiceClient } from '@/lib/supabaseServiceServer';
 import { validateAndFormatPhone } from '@/lib/phone/validation';
 
 /**
  * POST /api/auth/reset-password
- * 전화번호 인증 후 비밀번호 재설정 API
+ * 이메일 + 전화번호 인증 후 비밀번호 재설정 API
  *
  * Request Body:
  * {
- *   "phone": "010-1234-5678",
+ *   "email": "user@example.com",
+ *   "phone": "+821012345678",
  *   "verificationId": "uuid",
  *   "newPassword": "newPassword123"
  * }
@@ -22,11 +22,12 @@ import { validateAndFormatPhone } from '@/lib/phone/validation';
  */
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createServiceClient();
     const body = await request.json();
-    const { phone, verificationId, newPassword } = body;
+    const { email, phone, verificationId, newPassword } = body;
 
     // 입력 검증
-    if (!phone || !verificationId || !newPassword) {
+    if (!email || !phone || !verificationId || !newPassword) {
       return NextResponse.json(
         { success: false, error: '필수 정보가 누락되었습니다.' },
         { status: 400 }
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
 
     const e164Phone = phoneValidation.e164;
 
-    // OTP 검증 확인
+    // OTP 검증 확인 (service client 사용)
     const { data: otpRecord, error: otpError } = await supabase
       .from('phone_otps')
       .select('*')
@@ -81,24 +82,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 전화번호로 사용자 조회
+    // 이메일로 사용자 조회 (service client 사용으로 RLS 우회)
     const { data: userProfile, error: profileError } = await supabase
       .from('user_profiles')
-      .select('user_id, email')
-      .eq('phone', e164Phone)
-      .eq('phone_verified', true)
+      .select('user_id, email, phone')
+      .eq('email', email.toLowerCase().trim())
       .single();
 
     if (profileError || !userProfile) {
       return NextResponse.json(
-        { success: false, error: '해당 전화번호로 가입된 계정이 없습니다.' },
+        { success: false, error: '해당 이메일로 가입된 계정이 없습니다.' },
+        { status: 400 }
+      );
+    }
+
+    // 이메일에 등록된 전화번호와 인증된 전화번호 일치 확인
+    if (userProfile.phone !== e164Phone) {
+      return NextResponse.json(
+        { success: false, error: '인증된 전화번호와 계정의 전화번호가 일치하지 않습니다.' },
         { status: 400 }
       );
     }
 
     // Service role 클라이언트로 비밀번호 업데이트
-    const serviceClient = await createServiceClient();
-    const { error: updateError } = await serviceClient.auth.admin.updateUserById(
+    const { error: updateError } = await supabase.auth.admin.updateUserById(
       userProfile.user_id,
       { password: newPassword }
     );

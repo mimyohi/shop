@@ -61,6 +61,21 @@ export async function GET(request: Request) {
             new URL("/auth/login?error=email_already_registered", requestUrl.origin)
           );
         }
+
+        // 프로필 완성 여부 확인 (이름, 전화번호)
+        const { data: profile } = await serviceSupabase
+          .from("user_profiles")
+          .select("display_name, phone, phone_verified")
+          .eq("user_id", data.user.id)
+          .single();
+
+        const needsProfileCompletion = !profile?.display_name || !profile?.phone || !profile?.phone_verified;
+
+        if (needsProfileCompletion) {
+          return NextResponse.redirect(
+            new URL("/auth/signup?mode=kakao", requestUrl.origin)
+          );
+        }
       }
     }
   }

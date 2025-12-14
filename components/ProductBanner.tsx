@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
+import { useState, useEffect, useRef, useCallback } from "react";
+import Image from "next/image";
+import Link from "next/link";
 
 interface ProductBannerItem {
   id: string;
@@ -11,8 +11,8 @@ interface ProductBannerItem {
   image_url: string;
   mobile_image_url: string | null;
   link_url: string | null;
-  link_target: '_self' | '_blank';
-  device_type: 'pc' | 'mobile' | 'both';
+  link_target: "_self" | "_blank";
+  device_type: "pc" | "mobile" | "both";
   display_order: number;
   is_active: boolean;
 }
@@ -30,15 +30,21 @@ export default function ProductBanner({ banners }: ProductBannerProps) {
   const [isTransitioning, setIsTransitioning] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const activeBanners = banners.filter(b => b.is_active);
+  const activeBanners = banners.filter((b) => b.is_active);
 
-  const extendedBanners = activeBanners.length > 1
-    ? [activeBanners[activeBanners.length - 1], ...activeBanners, activeBanners[0]]
-    : activeBanners;
+  const extendedBanners =
+    activeBanners.length > 1
+      ? [
+          activeBanners[activeBanners.length - 1],
+          ...activeBanners,
+          activeBanners[0],
+        ]
+      : activeBanners;
 
-  const realIndex = activeBanners.length > 1
-    ? (currentSlide - 1 + activeBanners.length) % activeBanners.length
-    : 0;
+  const realIndex =
+    activeBanners.length > 1
+      ? (currentSlide - 1 + activeBanners.length) % activeBanners.length
+      : 0;
 
   useEffect(() => {
     if (activeBanners.length <= 1 || !isAutoPlaying) return;
@@ -202,7 +208,7 @@ export default function ProductBanner({ banners }: ProductBannerProps) {
   }
 
   return (
-    <section className="py-8 bg-white">
+    <section className="py-10 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div
           ref={containerRef}
@@ -218,15 +224,17 @@ export default function ProductBanner({ banners }: ProductBannerProps) {
           <div
             className="flex"
             style={{
-              transform: `translateX(calc(-${currentSlide * 100}% + ${isDragging ? translateX : 0}px))`,
-              transition: isTransitioning && !isDragging ? 'transform 300ms ease-out' : 'none'
+              transform: `translateX(calc(-${currentSlide * 100}% + ${
+                isDragging ? translateX : 0
+              }px))`,
+              transition:
+                isTransitioning && !isDragging
+                  ? "transform 300ms ease-out"
+                  : "none",
             }}
           >
             {extendedBanners.map((banner, index) => (
-              <div
-                key={`${banner.id}-${index}`}
-                className="w-full shrink-0"
-              >
+              <div key={`${banner.id}-${index}`} className="w-full shrink-0">
                 <div className="hidden md:block relative w-full h-[400px]">
                   {banner.link_url && !isDragging ? (
                     <Link
@@ -307,8 +315,19 @@ export default function ProductBanner({ banners }: ProductBannerProps) {
             className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/50 hover:bg-white/75 rounded-full flex items-center justify-center transition z-10"
             aria-label="이전 배너"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+              stroke="currentColor"
+              className="w-5 h-5"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15.75 19.5 8.25 12l7.5-7.5"
+              />
             </svg>
           </button>
           <button
@@ -321,8 +340,19 @@ export default function ProductBanner({ banners }: ProductBannerProps) {
             className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/50 hover:bg-white/75 rounded-full flex items-center justify-center transition z-10"
             aria-label="다음 배너"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+              stroke="currentColor"
+              className="w-5 h-5"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="m8.25 4.5 7.5 7.5-7.5 7.5"
+              />
             </svg>
           </button>
 
@@ -339,8 +369,8 @@ export default function ProductBanner({ banners }: ProductBannerProps) {
                 }}
                 className={`w-2 h-2 rounded-full transition-all ${
                   index === realIndex
-                    ? 'bg-white w-6'
-                    : 'bg-white/50 hover:bg-white/75'
+                    ? "bg-white w-6"
+                    : "bg-white/50 hover:bg-white/75"
                 }`}
               />
             ))}

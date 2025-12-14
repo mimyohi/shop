@@ -43,7 +43,7 @@ export default function AboutPage() {
                     {info.tel ? (
                       <a
                         href={`tel:${info.tel}`}
-                        className="text-[#8B8B73] hover:underline"
+                        className="text-[#222222] hover:underline"
                       >
                         {info.value}
                       </a>
@@ -52,7 +52,7 @@ export default function AboutPage() {
                         {info.value}
                         <a
                           href={`mailto:${info.email}`}
-                          className="ml-2 text-[#8B8B73] hover:underline"
+                          className="ml-2 text-[#222222] hover:underline"
                         >
                           ({info.email})
                         </a>

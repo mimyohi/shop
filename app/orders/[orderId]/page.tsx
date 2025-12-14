@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import { useAuth } from "@/hooks/useAuth";
 import { ordersQueries } from "@/queries/orders.queries";
 
 // 방문 타입 한글 변환
@@ -23,56 +24,28 @@ function getVisitTypeLabel(visitType: string | null): string {
   }
 }
 
-// 주문 상태 라벨
-function getStatusLabel(status: string): { label: string; className: string } {
-  switch (status) {
-    case "pending":
-      return { label: "결제 대기", className: "bg-yellow-100 text-yellow-700" };
-    case "paid":
-      return { label: "결제 완료", className: "bg-green-100 text-green-700" };
-    case "preparing":
-      return { label: "상품 준비중", className: "bg-blue-100 text-blue-700" };
-    case "shipped":
-      return { label: "배송중", className: "bg-indigo-100 text-indigo-700" };
-    case "delivered":
-      return { label: "배송 완료", className: "bg-teal-100 text-teal-700" };
-    case "completed":
-      return {
-        label: "구매 확정",
-        className: "bg-emerald-100 text-emerald-700",
-      };
-    case "cancelled":
-      return { label: "취소됨", className: "bg-red-100 text-red-700" };
-    case "refunded":
-      return { label: "환불됨", className: "bg-gray-100 text-gray-700" };
-    default:
-      return { label: status, className: "bg-gray-100 text-gray-700" };
-  }
-}
-
 // 상담 상태 라벨
 function getConsultationStatusLabel(status: string | null): {
   label: string;
-  className: string;
 } {
-  if (!status) return { label: "-", className: "" };
+  if (!status) return { label: "-" };
   switch (status) {
     case "chatting_required":
-      return { label: "접수 대기", className: "bg-yellow-100 text-yellow-700" };
+      return { label: "상담 필요" };
     case "consultation_required":
-      return { label: "상담 필요", className: "bg-orange-100 text-orange-700" };
+      return { label: "상담 필요" };
     case "on_hold":
-      return { label: "보류", className: "bg-gray-100 text-gray-700" };
+      return { label: "상담 필요" };
     case "consultation_completed":
-      return { label: "상담 완료", className: "bg-green-100 text-green-700" };
+      return { label: "상담 완료" };
     case "shipping_on_hold":
-      return { label: "배송 보류", className: "bg-red-100 text-red-700" };
+      return { label: "배송 보류" };
     case "shipped":
-      return { label: "배송됨", className: "bg-blue-100 text-blue-700" };
+      return { label: "배송됨" };
     case "cancelled":
-      return { label: "취소됨", className: "bg-red-100 text-red-700" };
+      return { label: "취소됨" };
     default:
-      return { label: status, className: "bg-gray-100 text-gray-700" };
+      return { label: status };
   }
 }
 
@@ -155,13 +128,19 @@ export default function OrderDetailPage({ params }: PageProps) {
   const { orderId } = use(params);
   const router = useRouter();
 
+  // 공통 인증 훅 사용 (카카오 프로필 미완성 시 자동 리다이렉트)
+  const { isLoading: authLoading, isAuthenticated } = useAuth();
+
   const {
     data: order,
-    isLoading,
+    isLoading: orderLoading,
     error,
   } = useQuery({
     ...ordersQueries.byOrderId(orderId),
+    enabled: isAuthenticated, // 인증된 사용자만 주문 조회
   });
+
+  const isLoading = authLoading || orderLoading;
 
   if (isLoading) {
     return (
@@ -225,7 +204,6 @@ export default function OrderDetailPage({ params }: PageProps) {
     );
   }
 
-  const statusInfo = getStatusLabel(order.status);
   const consultationStatusInfo = getConsultationStatusLabel(
     order.consultation_status
   );
@@ -255,20 +233,6 @@ export default function OrderDetailPage({ params }: PageProps) {
             >
               <span>←</span> 뒤로가기
             </button>
-          </div>
-          <div className="flex flex-col items-end gap-2">
-            <span
-              className={`px-3 py-1 rounded text-xs font-medium ${statusInfo.className}`}
-            >
-              {statusInfo.label}
-            </span>
-            {consultationStatusInfo.label !== "-" && (
-              <span
-                className={`px-3 py-1 rounded text-xs font-medium ${consultationStatusInfo.className}`}
-              >
-                {consultationStatusInfo.label}
-              </span>
-            )}
           </div>
         </div>
 
@@ -306,10 +270,8 @@ export default function OrderDetailPage({ params }: PageProps) {
                 </p>
               </div>
               <div>
-                <span className="text-gray-500">상담 상태</span>
-                <p
-                  className={`font-semibold ${consultationStatusInfo.className}`}
-                >
+                <span className="text-gray-500">주문 상태</span>
+                <p className={`font-semibold`}>
                   {consultationStatusInfo.label}
                 </p>
               </div>
@@ -408,9 +370,54 @@ export default function OrderDetailPage({ params }: PageProps) {
               ))}
             </div>
 
-            {/* 총 금액 */}
-            <div className="border-t border-gray-200 mt-4 pt-4">
-              <div className="flex justify-between items-center text-base font-medium">
+            {/* 결제 금액 상세 */}
+            <div className="border-t border-gray-200 mt-4 pt-4 space-y-2">
+              {/* 상품 금액 */}
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-500">상품 금액</span>
+                <span className="text-gray-700">
+                  {order.order_items
+                    .reduce(
+                      (sum, item) => sum + item.product_price * item.quantity,
+                      0
+                    )
+                    .toLocaleString()}
+                  원
+                </span>
+              </div>
+
+              {/* 쿠폰 할인 */}
+              {order.coupon_discount != null && order.coupon_discount > 0 && (
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-500">쿠폰 할인</span>
+                  <span className="text-red-500">
+                    -{order.coupon_discount.toLocaleString()}원
+                  </span>
+                </div>
+              )}
+
+              {/* 포인트 사용 */}
+              {order.used_points != null && order.used_points > 0 && (
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-500">포인트 사용</span>
+                  <span className="text-red-500">
+                    -{order.used_points.toLocaleString()}원
+                  </span>
+                </div>
+              )}
+
+              {/* 배송비 */}
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-500">배송비</span>
+                <span className="text-gray-700">
+                  {order.shipping_fee != null && order.shipping_fee > 0
+                    ? `${order.shipping_fee.toLocaleString()}원`
+                    : "무료"}
+                </span>
+              </div>
+
+              {/* 총 결제 금액 */}
+              <div className="flex justify-between items-center text-base font-medium pt-2 border-t border-gray-100">
                 <span className="text-gray-900">총 결제 금액</span>
                 <span className="text-gray-900">
                   {order.total_amount.toLocaleString()}원
