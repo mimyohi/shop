@@ -2,16 +2,11 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
 
 interface MainBanner {
   id: string;
-  title: string;
-  description: string | null;
   image_url: string;
   mobile_image_url: string | null;
-  link_url: string | null;
-  link_target: '_self' | '_blank';
   device_type: 'pc' | 'mobile' | 'both';
   display_order: number;
   is_active: boolean;
@@ -169,47 +164,25 @@ export default function MainBanner({ banners }: MainBannerProps) {
     const banner = activeBanners[0];
     return (
       <div className="relative w-full bg-[#f5f3ef] overflow-hidden">
-        <div className="hidden md:block relative w-full h-[500px]">
-          {banner.link_url ? (
-            <Link href={banner.link_url} target={banner.link_target}>
-              <Image
-                src={banner.image_url}
-                alt={banner.title}
-                fill
-                className="object-cover"
-                priority
-              />
-            </Link>
-          ) : (
-            <Image
-              src={banner.image_url}
-              alt={banner.title}
-              fill
-              className="object-cover"
-              priority
-            />
-          )}
+        {/* PC: 1440x501 비율 */}
+        <div className="hidden md:block relative w-full aspect-[1440/501]">
+          <Image
+            src={banner.image_url}
+            alt="메인 배너"
+            fill
+            className="object-cover"
+            priority
+          />
         </div>
-        <div className="md:hidden relative w-full h-[400px]">
-          {banner.link_url ? (
-            <Link href={banner.link_url} target={banner.link_target}>
-              <Image
-                src={banner.mobile_image_url || banner.image_url}
-                alt={banner.title}
-                fill
-                className="object-cover"
-                priority
-              />
-            </Link>
-          ) : (
-            <Image
-              src={banner.mobile_image_url || banner.image_url}
-              alt={banner.title}
-              fill
-              className="object-cover"
-              priority
-            />
-          )}
+        {/* 모바일: 393x153 비율 */}
+        <div className="md:hidden relative w-full aspect-[393/153]">
+          <Image
+            src={banner.mobile_image_url || banner.image_url}
+            alt="메인 배너"
+            fill
+            className="object-cover"
+            priority
+          />
         </div>
       </div>
     );
@@ -240,72 +213,28 @@ export default function MainBanner({ banners }: MainBannerProps) {
             key={`${banner.id}-${index}`}
             className="w-full flex-shrink-0"
           >
-            {/* 데스크톱 레이아웃 */}
-            <div className="hidden md:block relative w-full h-[500px]">
-              {banner.link_url && !isDragging ? (
-                <Link
-                  href={banner.link_url}
-                  target={banner.link_target}
-                  draggable={false}
-                  onClick={(e) => {
-                    if (Math.abs(translateX) > 5) {
-                      e.preventDefault();
-                    }
-                  }}
-                >
-                  <Image
-                    src={banner.image_url}
-                    alt={banner.title}
-                    fill
-                    className="object-cover pointer-events-none"
-                    priority={index <= 2}
-                    draggable={false}
-                  />
-                </Link>
-              ) : (
-                <Image
-                  src={banner.image_url}
-                  alt={banner.title}
-                  fill
-                  className="object-cover pointer-events-none"
-                  priority={index <= 2}
-                  draggable={false}
-                />
-              )}
+            {/* 데스크톱 레이아웃 - 1440x501 비율 */}
+            <div className="hidden md:block relative w-full aspect-[1440/501]">
+              <Image
+                src={banner.image_url}
+                alt="메인 배너"
+                fill
+                className="object-cover pointer-events-none"
+                priority={index <= 2}
+                draggable={false}
+              />
             </div>
 
-            {/* 모바일 레이아웃 */}
-            <div className="md:hidden relative w-full h-[400px]">
-              {banner.link_url && !isDragging ? (
-                <Link
-                  href={banner.link_url}
-                  target={banner.link_target}
-                  draggable={false}
-                  onClick={(e) => {
-                    if (Math.abs(translateX) > 5) {
-                      e.preventDefault();
-                    }
-                  }}
-                >
-                  <Image
-                    src={banner.mobile_image_url || banner.image_url}
-                    alt={banner.title}
-                    fill
-                    className="object-cover pointer-events-none"
-                    priority={index <= 2}
-                    draggable={false}
-                  />
-                </Link>
-              ) : (
-                <Image
-                  src={banner.mobile_image_url || banner.image_url}
-                  alt={banner.title}
-                  fill
-                  className="object-cover pointer-events-none"
-                  priority={index <= 2}
-                  draggable={false}
-                />
-              )}
+            {/* 모바일 레이아웃 - 393x153 비율 */}
+            <div className="md:hidden relative w-full aspect-[393/153]">
+              <Image
+                src={banner.mobile_image_url || banner.image_url}
+                alt="메인 배너"
+                fill
+                className="object-cover pointer-events-none"
+                priority={index <= 2}
+                draggable={false}
+              />
             </div>
           </div>
         ))}

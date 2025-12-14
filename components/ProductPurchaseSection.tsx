@@ -2,7 +2,6 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import {
   Product,
   VisitType,
@@ -11,28 +10,7 @@ import {
 } from "@/models";
 import { useOrderStore } from "@/store/orderStore";
 import ProductNewOptionsSelector from "./ProductNewOptionsSelector";
-import { useOptionalAuth } from "@/hooks/useAuth";
-
-// ProductNewOptionsSelector에서 반환하는 타입
-interface ProductOptionWithSettings {
-  id: string;
-  product_id?: string | null;
-  slug?: string;
-  name: string;
-  category?: string;
-  image_url?: string;
-  detail_images?: string[];
-  price: number;
-  use_settings_on_first: boolean;
-  use_settings_on_revisit_with_consult: boolean;
-  use_settings_on_revisit_no_consult: boolean;
-  is_new_badge?: boolean;
-  is_sale_badge?: boolean;
-  display_order?: number;
-  created_at: string;
-  updated_at: string;
-  settings?: any[];
-}
+import type { ProductOptionWithSettings } from "@/repositories/product-options.repository";
 
 // 방문 타입 한글 변환
 function getVisitTypeLabel(visitType: VisitType): string {
@@ -50,13 +28,11 @@ function getVisitTypeLabel(visitType: VisitType): string {
 
 interface Props {
   product: Product;
+  productOptions: ProductOptionWithSettings[];
 }
 
-export default function ProductPurchaseSection({ product }: Props) {
+export default function ProductPurchaseSection({ product, productOptions }: Props) {
   const router = useRouter();
-
-  // 공통 인증 훅 사용 (카카오 프로필 미완성 = 미인증 처리)
-  const { isLoading: authLoading, isAuthenticated } = useOptionalAuth();
 
   // 현재 선택 중인 옵션 상태 (선택 UI용)
   const [selectedOption, setSelectedOption] =
@@ -68,7 +44,7 @@ export default function ProductPurchaseSection({ product }: Props) {
     SelectedOptionSetting[]
   >([]);
   const [quantity, setQuantity] = useState(1);
-  const [hasOptions, setHasOptions] = useState<boolean | null>(null); // null = 로딩 중
+  const hasOptions = productOptions.length > 0;
 
   // 주문 스토어
   const setOrderItem = useOrderStore((state) => state.setOrderItem);
@@ -89,9 +65,6 @@ export default function ProductPurchaseSection({ product }: Props) {
     []
   );
 
-  const handleOptionsLoaded = useCallback((loaded: boolean) => {
-    setHasOptions(loaded);
-  }, []);
 
   // 설정이 필요한지 확인
   const shouldShowSettings = useCallback(() => {
@@ -198,23 +171,12 @@ export default function ProductPurchaseSection({ product }: Props) {
   const isOutOfStock = product.is_out_of_stock;
   const canBuy = isSelectionComplete() && !isOutOfStock;
 
-  // 로그인 상태 확인 중
-  if (authLoading) {
-    return (
-      <div className="space-y-4">
-        <div className="h-12 bg-gray-100 rounded animate-pulse" />
-        <div className="h-12 bg-gray-100 rounded animate-pulse" />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-4">
       {/* 옵션 선택 드롭다운들 */}
       <ProductNewOptionsSelector
-        productId={product.id}
+        options={productOptions}
         onSelectionChange={handleOptionSelectionChange}
-        onOptionsLoaded={handleOptionsLoaded}
       />
 
       {/* 선택된 상품 표시 - 옵션이 있는 경우 */}

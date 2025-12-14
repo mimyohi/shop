@@ -14,6 +14,7 @@ export interface Product {
   is_visible_on_main?: boolean
   is_new_badge?: boolean
   is_sale_badge?: boolean
+  is_out_of_stock?: boolean
   sale_start_at?: string | null
   sale_end_at?: string | null
   created_at: string

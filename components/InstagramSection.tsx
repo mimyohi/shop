@@ -30,6 +30,7 @@ export default function InstagramSection({
 
   return (
     <section className="py-16 bg-white">
+      <div className="max-w-7xl mx-auto">
       {/* 헤더 */}
       <div className="text-center mb-10">
         <Link
@@ -45,7 +46,7 @@ export default function InstagramSection({
       {/* 가로 스크롤 캐러셀 */}
       <div
         ref={scrollRef}
-        className="flex gap-4 overflow-x-auto scrollbar-hide px-4 md:px-8 pb-4"
+        className="flex gap-4 overflow-x-auto scrollbar-hide px-4 sm:px-6 lg:px-8 pb-4"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {images.map((image) => (
@@ -76,6 +77,7 @@ export default function InstagramSection({
             )}
           </Link>
         ))}
+      </div>
       </div>
 
       {/* 스크롤바 숨기기 스타일 */}

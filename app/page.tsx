@@ -152,12 +152,13 @@ async function getInstagramImages(): Promise<InstagramImageType[]> {
 }
 
 export default async function Home() {
-  const [mainBanners, productBanners, homeProducts, instagramImages] = await Promise.all([
-    getMainBanners(),
-    getProductBanners(),
-    getHomeProducts(),
-    getInstagramImages(),
-  ]);
+  const [mainBanners, productBanners, homeProducts, instagramImages] =
+    await Promise.all([
+      getMainBanners(),
+      getProductBanners(),
+      getHomeProducts(),
+      getInstagramImages(),
+    ]);
 
   const products = homeProducts.map((hp) => ({
     id: hp.product_id,
@@ -180,7 +181,7 @@ export default async function Home() {
       <MainBanner banners={mainBanners} />
 
       {/* 상품 배너 */}
-      <ProductBanner banners={productBanners} />
+      {/* <ProductBanner banners={productBanners} /> */}
 
       {/* BEST ITEM 섹션 */}
       <BestItemSection products={products} />
@@ -189,8 +190,11 @@ export default async function Home() {
       <BrandIntroSection />
 
       {/* 인스타그램 섹션 */}
-      <InstagramSection images={instagramImages} />
+      {instagramImages.length > 0 && (
+        <InstagramSection images={instagramImages} />
+      )}
 
+      <div className="h-10" />
       {/* Footer */}
       <Footer />
     </div>

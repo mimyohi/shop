@@ -5,8 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useUserStore } from "@/store/userStore";
-import { supabaseAuth, signOut } from "@/lib/supabaseAuth";
-import { useOptionalAuth } from "@/hooks/useAuth";
+import { useOptionalAuthContext } from "@/providers/AuthProvider";
 
 export default function Navigation() {
   const pathname = usePathname();
@@ -14,13 +13,14 @@ export default function Navigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  // 공통 인증 훅 사용 (카카오 프로필 미완성 = 미인증 처리)
+  // AuthProvider에서 서버에서 가져온 인증 상태 사용
   const {
     user: authUser,
     profile,
     isLoading: authLoading,
     isAuthenticated,
-  } = useOptionalAuth();
+    signOut: contextSignOut,
+  } = useOptionalAuthContext();
 
   const { setUser, setUserProfile, clearUser, setIsLoading } = useUserStore();
 
@@ -62,8 +62,7 @@ export default function Navigation() {
   ]);
 
   const handleSignOut = async () => {
-    await signOut();
-    router.push("/");
+    await contextSignOut();
   };
 
   const isActive = (path: string) => pathname === path;
@@ -75,7 +74,7 @@ export default function Navigation() {
   ];
 
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <header className="bg-white sticky top-0 z-50">
       {/* 메인 네비게이션 */}
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[70px] md:h-[87px] flex items-center">
         {/* PC Navigation */}

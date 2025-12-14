@@ -1516,32 +1516,25 @@ WITH CHECK (auth.role() = 'service_role');
 -- Banner tables
 -- ----------------------------------------------------------------------------
 
--- 메인 배너 테이블 (PC/Mobile 구분)
+-- 메인 배너 테이블 (PC/Mobile 구분) - 이미지 전용
 CREATE TABLE IF NOT EXISTS main_banners (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  title VARCHAR(255) NOT NULL,
-  description TEXT,
   image_url TEXT NOT NULL,
   mobile_image_url TEXT,
-  link_url TEXT,
-  link_target VARCHAR(20) DEFAULT '_self' CHECK (link_target IN ('_self', '_blank')),
   device_type VARCHAR(20) NOT NULL CHECK (device_type IN ('pc', 'mobile', 'both')),
   display_order INTEGER DEFAULT 0,
   is_active BOOLEAN DEFAULT true,
-  start_at TIMESTAMPTZ,
-  end_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW()),
   updated_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
 );
 
-COMMENT ON TABLE main_banners IS '메인 페이지 상단 배너 (PC/Mobile)';
+COMMENT ON TABLE main_banners IS '메인 페이지 상단 배너 (PC/Mobile) - 이미지 전용';
 COMMENT ON COLUMN main_banners.device_type IS 'pc: PC 전용, mobile: 모바일 전용, both: 모두 노출';
 COMMENT ON COLUMN main_banners.mobile_image_url IS 'device_type이 both일 때 모바일용 이미지';
 
 CREATE INDEX IF NOT EXISTS idx_main_banners_is_active ON main_banners(is_active);
 CREATE INDEX IF NOT EXISTS idx_main_banners_device_type ON main_banners(device_type);
 CREATE INDEX IF NOT EXISTS idx_main_banners_display_order ON main_banners(display_order);
-CREATE INDEX IF NOT EXISTS idx_main_banners_dates ON main_banners(start_at, end_at);
 
 DROP TRIGGER IF EXISTS trigger_update_main_banners_updated_at ON main_banners;
 CREATE TRIGGER trigger_update_main_banners_updated_at
@@ -1549,11 +1542,9 @@ CREATE TRIGGER trigger_update_main_banners_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- 상품 배너 테이블 (PC/Mobile 구분)
+-- 상품 배너 테이블 (PC/Mobile 구분) - 링크, 기간 포함
 CREATE TABLE IF NOT EXISTS product_banners (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  title VARCHAR(255) NOT NULL,
-  description TEXT,
   image_url TEXT NOT NULL,
   mobile_image_url TEXT,
   link_url TEXT,
@@ -1567,7 +1558,7 @@ CREATE TABLE IF NOT EXISTS product_banners (
   updated_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
 );
 
-COMMENT ON TABLE product_banners IS '상품 섹션 배너 (PC/Mobile)';
+COMMENT ON TABLE product_banners IS '상품 섹션 배너 (PC/Mobile) - 링크, 기간 포함';
 COMMENT ON COLUMN product_banners.device_type IS 'pc: PC 전용, mobile: 모바일 전용, both: 모두 노출';
 COMMENT ON COLUMN product_banners.mobile_image_url IS 'device_type이 both일 때 모바일용 이미지';
 

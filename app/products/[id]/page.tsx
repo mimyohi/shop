@@ -1,7 +1,7 @@
 import Image from "next/image";
-import { supabase } from "@/lib/supabase";
-import { Product } from "@/models";
 import { notFound } from "next/navigation";
+import { productsRepository } from "@/repositories/products.repository";
+import { fetchProductOptionsWithSettingsServer } from "@/lib/server-data";
 import ProductPurchaseSection from "@/components/ProductPurchaseSection";
 import ProductInfoSections from "@/components/ProductInfoSections";
 import Navigation from "@/components/Navigation";
@@ -9,46 +9,20 @@ import Footer from "@/components/Footer";
 
 export const revalidate = 0;
 
-async function getProduct(idOrSlug: string): Promise<Product | null> {
-  // slug 또는 id로 조회 (slug 우선)
-  let query = supabase.from("products").select("*");
-
-  // UUID 형식인지 확인
-  const isUUID =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-      idOrSlug
-    );
-
-  if (isUUID) {
-    query = query.eq("id", idOrSlug);
-  } else {
-    query = query.eq("slug", idOrSlug);
-  }
-
-  // 삭제된 상품 제외
-  query = query.is("deleted_at", null);
-
-  const { data, error } = await query.single();
-
-  if (error || !data) {
-    console.error("Error fetching product:", error);
-    return null;
-  }
-
-  return data;
-}
-
 export default async function ProductDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const product = await getProduct(id);
+  const product = await productsRepository.findByIdOrSlug(id);
 
   if (!product) {
     notFound();
   }
+
+  // 상품 옵션 가져오기 (서버 사이드)
+  const productOptions = await fetchProductOptionsWithSettingsServer(product.id);
 
   // 할인 가격 계산
   const discountedPrice =
@@ -106,7 +80,7 @@ export default async function ProductDetailPage({
             </div>
 
             {/* 옵션 선택 및 구매 섹션 */}
-            <ProductPurchaseSection product={product} />
+            <ProductPurchaseSection product={product} productOptions={productOptions} />
           </div>
         </div>
 

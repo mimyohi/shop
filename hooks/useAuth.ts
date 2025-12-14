@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useEffect, useState, useCallback } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import { User } from '@supabase/supabase-js';
-import { supabaseAuth } from '@/lib/supabaseAuth';
+import { useEffect, useState, useCallback } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { User } from "@supabase/supabase-js";
+import { supabaseAuth } from "@/lib/supabaseAuth";
 
 interface UserProfile {
   id: string;
@@ -47,20 +47,20 @@ interface UseAuthReturn {
 
 // 인증 체크를 건너뛸 경로들
 const PUBLIC_PATHS = [
-  '/',
-  '/auth/login',
-  '/auth/signup',
-  '/auth/callback',
-  '/auth/forgot-password',
-  '/auth/find-id',
-  '/products',
-  '/faq',
-  '/about',
+  "/",
+  "/auth/login",
+  "/auth/signup",
+  "/auth/callback",
+  "/auth/forgot-password",
+  "/auth/find-id",
+  "/products",
+  "/faq",
+  "/about",
 ];
 
 // 인증이 필요하지만 프로필 완성이 필요 없는 경로
 const AUTH_ONLY_PATHS = [
-  '/auth/signup', // 카카오 사용자 프로필 완성용
+  "/auth/signup", // 카카오 사용자 프로필 완성용
 ];
 
 /**
@@ -91,7 +91,7 @@ const AUTH_ONLY_PATHS = [
 export function useAuth(options: UseAuthOptions = {}): UseAuthReturn {
   const {
     requireAuth = true,
-    redirectTo = '/auth/login',
+    redirectTo = "/auth/login",
     returnToCurrentPage = true,
   } = options;
 
@@ -108,7 +108,7 @@ export function useAuth(options: UseAuthOptions = {}): UseAuthReturn {
   );
 
   // 카카오 사용자 여부
-  const isKakaoUser = user?.app_metadata?.provider === 'kakao';
+  const isKakaoUser = user?.app_metadata?.provider === "kakao";
 
   // 인증 완료 여부 (카카오 사용자는 프로필 완성 필수)
   const isAuthenticated = Boolean(user) && (!isKakaoUser || isProfileComplete);
@@ -117,19 +117,19 @@ export function useAuth(options: UseAuthOptions = {}): UseAuthReturn {
   const fetchProfile = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabaseAuth
-        .from('user_profiles')
-        .select('id, user_id, email, display_name, phone, phone_verified')
-        .eq('user_id', userId)
+        .from("user_profiles")
+        .select("id, user_id, email, display_name, phone, phone_verified")
+        .eq("user_id", userId)
         .single();
 
       if (error) {
-        console.error('Failed to fetch profile:', error);
+        console.error("Failed to fetch profile:", error);
         return null;
       }
 
       return data as UserProfile;
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.error("Error fetching profile:", error);
       return null;
     }
   }, []);
@@ -146,7 +146,7 @@ export function useAuth(options: UseAuthOptions = {}): UseAuthReturn {
     await supabaseAuth.auth.signOut();
     setUser(null);
     setProfile(null);
-    router.push('/');
+    router.push("/");
   }, [router]);
 
   // 인증 상태 변화 감지
@@ -155,7 +155,9 @@ export function useAuth(options: UseAuthOptions = {}): UseAuthReturn {
 
     const checkAuth = async () => {
       try {
-        const { data: { user: currentUser } } = await supabaseAuth.auth.getUser();
+        const {
+          data: { user: currentUser },
+        } = await supabaseAuth.auth.getUser();
 
         if (!isMounted) return;
 
@@ -170,7 +172,7 @@ export function useAuth(options: UseAuthOptions = {}): UseAuthReturn {
           setProfile(null);
         }
       } catch (error) {
-        console.error('Auth check error:', error);
+        console.error("Auth check error:", error);
         if (isMounted) {
           setUser(null);
           setProfile(null);
@@ -185,33 +187,33 @@ export function useAuth(options: UseAuthOptions = {}): UseAuthReturn {
     checkAuth();
 
     // 인증 상태 변화 구독
-    const { data: { subscription } } = supabaseAuth.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!isMounted) return;
+    const {
+      data: { subscription },
+    } = supabaseAuth.auth.onAuthStateChange(async (event, session) => {
+      if (!isMounted) return;
 
-        if (event === 'SIGNED_OUT') {
-          setUser(null);
-          setProfile(null);
-          setIsLoading(false);
-          return;
-        }
-
-        if (session?.user) {
-          setUser(session.user);
-          const userProfile = await fetchProfile(session.user.id);
-          if (isMounted) {
-            setProfile(userProfile);
-          }
-        } else {
-          setUser(null);
-          setProfile(null);
-        }
-
-        if (isMounted) {
-          setIsLoading(false);
-        }
+      if (event === "SIGNED_OUT") {
+        setUser(null);
+        setProfile(null);
+        setIsLoading(false);
+        return;
       }
-    );
+
+      if (session?.user) {
+        setUser(session.user);
+        const userProfile = await fetchProfile(session.user.id);
+        if (isMounted) {
+          setProfile(userProfile);
+        }
+      } else {
+        setUser(null);
+        setProfile(null);
+      }
+
+      if (isMounted) {
+        setIsLoading(false);
+      }
+    });
 
     return () => {
       isMounted = false;
@@ -224,8 +226,8 @@ export function useAuth(options: UseAuthOptions = {}): UseAuthReturn {
     if (isLoading) return;
 
     // 공개 경로는 리다이렉트 안함
-    const isPublicPath = PUBLIC_PATHS.some(path =>
-      pathname === path || pathname?.startsWith(`${path}/`)
+    const isPublicPath = PUBLIC_PATHS.some(
+      (path) => pathname === path || pathname?.startsWith(`${path}/`)
     );
     if (isPublicPath && !requireAuth) return;
 
@@ -234,16 +236,18 @@ export function useAuth(options: UseAuthOptions = {}): UseAuthReturn {
       // 카카오 사용자이고 프로필이 미완성인 경우
       if (user && isKakaoUser && !isProfileComplete) {
         // 이미 signup 페이지에 있으면 리다이렉트 안함
-        if (pathname?.startsWith('/auth/signup')) return;
+        if (pathname?.startsWith("/auth/signup")) return;
 
-        router.push('/auth/signup?mode=kakao');
+        router.push("/auth/signup?mode=kakao");
         return;
       }
 
       // 그 외 미인증 사용자
       if (!user) {
-        const currentPath = returnToCurrentPage && pathname ? pathname : '';
-        const nextParam = currentPath ? `?next=${encodeURIComponent(currentPath)}` : '';
+        const currentPath = returnToCurrentPage && pathname ? pathname : "";
+        const nextParam = currentPath
+          ? `?next=${encodeURIComponent(currentPath)}`
+          : "";
         router.push(`${redirectTo}${nextParam}`);
       }
     }

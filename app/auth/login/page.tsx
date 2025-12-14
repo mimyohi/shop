@@ -3,7 +3,8 @@
 import { useState, Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { signIn, signInWithKakao } from "@/lib/supabaseAuth";
+import { signInWithKakao } from "@/lib/supabaseAuth";
+import { loginAction } from "./actions";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 
@@ -44,25 +45,30 @@ function LoginForm() {
     setError("");
     setLoading(true);
 
-    const { data, error } = await signIn(email, password);
+    try {
+      const result = await loginAction(email, password);
 
-    if (error) {
-      // Supabase 에러 코드에 따른 구체적인 메시지
-      if (error.code === "invalid_credentials") {
-        setError("이메일 또는 비밀번호가 일치하지 않습니다. 다시 확인해주세요.");
-      } else if (error.code === "email_not_confirmed") {
-        setError("이메일 인증이 완료되지 않았습니다. 이메일을 확인해주세요.");
-      } else if (error.code === "user_not_found") {
-        setError("가입되지 않은 이메일입니다. 회원가입을 먼저 진행해주세요.");
-      } else if (error.code === "too_many_requests") {
-        setError("로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요.");
+      if (!result.success && result.error) {
+        // Supabase 에러 코드에 따른 구체적인 메시지
+        if (result.error.code === "invalid_credentials") {
+          setError("이메일 또는 비밀번호가 일치하지 않습니다. 다시 확인해주세요.");
+        } else if (result.error.code === "email_not_confirmed") {
+          setError("이메일 인증이 완료되지 않았습니다. 이메일을 확인해주세요.");
+        } else if (result.error.code === "user_not_found") {
+          setError("가입되지 않은 이메일입니다. 회원가입을 먼저 진행해주세요.");
+        } else if (result.error.code === "too_many_requests") {
+          setError("로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요.");
+        } else {
+          setError("로그인에 실패했습니다. 잠시 후 다시 시도해주세요.");
+        }
+        setLoading(false);
       } else {
-        setError("로그인에 실패했습니다. 잠시 후 다시 시도해주세요.");
+        router.push(nextUrl || "/");
+        router.refresh();
       }
+    } catch (err) {
+      setError("로그인 중 오류가 발생했습니다.");
       setLoading(false);
-    } else {
-      router.push(nextUrl || "/");
-      router.refresh();
     }
   };
 

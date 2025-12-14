@@ -1,47 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { VisitType, SelectedOptionSetting } from "@/models";
-import { supabase } from "@/lib/supabase";
-
-interface ProductOptionSettingType {
-  id: string;
-  setting_id: string;
-  name: string;
-  display_order: number;
-}
-
-interface ProductOptionSetting {
-  id: string;
-  option_id: string;
-  name: string;
-  display_order: number;
-  types?: ProductOptionSettingType[];
-}
-
-interface ProductOptionWithSettings {
-  id: string;
-  product_id?: string | null;
-  slug?: string;
-  name: string;
-  category?: string;
-  image_url?: string;
-  detail_images?: string[];
-  price: number;
-  use_settings_on_first: boolean;
-  use_settings_on_revisit_with_consult: boolean;
-  use_settings_on_revisit_no_consult: boolean;
-  is_new_badge?: boolean;
-  is_sale_badge?: boolean;
-  display_order?: number;
-  created_at: string;
-  updated_at: string;
-  settings?: ProductOptionSetting[];
-}
+import type {
+  ProductOptionWithSettings,
+  ProductOptionSetting,
+  ProductOptionSettingType,
+} from "@/repositories/product-options.repository";
 
 interface Props {
-  productId: string;
+  options: ProductOptionWithSettings[];
   onSelectionChange: (
     option: ProductOptionWithSettings | null,
     visitType: VisitType | null,
@@ -52,7 +20,7 @@ interface Props {
 }
 
 export default function ProductNewOptionsSelector({
-  productId,
+  options,
   onSelectionChange,
   onOptionsLoaded,
   resetTrigger,
@@ -76,62 +44,12 @@ export default function ProductNewOptionsSelector({
     }
   }, [resetTrigger]);
 
-  // Fetch product options with settings and types
-  const { data: options = [], isLoading } = useQuery({
-    queryKey: ["product-new-options", productId],
-    queryFn: async () => {
-      const { data: optionsData, error: optionsError } = await supabase
-        .from("product_options")
-        .select("*")
-        .eq("product_id", productId)
-        .order("display_order");
-
-      if (optionsError) throw optionsError;
-
-      const optionsWithSettings = await Promise.all(
-        (optionsData || []).map(async (option) => {
-          const { data: settingsData, error: settingsError } = await supabase
-            .from("product_option_settings")
-            .select("*")
-            .eq("option_id", option.id)
-            .order("display_order");
-
-          if (settingsError) throw settingsError;
-
-          const settingsWithTypes = await Promise.all(
-            (settingsData || []).map(async (setting) => {
-              const { data: typesData, error: typesError } = await supabase
-                .from("product_option_setting_types")
-                .select("*")
-                .eq("setting_id", setting.id)
-                .order("display_order");
-
-              if (typesError) throw typesError;
-
-              return {
-                ...setting,
-                types: typesData || [],
-              };
-            })
-          );
-
-          return {
-            ...option,
-            settings: settingsWithTypes,
-          };
-        })
-      );
-
-      return optionsWithSettings as ProductOptionWithSettings[];
-    },
-  });
-
   // 옵션 로드 완료 시 부모에게 알림
   useEffect(() => {
-    if (!isLoading && onOptionsLoaded) {
+    if (onOptionsLoaded) {
       onOptionsLoaded(options.length > 0);
     }
-  }, [isLoading, options.length, onOptionsLoaded]);
+  }, [options.length, onOptionsLoaded]);
 
   // Check if settings should be shown based on visit type
   const shouldShowSettings = () => {
@@ -196,15 +114,6 @@ export default function ProductNewOptionsSelector({
       [settingId]: typeId,
     }));
   };
-
-  if (isLoading) {
-    return (
-      <div className="space-y-3">
-        <div className="h-12 bg-gray-100 rounded animate-pulse"></div>
-        <div className="h-12 bg-gray-100 rounded animate-pulse"></div>
-      </div>
-    );
-  }
 
   if (options.length === 0) {
     return null;

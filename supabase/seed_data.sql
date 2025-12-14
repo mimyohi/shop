@@ -1375,17 +1375,17 @@ BEGIN
 
 END $$;
 
--- 메인 배너 테스트 데이터
-INSERT INTO main_banners (title, description, image_url, mobile_image_url, link_url, device_type, display_order, is_active) VALUES
-('겨울 다이어트 시즌 OPEN', '지금 시작하면 봄에 자신있게!', 'https://via.placeholder.com/1200x400?text=Winter+Diet+Season', 'https://via.placeholder.com/600x800?text=Winter+Diet+Mobile', '/products/diet-stage1', 'both', 0, true),
-('신규 회원 특별 혜택', '첫 구매 시 10% 할인 쿠폰 증정', 'https://via.placeholder.com/1200x400?text=New+Member+Benefits', NULL, '/signup', 'pc', 1, true),
-('모바일 전용 이벤트', '앱에서만 받을 수 있는 특별 혜택', 'https://via.placeholder.com/600x800?text=Mobile+Only+Event', NULL, '/app-download', 'mobile', 2, true)
+-- 메인 배너 테스트 데이터 (이미지 전용)
+INSERT INTO main_banners (image_url, mobile_image_url, device_type, display_order, is_active) VALUES
+('https://via.placeholder.com/1440x501?text=Main+Banner+1', 'https://via.placeholder.com/393x153?text=Main+Banner+1+Mobile', 'both', 0, true),
+('https://via.placeholder.com/1440x501?text=Main+Banner+2', NULL, 'pc', 1, true),
+('https://via.placeholder.com/393x153?text=Main+Banner+Mobile+Only', NULL, 'mobile', 2, true)
 ON CONFLICT DO NOTHING;
 
--- 상품 배너 테스트 데이터
-INSERT INTO product_banners (title, description, image_url, mobile_image_url, link_url, device_type, display_order, is_active) VALUES
-('베스트셀러 한약', '가장 많이 선택된 다이어트 한약', 'https://via.placeholder.com/800x300?text=Best+Seller', 'https://via.placeholder.com/400x500?text=Best+Seller+Mobile', '/products/diet-stage2', 'both', 0, true),
-('한방차 기획전', '체질에 맞는 한방차 찾기', 'https://via.placeholder.com/800x300?text=Herbal+Tea+Collection', NULL, '/category/tea', 'pc', 1, true)
+-- 상품 배너 테스트 데이터 (링크, 기간 포함)
+INSERT INTO product_banners (image_url, mobile_image_url, link_url, device_type, display_order, is_active) VALUES
+('https://via.placeholder.com/1380x501?text=Product+Banner+1', 'https://via.placeholder.com/378x137?text=Product+Banner+1+Mobile', '/products/diet-stage2', 'both', 0, true),
+('https://via.placeholder.com/1380x501?text=Product+Banner+2', NULL, '/category/tea', 'pc', 1, true)
 ON CONFLICT DO NOTHING;
 
 COMMIT;

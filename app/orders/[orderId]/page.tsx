@@ -1,13 +1,10 @@
-"use client";
-
-import { use } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { useAuth } from "@/hooks/useAuth";
-import { ordersQueries } from "@/queries/orders.queries";
+import { createClient } from "@/lib/supabaseServer";
+import { fetchOrderByOrderIdServer } from "@/lib/server-data";
+import BackButton from "./BackButton";
 
 // 방문 타입 한글 변환
 function getVisitTypeLabel(visitType: string | null): string {
@@ -124,51 +121,24 @@ interface PageProps {
   params: Promise<{ orderId: string }>;
 }
 
-export default function OrderDetailPage({ params }: PageProps) {
-  const { orderId } = use(params);
-  const router = useRouter();
+export default async function OrderDetailPage({ params }: PageProps) {
+  const { orderId } = await params;
 
-  // 공통 인증 훅 사용 (카카오 프로필 미완성 시 자동 리다이렉트)
-  const { isLoading: authLoading, isAuthenticated } = useAuth();
-
+  // 서버에서 인증 상태 확인
+  const supabase = await createClient();
   const {
-    data: order,
-    isLoading: orderLoading,
-    error,
-  } = useQuery({
-    ...ordersQueries.byOrderId(orderId),
-    enabled: isAuthenticated, // 인증된 사용자만 주문 조회
-  });
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  const isLoading = authLoading || orderLoading;
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-white">
-        <Navigation />
-        <div className="relative h-32 md:h-40 bg-gray-800 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-gray-900/80 to-gray-900/40" />
-          <div className="relative h-full flex flex-col items-center justify-center text-white">
-            <h1 className="text-xl md:text-2xl font-medium tracking-wide">
-              주문 상세
-            </h1>
-          </div>
-        </div>
-        <main className="max-w-4xl mx-auto px-4 py-12">
-          <div className="animate-pulse space-y-6">
-            <div className="h-6 bg-gray-200 rounded w-1/3"></div>
-            <div className="border border-gray-200 rounded p-6">
-              <div className="h-4 bg-gray-200 rounded w-full mb-4"></div>
-              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            </div>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
+  // 인증되지 않은 경우 로그인 페이지로 리다이렉트
+  if (!user) {
+    redirect(`/auth/login?next=/orders/${orderId}`);
   }
 
-  if (error || !order) {
+  // 주문 데이터 가져오기
+  const order = await fetchOrderByOrderIdServer(orderId);
+
+  if (!order) {
     return (
       <div className="min-h-screen bg-white">
         <Navigation />
@@ -227,12 +197,7 @@ export default function OrderDetailPage({ params }: PageProps) {
         {/* 헤더 */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <button
-              onClick={() => router.back()}
-              className="text-sm text-gray-500 hover:text-gray-900 mb-2 flex items-center gap-1"
-            >
-              <span>←</span> 뒤로가기
-            </button>
+            <BackButton />
           </div>
         </div>
 

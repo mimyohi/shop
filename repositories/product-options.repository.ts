@@ -1,6 +1,41 @@
 import { supabase } from '@/lib/supabase'
 import { ProductAddon, ProductOption } from '@/models'
 
+export interface ProductOptionSettingType {
+  id: string
+  setting_id: string
+  name: string
+  display_order: number
+}
+
+export interface ProductOptionSetting {
+  id: string
+  option_id: string
+  name: string
+  display_order: number
+  types?: ProductOptionSettingType[]
+}
+
+export interface ProductOptionWithSettings {
+  id: string
+  product_id?: string | null
+  slug?: string
+  name: string
+  category?: string
+  image_url?: string
+  detail_images?: string[]
+  price: number
+  use_settings_on_first: boolean
+  use_settings_on_revisit_with_consult: boolean
+  use_settings_on_revisit_no_consult: boolean
+  is_new_badge?: boolean
+  is_sale_badge?: boolean
+  display_order?: number
+  created_at: string
+  updated_at: string
+  settings?: ProductOptionSetting[]
+}
+
 export interface ProductConfiguration {
   options: ProductOption[]
   addons: ProductAddon[]
@@ -68,4 +103,5 @@ export const productOptionsRepository = {
 
     return { options, addons }
   },
+
 }

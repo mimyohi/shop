@@ -6,8 +6,6 @@ import Link from "next/link";
 
 interface ProductBannerItem {
   id: string;
-  title: string;
-  description: string | null;
   image_url: string;
   mobile_image_url: string | null;
   link_url: string | null;
@@ -163,12 +161,13 @@ export default function ProductBanner({ banners }: ProductBannerProps) {
       <section className="py-8 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="relative overflow-hidden rounded-lg">
-            <div className="hidden md:block relative w-full h-[400px]">
+            {/* PC: 1380x501 비율 */}
+            <div className="hidden md:block relative w-full aspect-[1380/501]">
               {banner.link_url ? (
                 <Link href={banner.link_url} target={banner.link_target}>
                   <Image
                     src={banner.image_url}
-                    alt={banner.title}
+                    alt="상품 배너"
                     fill
                     className="object-cover"
                   />
@@ -176,18 +175,19 @@ export default function ProductBanner({ banners }: ProductBannerProps) {
               ) : (
                 <Image
                   src={banner.image_url}
-                  alt={banner.title}
+                  alt="상품 배너"
                   fill
                   className="object-cover"
                 />
               )}
             </div>
-            <div className="md:hidden relative w-full h-[250px]">
+            {/* 모바일: 378x137 비율 */}
+            <div className="md:hidden relative w-full aspect-[378/137]">
               {banner.link_url ? (
                 <Link href={banner.link_url} target={banner.link_target}>
                   <Image
                     src={banner.mobile_image_url || banner.image_url}
-                    alt={banner.title}
+                    alt="상품 배너"
                     fill
                     className="object-cover"
                   />
@@ -195,7 +195,7 @@ export default function ProductBanner({ banners }: ProductBannerProps) {
               ) : (
                 <Image
                   src={banner.mobile_image_url || banner.image_url}
-                  alt={banner.title}
+                  alt="상품 배너"
                   fill
                   className="object-cover"
                 />
@@ -235,7 +235,8 @@ export default function ProductBanner({ banners }: ProductBannerProps) {
           >
             {extendedBanners.map((banner, index) => (
               <div key={`${banner.id}-${index}`} className="w-full shrink-0">
-                <div className="hidden md:block relative w-full h-[400px]">
+                {/* PC: 1380x501 비율 */}
+            <div className="hidden md:block relative w-full aspect-[1380/501]">
                   {banner.link_url && !isDragging ? (
                     <Link
                       href={banner.link_url}
@@ -249,7 +250,7 @@ export default function ProductBanner({ banners }: ProductBannerProps) {
                     >
                       <Image
                         src={banner.image_url}
-                        alt={banner.title}
+                        alt="상품 배너"
                         fill
                         className="object-cover pointer-events-none"
                         priority={index <= 2}
@@ -259,7 +260,7 @@ export default function ProductBanner({ banners }: ProductBannerProps) {
                   ) : (
                     <Image
                       src={banner.image_url}
-                      alt={banner.title}
+                      alt="상품 배너"
                       fill
                       className="object-cover pointer-events-none"
                       priority={index <= 2}
@@ -268,7 +269,8 @@ export default function ProductBanner({ banners }: ProductBannerProps) {
                   )}
                 </div>
 
-                <div className="md:hidden relative w-full h-[250px]">
+                {/* 모바일: 378x137 비율 */}
+            <div className="md:hidden relative w-full aspect-[378/137]">
                   {banner.link_url && !isDragging ? (
                     <Link
                       href={banner.link_url}
@@ -282,7 +284,7 @@ export default function ProductBanner({ banners }: ProductBannerProps) {
                     >
                       <Image
                         src={banner.mobile_image_url || banner.image_url}
-                        alt={banner.title}
+                        alt="상품 배너"
                         fill
                         className="object-cover pointer-events-none"
                         priority={index <= 2}
@@ -292,7 +294,7 @@ export default function ProductBanner({ banners }: ProductBannerProps) {
                   ) : (
                     <Image
                       src={banner.mobile_image_url || banner.image_url}
-                      alt={banner.title}
+                      alt="상품 배너"
                       fill
                       className="object-cover pointer-events-none"
                       priority={index <= 2}

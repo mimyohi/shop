@@ -1,127 +1,80 @@
-'use client';
+"use client";
 
-export type SortOption = 'latest' | 'price_asc' | 'price_desc' | 'name';
+import { useState, useRef, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
-interface ProductFilterProps {
-  categories: string[];
-  filters: FilterState;
-  onFilterChange: (filters: FilterState) => void;
-  onReset: () => void;
-}
+export type SortOption = "latest" | "price_asc" | "price_desc";
 
-export interface FilterState {
-  search: string;
-  category: string;
-  minPrice: number;
-  maxPrice: number;
-  sortBy: SortOption;
-}
+const sortOptions: { value: SortOption; label: string }[] = [
+  { value: "latest", label: "최신순" },
+  { value: "price_asc", label: "낮은 가격순" },
+  { value: "price_desc", label: "높은 가격순" },
+];
 
-export default function ProductFilter({ categories, filters, onFilterChange, onReset }: ProductFilterProps) {
-  const handleFilterChange = <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
-    const newFilters: FilterState = { ...filters, [key]: value };
-    onFilterChange(newFilters);
+// 정렬 드롭다운 (default export)
+export default function ProductFilter() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const currentSort = (searchParams.get("sortBy") as SortOption) || "latest";
+
+  const handleSortChange = (sortBy: SortOption) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("sortBy", sortBy);
+    params.delete("page");
+    router.push(`?${params.toString()}`);
+    setIsOpen(false);
   };
 
-  const handleReset = () => {
-    onReset();
-  };
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
-    <div className="bg-white rounded-lg shadow p-6 mb-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        {/* 검색 */}
-        <div className="lg:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            검색
-          </label>
-          <input
-            type="text"
-            value={filters.search}
-            onChange={(e) => handleFilterChange('search', e.target.value)}
-            placeholder="상품명으로 검색..."
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 bg-white border border-gray-300 rounded-[10px] px-5 py-2.5 text-sm text-gray-700 focus:outline-none"
+      >
+        <span>정렬방식</span>
+        <svg
+          className="w-3 h-3 text-black"
+          viewBox="0 0 12 8"
+          fill="currentColor"
+        >
+          <path d="M6 8L0 0h12L6 8z" />
+        </svg>
+      </button>
 
-        {/* 카테고리 */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            카테고리
-          </label>
-          <select
-            value={filters.category}
-            onChange={(e) => handleFilterChange('category', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="">전체</option>
-            {categories.map((category) => (
-              <option key={category} value={category}>
-                {category}
-              </option>
-            ))}
-          </select>
+      {isOpen && (
+        <div className="absolute right-0 mt-2 w-36 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+          {sortOptions.map((option) => (
+            <button
+              key={option.value}
+              onClick={() => handleSortChange(option.value)}
+              className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg ${
+                currentSort === option.value
+                  ? "text-black font-medium"
+                  : "text-gray-600"
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
         </div>
-
-        {/* 정렬 */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            정렬
-          </label>
-          <select
-            value={filters.sortBy}
-            onChange={(e) => handleFilterChange('sortBy', e.target.value as SortOption)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="latest">최신순</option>
-            <option value="price_asc">가격 낮은순</option>
-            <option value="price_desc">가격 높은순</option>
-            <option value="name">이름순</option>
-          </select>
-        </div>
-
-        {/* 초기화 버튼 */}
-        <div className="flex items-end">
-          <button
-            onClick={handleReset}
-            className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
-          >
-            초기화
-          </button>
-        </div>
-      </div>
-
-      {/* 가격 범위 */}
-      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            최소 가격: {filters.minPrice.toLocaleString()}원
-          </label>
-          <input
-            type="range"
-            min="0"
-            max="500000"
-            step="10000"
-            value={filters.minPrice}
-            onChange={(e) => handleFilterChange('minPrice', parseInt(e.target.value))}
-            className="w-full"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            최대 가격: {filters.maxPrice.toLocaleString()}원
-          </label>
-          <input
-            type="range"
-            min="0"
-            max="1000000"
-            step="10000"
-            value={filters.maxPrice}
-            onChange={(e) => handleFilterChange('maxPrice', parseInt(e.target.value))}
-            className="w-full"
-          />
-        </div>
-      </div>
+      )}
     </div>
   );
 }
