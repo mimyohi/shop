@@ -26,9 +26,6 @@ function CheckoutFailContent() {
 
       <main className="max-w-md mx-auto px-4 py-12">
         <div className="text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <span className="text-3xl text-red-500">✕</span>
-          </div>
           <h2 className="text-xl font-medium text-gray-900 mb-3">
             결제를 완료하지 못했습니다
           </h2>

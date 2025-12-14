@@ -3,7 +3,7 @@ export const NEXT_PUBLIC_SUPABASE_URL =
 export const NEXT_PUBLIC_SUPABASE_ANON_KEY =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 export const SUPABASE_SERVICE_ROLE_KEY =
-  process.env.SUPABASE_SERVICE_ROLE_KEY;
+  process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 export const NEXT_PUBLIC_PORTONE_STORE_ID =
   process.env.NEXT_PUBLIC_PORTONE_STORE_ID!;
@@ -33,7 +33,7 @@ export const NODE_ENV = process.env.NODE_ENV ?? "development";
 type Env = {
   readonly NEXT_PUBLIC_SUPABASE_URL: string;
   readonly NEXT_PUBLIC_SUPABASE_ANON_KEY: string;
-  readonly SUPABASE_SERVICE_ROLE_KEY?: string;
+  readonly SUPABASE_SERVICE_ROLE_KEY: string;
   readonly NEXT_PUBLIC_PORTONE_STORE_ID: string;
   readonly NEXT_PUBLIC_PORTONE_CHANNEL_KEY: string;
   readonly PORTONE_API_SECRET: string;

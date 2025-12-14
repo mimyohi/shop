@@ -14,7 +14,10 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "Shop - 온라인 쇼핑몰",
+  icons: {
+    icon: "/favicon.png",
+  },
+  title: "미묘히 | 여성의 흐름을 위한 웰니스 솔루션",
 };
 
 export default async function RootLayout({
@@ -34,7 +37,9 @@ export default async function RootLayout({
   if (user) {
     const { data } = await supabase
       .from("user_profiles")
-      .select("id, user_id, email, display_name, phone, phone_verified, created_at, updated_at")
+      .select(
+        "id, user_id, email, display_name, phone, phone_verified, created_at, updated_at"
+      )
       .eq("user_id", user.id)
       .single();
     profile = data;

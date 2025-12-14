@@ -31,7 +31,10 @@ interface Props {
   productOptions: ProductOptionWithSettings[];
 }
 
-export default function ProductPurchaseSection({ product, productOptions }: Props) {
+export default function ProductPurchaseSection({
+  product,
+  productOptions,
+}: Props) {
   const router = useRouter();
 
   // 현재 선택 중인 옵션 상태 (선택 UI용)
@@ -64,7 +67,6 @@ export default function ProductPurchaseSection({ product, productOptions }: Prop
     },
     []
   );
-
 
   // 설정이 필요한지 확인
   const shouldShowSettings = useCallback(() => {
@@ -348,7 +350,7 @@ export default function ProductPurchaseSection({ product, productOptions }: Prop
             disabled={!canBuy}
             className={`w-full py-4 rounded text-sm font-medium transition ${
               canBuy
-                ? "bg-[#5a8a87] text-white hover:bg-[#4a7a77]"
+                ? "bg-black text-white "
                 : "bg-gray-200 text-gray-400 cursor-not-allowed"
             }`}
           >

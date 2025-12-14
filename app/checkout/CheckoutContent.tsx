@@ -22,17 +22,12 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import AddressSearch from "@/components/AddressSearch";
 import { useCreateOrder } from "@/queries/orders.queries";
-import {
-  deleteOrderByOrderIdAction,
-  updateOrderStatusAction,
-  processTestPaymentBenefitsAction,
-} from "@/lib/actions/orders.actions";
+import { deleteOrderByOrderIdAction } from "@/lib/actions/orders.actions";
 import { useCreateAddress } from "@/queries/addresses.queries";
 import { useShippingFee } from "@/hooks/useShippingFee";
 import {
   NEXT_PUBLIC_PORTONE_STORE_ID,
   NEXT_PUBLIC_PORTONE_CHANNEL_KEY,
-  NODE_ENV,
 } from "@/env";
 
 // 방문 타입 한글 변환
@@ -402,7 +397,6 @@ export default function CheckoutContent({
           phoneNumber: customerPhone,
           email: customerEmail,
         },
-        redirectUrl: `${window.location.origin}/checkout/success`,
       });
 
       if (response?.code != null) {
@@ -420,123 +414,6 @@ export default function CheckoutContent({
         await deleteOrderByOrderIdAction(orderId);
       }
       alert(error?.message || "결제 요청에 실패했습니다.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleTestPayment = async () => {
-    const currentItem = useOrderStore.getState().item;
-    if (!currentItem) {
-      alert("주문 정보가 없습니다.");
-      return;
-    }
-
-    if (!product) {
-      alert(
-        "상품 정보를 찾을 수 없습니다. 삭제되었거나 일시적으로 판매 중지된 상품입니다."
-      );
-      router.push("/products");
-      return;
-    }
-
-    if (product.is_out_of_stock) {
-      alert("품절된 상품입니다. 다른 상품을 선택해주세요.");
-      router.push("/products");
-      return;
-    }
-
-    if (!selectedAddressId) {
-      alert("배송지를 선택해주세요.");
-      return;
-    }
-
-    const orderId = `TEST_ORDER_${Date.now()}`;
-
-    setIsLoading(true);
-
-    try {
-      let shippingInfo;
-      if (user && selectedAddressId) {
-        const selectedAddress = addresses.find(
-          (addr) => addr.id === selectedAddressId
-        );
-        if (selectedAddress) {
-          shippingInfo = {
-            shipping_address_id: selectedAddress.id,
-            shipping_name: selectedAddress.recipient,
-            shipping_phone: selectedAddress.phone,
-            shipping_postal_code: selectedAddress.postal_code,
-            shipping_address: selectedAddress.address,
-            shipping_address_detail: selectedAddress.address_detail,
-          };
-        }
-      }
-
-      const selectedUserCoupon = selectedCoupon
-        ? availableCoupons.find((uc: any) => uc.id === selectedCoupon)
-        : null;
-
-      const order = await createOrderMutation.mutateAsync({
-        user_email: customerEmail,
-        user_name: customerName,
-        user_phone: customerPhone,
-        total_amount: calculateFinalPrice(),
-        order_id: orderId,
-        ...(shippingInfo && {
-          shipping_address_id: shippingInfo.shipping_address_id,
-          shipping_name: shippingInfo.shipping_name,
-          shipping_phone: shippingInfo.shipping_phone,
-          shipping_postal_code: shippingInfo.shipping_postal_code,
-          shipping_address: shippingInfo.shipping_address,
-          shipping_address_detail: shippingInfo.shipping_address_detail,
-          zipcode: currentZipcode,
-        }),
-        used_points: usePoints,
-        user_coupon_id: selectedUserCoupon?.id || undefined,
-        coupon_discount: calculateDiscount(),
-        shipping_fee: shippingFee?.totalShippingFee || 0,
-        items: [
-          {
-            product_id:
-              currentItem.option?.product_id ||
-              currentItem.product?.id ||
-              undefined,
-            product_name: product?.name || currentItem.option?.name || "상품",
-            product_price:
-              currentItem.option?.price ?? currentItem.product?.price ?? 0,
-            quantity: currentItem.quantity,
-            option_id: currentItem.option?.id,
-            option_name: currentItem.option?.name,
-            option_price: currentItem.option?.price,
-            visit_type: currentItem.visit_type ?? undefined,
-            selected_option_settings: currentItem.selected_settings,
-          },
-        ],
-        health_consultation: healthConsultation
-          ? {
-              user_id: user?.id,
-              ...healthConsultation,
-            }
-          : undefined,
-      });
-
-      await updateOrderStatusAction(
-        orderId,
-        "paid",
-        `TEST_PAYMENT_${Date.now()}`
-      );
-
-      await processTestPaymentBenefitsAction(orderId);
-
-      useOrderStore.getState().clearOrder();
-      router.push(`/checkout/test-success?orderId=${orderId}`);
-    } catch (error: any) {
-      console.error("테스트 주문 생성 실패:", error);
-      if (orderId) {
-        await deleteOrderByOrderIdAction(orderId);
-      }
-      alert(error?.message || "테스트 주문 생성에 실패했습니다.");
     } finally {
       setIsLoading(false);
     }
@@ -1159,18 +1036,6 @@ export default function CheckoutContent({
                 ? "결제 진행 중..."
                 : `${calculateFinalPrice().toLocaleString()}원 결제하기`}
             </button>
-
-            {NODE_ENV === "development" && (
-              <button
-                onClick={handleTestPayment}
-                disabled={isLoading}
-                className="w-full bg-orange-500 text-white py-4 rounded font-medium hover:bg-orange-600 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
-              >
-                {isLoading
-                  ? "테스트 결제 진행 중..."
-                  : `테스트 결제 (실제 결제 없이 완료)`}
-              </button>
-            )}
           </div>
         </div>
       </main>

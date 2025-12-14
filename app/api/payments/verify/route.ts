@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { PortOneClient, PortOneError } from "@portone/server-sdk";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 import { env } from "@/env";
 import { recalculateShippingFeeForValidation } from "@/lib/shipping/calculate-shipping-fee";
 import { calculateProductAmount } from "@/lib/utils/price-calculation";
 
-const portoneApiSecret = env.PORTONE_API_SECRET;
+const portone = PortOneClient({
+  secret: env.PORTONE_API_SECRET,
+  storeId: env.NEXT_PUBLIC_PORTONE_STORE_ID,
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,8 +22,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log("결제 확인 요청 - paymentId:", paymentId);
+
     // API Secret 확인
-    if (!portoneApiSecret) {
+    if (!env.PORTONE_API_SECRET) {
       console.error("PORTONE_API_SECRET 환경 변수가 설정되지 않았습니다.");
       return NextResponse.json(
         { error: "포트원 API 설정이 올바르지 않습니다." },
@@ -27,39 +33,42 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 포트원 V2 API로 결제 정보 조회
-    const response = await fetch(
-      `https://api.portone.io/payments/${encodeURIComponent(paymentId)}`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `PortOne ${portoneApiSecret}`,
-          "Content-Type": "application/json",
-        },
+    // 포트원 SDK로 결제 정보 조회
+    let paymentData;
+    try {
+      paymentData = await portone.payment.getPayment({ paymentId });
+    } catch (e: unknown) {
+      // 에러 객체 전체 출력
+      console.error("포트원 결제 조회 실패:", JSON.stringify(e, null, 2));
+      if (e && typeof e === "object" && "data" in e) {
+        console.error("에러 data:", JSON.stringify(e.data, null, 2));
       }
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error("포트원 결제 조회 실패:", errorData);
-      return NextResponse.json(
-        { error: errorData.message || "결제 정보 조회에 실패했습니다." },
-        { status: response.status }
-      );
+      if (e instanceof PortOneError) {
+        return NextResponse.json(
+          { error: e.message || "결제 정보 조회에 실패했습니다." },
+          { status: 400 }
+        );
+      }
+      // 기타 에러도 로깅
+      if (e instanceof Error) {
+        return NextResponse.json(
+          { error: e.message || "결제 정보 조회에 실패했습니다." },
+          { status: 400 }
+        );
+      }
+      throw e;
     }
-
-    const paymentData = await response.json();
 
     // 결제 상태 확인
     if (paymentData.status !== "PAID") {
       return NextResponse.json(
-        { error: `결제가 완료되지 않았습니다. 상태: ${paymentData.status}` },
+        { error: `결제가 완료되지 않았습니다. 상태: ${String(paymentData.status)}` },
         { status: 400 }
       );
     }
 
     // 주문 정보 조회 (금액 검증을 위해)
-    const { data: orderData, error: orderError } = await supabase
+    const { data: orderData, error: orderError } = await supabaseAdmin
       .from("orders")
       .select("*")
       .eq("order_id", paymentId)
@@ -74,7 +83,7 @@ export async function POST(request: NextRequest) {
     }
 
     // order_items 조회하여 상품 금액 계산
-    const { data: orderItems, error: itemsError } = await supabase
+    const { data: orderItems, error: itemsError } = await supabaseAdmin
       .from("order_items")
       .select("*")
       .eq("order_id", orderData.id);
@@ -144,7 +153,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 주문 상태 업데이트 (검증된 배송비 정보 포함)
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseAdmin
       .from("orders")
       .update({
         status: "completed",

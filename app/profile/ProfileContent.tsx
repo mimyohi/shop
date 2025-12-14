@@ -12,9 +12,7 @@ import {
   useSetDefaultAddress,
 } from "@/queries/addresses.queries";
 import { useUpdateUserProfile } from "@/queries/user-profiles.queries";
-import {
-  useUpsertUserHealthConsultation,
-} from "@/queries/user-health-consultations.queries";
+import { useUpsertUserHealthConsultation } from "@/queries/user-health-consultations.queries";
 import { useRegisterCouponByCode } from "@/queries/coupons.queries";
 import HealthConsultationForm from "@/components/HealthConsultationForm";
 import type {
@@ -72,21 +70,27 @@ export default function ProfileContent({
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
   const [isEditing, setIsEditing] = useState(false);
   const [showAddressForm, setShowAddressForm] = useState(false);
-  const [displayName, setDisplayName] = useState(initialData.profile?.display_name || "");
+  const [displayName, setDisplayName] = useState(
+    initialData.profile?.display_name || ""
+  );
   const [addressForm, setAddressForm] = useState(initialAddressForm);
 
   // 쿠폰 관련 상태
   const [couponCode, setCouponCode] = useState("");
 
   // 포인트 히스토리 필터
-  const [pointsFilter, setPointsFilter] = useState<"all" | "earn" | "use">("all");
+  const [pointsFilter, setPointsFilter] = useState<"all" | "earn" | "use">(
+    "all"
+  );
 
   // 로컬 상태로 데이터 관리 (mutation 후 업데이트용)
   const [profile] = useState(initialData.profile);
   const [userPoints] = useState(initialData.userPoints);
   const [orders] = useState(initialData.orders);
   const [addresses, setAddresses] = useState(initialData.addresses);
-  const [savedHealthConsultation, setSavedHealthConsultation] = useState<(HealthConsultationDetails & { updated_at?: string }) | null>(initialData.healthConsultation);
+  const [savedHealthConsultation, setSavedHealthConsultation] = useState<
+    (HealthConsultationDetails & { updated_at?: string }) | null
+  >(initialData.healthConsultation);
   const [myCoupons, setMyCoupons] = useState(initialData.coupons);
   const [pointsHistory] = useState(initialData.pointsHistory);
 
@@ -199,8 +203,24 @@ export default function ProfileContent({
   };
 
   const handleLogout = async () => {
-    await supabaseAuth.auth.signOut();
-    router.push("/");
+    // Supabase 관련 쿠키와 localStorage 직접 삭제
+    const cookies = document.cookie.split(";");
+    for (const cookie of cookies) {
+      const cookieName = cookie.split("=")[0].trim();
+      if (cookieName.includes("supabase") || cookieName.includes("sb-")) {
+        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+      }
+    }
+
+    // localStorage에서 supabase 관련 항목 삭제
+    for (const key of Object.keys(localStorage)) {
+      if (key.includes("supabase") || key.includes("sb-")) {
+        localStorage.removeItem(key);
+      }
+    }
+
+    // 홈으로 이동 (전체 새로고침으로 상태 초기화)
+    window.location.href = "/";
   };
 
   const handleTabChange = (tab: TabType) => {
@@ -215,7 +235,9 @@ export default function ProfileContent({
     }
 
     try {
-      const newCoupon = await registerCouponMutation.mutateAsync(couponCode.trim());
+      const newCoupon = await registerCouponMutation.mutateAsync(
+        couponCode.trim()
+      );
       alert("쿠폰이 등록되었습니다!");
       setCouponCode("");
       if (newCoupon) {
