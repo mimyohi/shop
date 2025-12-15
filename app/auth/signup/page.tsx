@@ -74,6 +74,20 @@ export default function SignupPage() {
   const [registeredUserId, setRegisteredUserId] = useState<string | null>(null);
   const [healthSubmitting, setHealthSubmitting] = useState(false);
 
+  // 일반 사용자 회원가입 정보 임시 저장 (Step 3에서 실제 가입 시 사용)
+  const [pendingSignupData, setPendingSignupData] = useState<{
+    email: string;
+    password: string;
+    displayName: string;
+    phone: string;
+    verificationId: string;
+    agreements: {
+      marketing: boolean;
+      sms: boolean;
+      email: boolean;
+    };
+  } | null>(null);
+
   useEffect(() => {
     if (otpCountdown > 0) {
       const timer = setTimeout(() => setOtpCountdown((prev) => prev - 1), 1000);
@@ -401,94 +415,130 @@ export default function SignupPage() {
       return;
     }
 
-    setLoading(true);
+    // 회원가입 정보를 임시 저장하고 문진표 단계로 이동
+    // 실제 회원가입은 문진표 작성 완료 시 수행
+    setPendingSignupData({
+      email: formData.email,
+      password: formData.password,
+      displayName: formData.displayName.trim(),
+      phone: verifiedPhoneE164,
+      verificationId: verificationId,
+      agreements: {
+        marketing: agreements.marketing,
+        sms: agreements.sms,
+        email: agreements.email,
+      },
+    });
 
-    const { error: signUpError } = await signUp(
-      formData.email,
-      formData.password,
-      {
-        displayName: formData.displayName,
-        phone: verifiedPhoneE164,
-        phoneVerified: true,
-      }
-    );
-
-    if (signUpError) {
-      setError("회원가입에 실패했습니다. 다시 시도해주세요.");
-      setLoading(false);
-    } else {
-      // 자동 로그인
-      const { data: signInData, error: autoLoginError } = await signIn(
-        formData.email,
-        formData.password
-      );
-
-      if (!autoLoginError && signInData?.user) {
-        try {
-          await supabaseAuth
-            .from("user_profiles")
-            .update({
-              phone: verifiedPhoneE164,
-              phone_verified: true,
-              phone_verified_at: new Date().toISOString(),
-              marketing_consent: agreements.marketing,
-              sms_consent: agreements.sms,
-              email_consent: agreements.email,
-            })
-            .eq("user_id", signInData.user.id);
-        } catch (profileError) {
-          console.error("Failed to update phone info:", profileError);
-        }
-
-        setLoading(false);
-        setRegisteredUserId(signInData.user.id);
-        setStep("health");
-      } else {
-        // 자동 로그인 실패 시 로그인 페이지로 이동
-        setLoading(false);
-        alert("회원가입이 완료되었습니다! 로그인 후 문진표를 작성해주세요.");
-        const nextParam = encodeURIComponent("/profile?tab=health");
-        router.push(`/auth/login?next=${nextParam}`);
-      }
-    }
+    setStep("health");
   };
 
   // 문진표 제출 핸들러
   const handleHealthSubmit = async (
     data: Partial<HealthConsultationDetails>
   ) => {
-    if (!registeredUserId) {
-      setError("사용자 정보를 찾을 수 없습니다.");
-      return;
-    }
-
     setHealthSubmitting(true);
     setError("");
 
-    const result = await saveUserHealthConsultationAction({
-      user_id: registeredUserId,
-      ...(data as HealthConsultationDetails),
-    });
+    // 카카오 사용자인 경우 (이미 가입된 상태)
+    if (isKakaoUser && registeredUserId) {
+      const result = await saveUserHealthConsultationAction({
+        user_id: registeredUserId,
+        ...(data as HealthConsultationDetails),
+      });
 
-    if (!result.success) {
-      setError(result.error || "문진표 저장에 실패했습니다.");
+      if (!result.success) {
+        setError(result.error || "문진표 저장에 실패했습니다.");
+        setHealthSubmitting(false);
+        return;
+      }
+
+      setHealthSubmitting(false);
+      alert("회원가입이 완료되었습니다!");
+      router.push("/");
+      router.refresh();
+      return;
+    }
+
+    // 일반 사용자인 경우 (아직 가입되지 않은 상태)
+    if (!pendingSignupData) {
+      setError("회원가입 정보를 찾을 수 없습니다. 처음부터 다시 시도해주세요.");
       setHealthSubmitting(false);
       return;
     }
 
-    setHealthSubmitting(false);
-    alert("회원가입이 완료되었습니다!");
-    router.push("/");
-    router.refresh();
-  };
+    try {
+      // 1. 회원가입
+      const { error: signUpError } = await signUp(
+        pendingSignupData.email,
+        pendingSignupData.password,
+        {
+          displayName: pendingSignupData.displayName,
+          phone: pendingSignupData.phone,
+          phoneVerified: true,
+        }
+      );
 
-  // 문진표 건너뛰기
-  const handleSkipHealth = () => {
-    alert(
-      "회원가입이 완료되었습니다! 마이페이지에서 언제든 문진표를 작성할 수 있습니다."
-    );
-    router.push("/");
-    router.refresh();
+      if (signUpError) {
+        setError("회원가입에 실패했습니다. 다시 시도해주세요.");
+        setHealthSubmitting(false);
+        return;
+      }
+
+      // 2. 자동 로그인
+      const { data: signInData, error: autoLoginError } = await signIn(
+        pendingSignupData.email,
+        pendingSignupData.password
+      );
+
+      if (autoLoginError || !signInData?.user) {
+        // 회원가입은 성공했지만 자동 로그인 실패
+        setHealthSubmitting(false);
+        alert("회원가입이 완료되었습니다! 로그인 후 문진표를 작성해주세요.");
+        const nextParam = encodeURIComponent("/profile?tab=health");
+        router.push(`/auth/login?next=${nextParam}`);
+        return;
+      }
+
+      const userId = signInData.user.id;
+
+      // 3. 프로필 정보 업데이트
+      try {
+        await supabaseAuth
+          .from("user_profiles")
+          .update({
+            phone: pendingSignupData.phone,
+            phone_verified: true,
+            phone_verified_at: new Date().toISOString(),
+            marketing_consent: pendingSignupData.agreements.marketing,
+            sms_consent: pendingSignupData.agreements.sms,
+            email_consent: pendingSignupData.agreements.email,
+          })
+          .eq("user_id", userId);
+      } catch (profileError) {
+        console.error("Failed to update phone info:", profileError);
+      }
+
+      // 4. 문진표 저장
+      const result = await saveUserHealthConsultationAction({
+        user_id: userId,
+        ...(data as HealthConsultationDetails),
+      });
+
+      if (!result.success) {
+        // 문진표 저장 실패해도 회원가입은 완료된 상태
+        console.error("Failed to save health consultation:", result.error);
+      }
+
+      setHealthSubmitting(false);
+      alert("회원가입이 완료되었습니다!");
+      router.push("/");
+      router.refresh();
+    } catch (error) {
+      console.error("Signup error:", error);
+      setError("회원가입 중 오류가 발생했습니다.");
+      setHealthSubmitting(false);
+    }
   };
 
   const renderContent = () => {
@@ -1222,10 +1272,10 @@ export default function SignupPage() {
                 </svg>
                 <div>
                   <p className="text-sm font-medium text-gray-900">
-                    문진표를 작성해주세요
+                    문진표를 작성해주세요 <span className="text-red-500">(필수)</span>
                   </p>
                   <p className="text-xs text-gray-600 mt-1">
-                    정확한 상담과 맞춤 처방을 위해 문진표 작성이 필요합니다.
+                    정확한 상담과 맞춤 처방을 위해 문진표 작성이 필수입니다.
                     작성하신 정보는 의료진만 열람할 수 있습니다.
                   </p>
                 </div>
