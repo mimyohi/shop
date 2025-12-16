@@ -25,6 +25,6 @@ CHECK (consultation_status::text = ANY (ARRAY[
 -- 참고: 새로운 상태 흐름
 -- chatting_required (접수 필요)
 -- → consultation_required (상담 필요)
--- → on_hold (보류) 또는 consultation_completed (배송필요/상담완료)
+-- → on_hold (부재중) 또는 consultation_completed (배송준비/상담완료)
 -- → shipping_on_hold (배송보류) 또는 shipped (배송처리)
 -- → cancelled (취소)

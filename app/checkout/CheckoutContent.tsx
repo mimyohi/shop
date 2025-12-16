@@ -401,8 +401,21 @@ export default function CheckoutContent({
 
       if (response?.code != null) {
         await deleteOrderByOrderIdAction(orderId);
-        alert(`결제 실패: ${response.message}`);
-        router.push("/checkout/fail");
+
+        // 사용자 친화적인 에러 메시지로 변환
+        let userFriendlyMessage = "결제를 완료하지 못했습니다.";
+        if (response.code === "PAY_PROCESS_CANCELED" || response.message?.includes("취소")) {
+          userFriendlyMessage = "결제가 취소되었습니다.";
+        } else if (response.code === "PAY_PROCESS_ABORTED") {
+          userFriendlyMessage = "결제가 중단되었습니다.";
+        } else if (response.message?.includes("카드") || response.message?.includes("CARD")) {
+          userFriendlyMessage = "카드 결제에 실패했습니다. 다른 결제 수단을 이용해주세요.";
+        } else if (response.message?.includes("잔액") || response.message?.includes("한도")) {
+          userFriendlyMessage = "잔액 부족 또는 한도 초과입니다. 다른 결제 수단을 이용해주세요.";
+        }
+
+        alert(userFriendlyMessage);
+        router.push(`/checkout/fail?message=${encodeURIComponent(userFriendlyMessage)}`);
         return;
       }
 

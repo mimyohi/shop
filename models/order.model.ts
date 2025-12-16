@@ -7,7 +7,7 @@ import { SelectedOptionSetting, VisitType } from "./product-option.model";
 export type ConsultationStatus =
   | "chatting_required" // 접수 필요
   | "consultation_required" // 상담 필요
-  | "on_hold" // 보류
+  | "on_hold" // 부재중
   | "consultation_completed" // 상담 완료
   | "shipping_on_hold" // 배송 보류
   | "shipped" // 배송됨

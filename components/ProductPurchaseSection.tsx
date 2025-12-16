@@ -108,7 +108,7 @@ export default function ProductPurchaseSection({
   // 총 가격 계산
   const calculateTotalPrice = () => {
     if (!selectedOption) {
-      return product.price;
+      return product.price * quantity;
     }
     return selectedOption.price * quantity;
   };
