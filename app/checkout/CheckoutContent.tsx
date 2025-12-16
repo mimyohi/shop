@@ -44,6 +44,25 @@ function getVisitTypeLabel(visitType: string): string {
   }
 }
 
+// 방문 타입에 따른 consultation_status 결정
+// 초진: 차팅 → 상담 순서 필요
+// 재진(상담필요): 차팅 재등록 없이 바로 상담으로 이동 가능
+// 재진(상담불필요): 상담 없이 바로 배송 단계로 넘길 수 있음
+function getConsultationStatusByVisitType(
+  visitType: string | null | undefined
+): "chatting_required" | "consultation_required" | "consultation_completed" {
+  switch (visitType) {
+    case "first":
+      return "chatting_required"; // 초진: 차팅 필요
+    case "revisit_with_consult":
+      return "consultation_required"; // 재진(상담필요): 바로 상담으로
+    case "revisit_no_consult":
+      return "consultation_completed"; // 재진(상담불필요): 바로 배송 가능
+    default:
+      return "chatting_required"; // 기본값: 차팅 필요
+  }
+}
+
 const storeId = NEXT_PUBLIC_PORTONE_STORE_ID;
 
 interface CheckoutContentProps {
@@ -343,12 +362,13 @@ export default function CheckoutContent({
         ? availableCoupons.find((uc: any) => uc.id === selectedCoupon)
         : null;
 
-      const order = await createOrderMutation.mutateAsync({
+      await createOrderMutation.mutateAsync({
         user_email: customerEmail,
         user_name: customerName,
         user_phone: customerPhone,
         total_amount: calculateFinalPrice(),
         order_id: orderId,
+        consultation_status: getConsultationStatusByVisitType(item.visit_type),
         ...(shippingInfo && {
           shipping_address_id: shippingInfo.shipping_address_id,
           shipping_name: shippingInfo.shipping_name,
@@ -404,18 +424,31 @@ export default function CheckoutContent({
 
         // 사용자 친화적인 에러 메시지로 변환
         let userFriendlyMessage = "결제를 완료하지 못했습니다.";
-        if (response.code === "PAY_PROCESS_CANCELED" || response.message?.includes("취소")) {
+        if (
+          response.code === "PAY_PROCESS_CANCELED" ||
+          response.message?.includes("취소")
+        ) {
           userFriendlyMessage = "결제가 취소되었습니다.";
         } else if (response.code === "PAY_PROCESS_ABORTED") {
           userFriendlyMessage = "결제가 중단되었습니다.";
-        } else if (response.message?.includes("카드") || response.message?.includes("CARD")) {
-          userFriendlyMessage = "카드 결제에 실패했습니다. 다른 결제 수단을 이용해주세요.";
-        } else if (response.message?.includes("잔액") || response.message?.includes("한도")) {
-          userFriendlyMessage = "잔액 부족 또는 한도 초과입니다. 다른 결제 수단을 이용해주세요.";
+        } else if (
+          response.message?.includes("카드") ||
+          response.message?.includes("CARD")
+        ) {
+          userFriendlyMessage =
+            "카드 결제에 실패했습니다. 다른 결제 수단을 이용해주세요.";
+        } else if (
+          response.message?.includes("잔액") ||
+          response.message?.includes("한도")
+        ) {
+          userFriendlyMessage =
+            "잔액 부족 또는 한도 초과입니다. 다른 결제 수단을 이용해주세요.";
         }
 
         alert(userFriendlyMessage);
-        router.push(`/checkout/fail?message=${encodeURIComponent(userFriendlyMessage)}`);
+        router.push(
+          `/checkout/fail?message=${encodeURIComponent(userFriendlyMessage)}`
+        );
         return;
       }
 
