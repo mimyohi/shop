@@ -810,66 +810,8 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- ----------------------------------------------------------------------------
--- Phone OTP
+-- Phone Utils
 -- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS phone_otps (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  phone VARCHAR(20) NOT NULL,
-  otp_hash VARCHAR(255) NOT NULL,
-  attempts INTEGER DEFAULT 0,
-  verified BOOLEAN DEFAULT false,
-  expires_at TIMESTAMPTZ NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW()),
-  updated_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
-);
-
-CREATE INDEX IF NOT EXISTS idx_phone_otps_phone ON phone_otps(phone);
-CREATE INDEX IF NOT EXISTS idx_phone_otps_expires_at ON phone_otps(expires_at);
-CREATE INDEX IF NOT EXISTS idx_phone_otps_verified ON phone_otps(verified);
-
-DROP TRIGGER IF EXISTS trigger_phone_otps_updated_at ON phone_otps;
-CREATE TRIGGER trigger_phone_otps_updated_at
-  BEFORE UPDATE ON phone_otps
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
-
-CREATE OR REPLACE FUNCTION cleanup_expired_otps()
-RETURNS VOID AS $$
-BEGIN
-  DELETE FROM phone_otps
-  WHERE expires_at < NOW();
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE OR REPLACE FUNCTION get_latest_otp(p_phone VARCHAR)
-RETURNS TABLE (
-  id UUID,
-  phone VARCHAR,
-  otp_hash VARCHAR,
-  attempts INTEGER,
-  verified BOOLEAN,
-  expires_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ
-) AS $$
-BEGIN
-  RETURN QUERY
-  SELECT
-    po.id,
-    po.phone,
-    po.otp_hash,
-    po.attempts,
-    po.verified,
-    po.expires_at,
-    po.created_at
-  FROM phone_otps po
-  WHERE po.phone = p_phone
-    AND po.verified = false
-    AND po.expires_at > NOW()
-  ORDER BY po.created_at DESC
-  LIMIT 1;
-END;
-$$ LANGUAGE plpgsql;
-
 CREATE OR REPLACE FUNCTION get_user_by_phone(p_phone VARCHAR)
 RETURNS TABLE (
   id UUID,
