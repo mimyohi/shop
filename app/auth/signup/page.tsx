@@ -51,17 +51,9 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [phone, setPhone] = useState("");
-  const [otp, setOtp] = useState("");
   const [phoneError, setPhoneError] = useState("");
-  const [otpError, setOtpError] = useState("");
-  const [phoneStep, setPhoneStep] = useState<"input" | "otp" | "verified">(
-    "input"
-  );
-  const [otpCountdown, setOtpCountdown] = useState(0);
-  const [otpLoading, setOtpLoading] = useState(false);
   const [verifiedPhoneE164, setVerifiedPhoneE164] = useState("");
   const [verifiedPhoneDisplay, setVerifiedPhoneDisplay] = useState("");
-  const [verificationId, setVerificationId] = useState<string | null>(null);
 
   // 이메일 중복 확인 상태
   const [emailCheckLoading, setEmailCheckLoading] = useState(false);
@@ -80,20 +72,12 @@ export default function SignupPage() {
     password: string;
     displayName: string;
     phone: string;
-    verificationId: string;
     agreements: {
       marketing: boolean;
       sms: boolean;
       email: boolean;
     };
   } | null>(null);
-
-  useEffect(() => {
-    if (otpCountdown > 0) {
-      const timer = setTimeout(() => setOtpCountdown((prev) => prev - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [otpCountdown]);
 
   // 카카오 사용자 감지
   useEffect(() => {
@@ -253,24 +237,9 @@ export default function SignupPage() {
     }
   };
 
-  const resetPhoneVerification = (clearPhone = false) => {
-    setOtp("");
+  // 전화번호 확인 함수
+  const handlePhoneConfirm = () => {
     setPhoneError("");
-    setOtpError("");
-    setPhoneStep("input");
-    setOtpCountdown(0);
-    setVerifiedPhoneE164("");
-    setVerifiedPhoneDisplay("");
-    setVerificationId(null);
-    if (clearPhone) {
-      setPhone("");
-    }
-  };
-
-  const handleSendOTP = async () => {
-    setPhoneError("");
-    setOtpError("");
-    setVerificationId(null);
 
     const validation = validateAndFormatPhone(phone);
     if (!validation.valid) {
@@ -278,78 +247,25 @@ export default function SignupPage() {
       return;
     }
 
-    setOtpLoading(true);
-    try {
-      const response = await fetch("/api/auth/phone/send-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone }),
-      });
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        setPhoneError(data.error || "OTP 발송에 실패했습니다.");
-        return;
-      }
-
-      setPhoneStep("otp");
-      setOtpCountdown(data.expiresIn || 300);
-      setOtp("");
-    } catch (err) {
-      console.error("Send OTP error:", err);
-      setPhoneError("인증번호 발송 중 오류가 발생했습니다.");
-    } finally {
-      setOtpLoading(false);
-    }
+    // 인증 과정 없이 바로 확인 처리
+    setVerifiedPhoneE164(validation.e164 || "");
+    setVerifiedPhoneDisplay(phone);
   };
 
-  const handleVerifyOTP = async () => {
-    setOtpError("");
-
-    if (otp.length !== 6) {
-      setOtpError("6자리 인증번호를 입력해주세요.");
-      return;
-    }
-
-    setOtpLoading(true);
-    try {
-      const response = await fetch("/api/auth/phone/verify-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, otp, flow: "signup" }),
-      });
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        setOtpError(data.error || "인증에 실패했습니다.");
-        return;
-      }
-
-      setPhoneStep("verified");
-      setVerifiedPhoneE164(data.phone);
-      setVerifiedPhoneDisplay(phone);
-      setVerificationId(data.verificationId);
-      setOtpCountdown(0);
-    } catch (err) {
-      console.error("Verify OTP error:", err);
-      setOtpError("인증 처리 중 오류가 발생했습니다.");
-    } finally {
-      setOtpLoading(false);
-    }
-  };
-
-  const formatCountdown = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  // 전화번호 초기화
+  const resetPhoneVerification = () => {
+    setPhone("");
+    setPhoneError("");
+    setVerifiedPhoneE164("");
+    setVerifiedPhoneDisplay("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    if (phoneStep !== "verified" || !verifiedPhoneE164 || !verificationId) {
-      setError("전화번호 인증을 완료해주세요.");
+    if (!verifiedPhoneE164) {
+      setError("전화번호를 입력해주세요.");
       return;
     }
 
@@ -422,7 +338,6 @@ export default function SignupPage() {
       password: formData.password,
       displayName: formData.displayName.trim(),
       phone: verifiedPhoneE164,
-      verificationId: verificationId,
       agreements: {
         marketing: agreements.marketing,
         sms: agreements.sms,
@@ -836,132 +751,58 @@ export default function SignupPage() {
                         {kakaoUserEmail}
                       </p>
                       <p className="text-xs text-yellow-700 mt-1">
-                        전화번호 인증과 이름 입력을 완료해주세요.
+                        전화번호와 이름 입력을 완료해주세요.
                       </p>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* 전화번호 인증 */}
+              {/* 전화번호 */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   전화번호
                 </label>
 
-                {phoneStep !== "verified" && (
-                  <div className="space-y-4">
-                    {/* 전화번호 입력 + 인증번호 받기 버튼 */}
-                    {phoneStep === "input" && (
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1">
-                          <input
-                            type="tel"
-                            value={phone}
-                            onChange={(e) => {
-                              const input = e.target.value;
-                              const formatted = input
-                                .replace(/[^0-9]/g, "")
-                                .replace(/^(\d{3})(\d{4})(\d{4})$/, "$1-$2-$3")
-                                .replace(
-                                  /^(\d{3})(\d{4})(\d{0,4})$/,
-                                  "$1-$2-$3"
-                                )
-                                .replace(/^(\d{3})(\d{0,4})$/, "$1-$2")
-                                .replace(/^(\d{0,3})$/, "$1");
-                              setPhone(formatted);
-                            }}
-                            disabled={otpLoading}
-                            placeholder="010-1234-5678"
-                            maxLength={13}
-                            className="w-full px-0 py-3 border-0 border-b border-gray-200 text-sm placeholder-gray-400 focus:outline-none focus:border-gray-900 bg-transparent"
-                          />
-                        </div>
-                        <button
-                          type="button"
-                          onClick={handleSendOTP}
-                          disabled={otpLoading || !phone || phone.length < 13}
-                          className="shrink-0 px-4 py-2 text-sm text-[#222222] border border-[#222222] rounded hover:bg-[#222222] hover:text-white disabled:border-gray-300 disabled:text-gray-300 disabled:hover:bg-transparent transition"
-                        >
-                          {otpLoading ? "발송 중..." : "인증번호 받기"}
-                        </button>
+                {!verifiedPhoneE164 ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1">
+                        <input
+                          type="tel"
+                          value={phone}
+                          onChange={(e) => {
+                            const input = e.target.value;
+                            const formatted = input
+                              .replace(/[^0-9]/g, "")
+                              .replace(/^(\d{3})(\d{4})(\d{4})$/, "$1-$2-$3")
+                              .replace(
+                                /^(\d{3})(\d{4})(\d{0,4})$/,
+                                "$1-$2-$3"
+                              )
+                              .replace(/^(\d{3})(\d{0,4})$/, "$1-$2")
+                              .replace(/^(\d{0,3})$/, "$1");
+                            setPhone(formatted);
+                          }}
+                          placeholder="010-1234-5678"
+                          maxLength={13}
+                          className="w-full px-0 py-3 border-0 border-b border-gray-200 text-sm placeholder-gray-400 focus:outline-none focus:border-gray-900 bg-transparent"
+                        />
                       </div>
-                    )}
+                      <button
+                        type="button"
+                        onClick={handlePhoneConfirm}
+                        disabled={!phone || phone.length < 13}
+                        className="shrink-0 px-4 py-2 text-sm text-[#222222] border border-[#222222] rounded hover:bg-[#222222] hover:text-white disabled:border-gray-300 disabled:text-gray-300 disabled:hover:bg-transparent transition"
+                      >
+                        확인
+                      </button>
+                    </div>
                     {phoneError && (
                       <p className="text-xs text-red-500">{phoneError}</p>
                     )}
-
-                    {/* OTP 입력 단계 */}
-                    {phoneStep === "otp" && (
-                      <div className="space-y-4">
-                        {/* 전화번호 표시 + 변경 */}
-                        <div className="flex items-center justify-between py-3 border-b border-gray-200">
-                          <span className="text-sm text-gray-900">{phone}</span>
-                          <button
-                            type="button"
-                            className="text-xs text-gray-500 hover:text-gray-700"
-                            onClick={() => resetPhoneVerification(true)}
-                          >
-                            번호 변경
-                          </button>
-                        </div>
-
-                        {/* 인증번호 입력 + 확인 버튼 */}
-                        <div className="flex items-center gap-3">
-                          <div className="flex-1 relative">
-                            <input
-                              type="text"
-                              value={otp}
-                              onChange={(e) => {
-                                const value = e.target.value
-                                  .replace(/[^0-9]/g, "")
-                                  .slice(0, 6);
-                                setOtp(value);
-                              }}
-                              disabled={otpLoading}
-                              placeholder="인증번호 6자리"
-                              maxLength={6}
-                              className="w-full px-0 py-3 border-0 border-b border-gray-200 text-sm placeholder-gray-400 focus:outline-none focus:border-gray-900 bg-transparent"
-                            />
-                            {otpCountdown > 0 && (
-                              <span className="absolute right-0 top-1/2 -translate-y-1/2 text-xs text-red-500">
-                                {formatCountdown(otpCountdown)}
-                              </span>
-                            )}
-                          </div>
-                          <button
-                            type="button"
-                            onClick={handleVerifyOTP}
-                            disabled={otpLoading || otp.length !== 6}
-                            className="shrink-0 px-4 py-2 text-sm text-white bg-[#222222] rounded hover:bg-[#111111] disabled:bg-gray-300 disabled:cursor-not-allowed transition"
-                          >
-                            {otpLoading ? "확인 중..." : "확인"}
-                          </button>
-                        </div>
-                        {otpError && (
-                          <p className="text-xs text-red-500">{otpError}</p>
-                        )}
-
-                        {/* 재발송 버튼 */}
-                        <button
-                          type="button"
-                          onClick={handleSendOTP}
-                          disabled={otpLoading || otpCountdown > 240}
-                          className="text-xs text-gray-500 hover:text-gray-700 disabled:text-gray-300"
-                        >
-                          {otpCountdown > 240
-                            ? `재발송 가능 (${formatCountdown(
-                                otpCountdown - 240
-                              )})`
-                            : "인증번호 재발송"}
-                        </button>
-                      </div>
-                    )}
                   </div>
-                )}
-
-                {/* 인증 완료 상태 */}
-                {phoneStep === "verified" && (
+                ) : (
                   <div className="flex items-center justify-between py-3 border-b border-gray-200">
                     <div className="flex items-center gap-2">
                       <svg
@@ -983,7 +824,7 @@ export default function SignupPage() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => resetPhoneVerification(true)}
+                      onClick={resetPhoneVerification}
                       className="text-xs text-gray-500 hover:text-gray-700"
                     >
                       변경
@@ -1171,7 +1012,7 @@ export default function SignupPage() {
                   type="submit"
                   disabled={
                     loading ||
-                    phoneStep !== "verified" ||
+                    !verifiedPhoneE164 ||
                     !formData.displayName.trim()
                   }
                   className="flex-1 py-3 text-sm font-medium rounded text-white bg-[#222222] hover:bg-[#111111] disabled:bg-gray-300 disabled:cursor-not-allowed"
@@ -1179,10 +1020,10 @@ export default function SignupPage() {
                   {loading ? "처리 중..." : "다음"}
                 </button>
               </div>
-              {(phoneStep !== "verified" || !formData.displayName.trim()) && (
+              {(!verifiedPhoneE164 || !formData.displayName.trim()) && (
                 <p className="text-center text-xs text-gray-500">
-                  {phoneStep !== "verified"
-                    ? "다음 단계로 진행하려면 전화번호 인증이 필요합니다."
+                  {!verifiedPhoneE164
+                    ? "전화번호를 입력해주세요."
                     : "이름을 입력해주세요."}
                 </p>
               )}
