@@ -1,5 +1,6 @@
 import { env } from "@/env";
 import { createServerClient } from "@supabase/ssr";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
 export async function createClient() {
@@ -26,5 +27,13 @@ export async function createClient() {
         },
       },
     }
+  );
+}
+
+// Service role client for server-side operations that need to bypass RLS
+export function createServiceRoleClient() {
+  return createSupabaseClient(
+    env.NEXT_PUBLIC_SUPABASE_URL!,
+    env.SUPABASE_SERVICE_ROLE_KEY!
   );
 }

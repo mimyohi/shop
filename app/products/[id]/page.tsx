@@ -1,13 +1,70 @@
 import Image from "next/image";
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { productsRepository } from "@/repositories/products.repository";
+import { createServiceRoleClient } from "@/lib/supabaseServer";
 import { fetchProductOptionsWithSettingsServer } from "@/lib/server-data";
 import ProductPurchaseSection from "@/components/ProductPurchaseSection";
 import ProductInfoSections from "@/components/ProductInfoSections";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import { Product } from "@/models";
 
 export const revalidate = 0;
+
+async function getProductByIdOrSlug(idOrSlug: string): Promise<Product | null> {
+  const supabase = createServiceRoleClient();
+  const isUUID =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      idOrSlug
+    );
+
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .eq(isUUID ? "id" : "slug", idOrSlug)
+    .is("deleted_at", null)
+    .single();
+
+  if (error) {
+    console.error("Error fetching product:", error);
+    return null;
+  }
+
+  return data;
+}
+
+type SaleStatus = "before" | "ended" | "active";
+
+function getSaleStatus(product: Product): SaleStatus {
+  const now = new Date();
+
+  if (product.sale_start_at) {
+    const startDate = new Date(product.sale_start_at);
+    if (now < startDate) {
+      return "before";
+    }
+  }
+
+  if (product.sale_end_at) {
+    const endDate = new Date(product.sale_end_at);
+    if (now > endDate) {
+      return "ended";
+    }
+  }
+
+  return "active";
+}
+
+function formatDate(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("ko-KR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 export default async function ProductDetailPage({
   params,
@@ -15,14 +72,78 @@ export default async function ProductDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const product = await productsRepository.findByIdOrSlug(id);
+  const product = await getProductByIdOrSlug(id);
 
   if (!product) {
     notFound();
   }
 
+  // 판매 기간 체크
+  const saleStatus = getSaleStatus(product);
+
+  if (saleStatus !== "active") {
+    const isBefore = saleStatus === "before";
+
+    return (
+      <div className="min-h-screen bg-white flex flex-col">
+        <Navigation />
+
+        <main className="flex-1 flex items-center justify-center px-6">
+          <div className="text-center max-w-md pt-20">
+            {/* 메시지 */}
+            <h1 className="text-2xl font-medium text-gray-900 mb-3">
+              {isBefore ? "판매 시작 전입니다" : "판매가 종료되었습니다"}
+            </h1>
+
+            <p className="text-gray-500 mb-6">{product.name}</p>
+
+            {/* 기간 정보 */}
+            <div className="border-t border-b border-gray-200 py-4 mb-8">
+              {isBefore && product.sale_start_at && (
+                <div className="text-sm text-gray-600">
+                  <span className="text-gray-400">판매 시작</span>
+                  <p className="mt-1 font-medium text-gray-800">
+                    {formatDate(product.sale_start_at)}
+                  </p>
+                </div>
+              )}
+              {!isBefore && product.sale_end_at && (
+                <div className="text-sm text-gray-600">
+                  <span className="text-gray-400">판매 종료</span>
+                  <p className="mt-1 font-medium text-gray-800">
+                    {formatDate(product.sale_end_at)}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* 버튼 */}
+            <div className="flex flex-col sm:flex-row gap-3 justify-center pb-20">
+              <Link
+                href="/"
+                className="inline-flex items-center justify-center px-8 py-3 border border-gray-900 bg-gray-900 text-white font-medium hover:bg-gray-800 transition-colors"
+              >
+                홈으로 돌아가기
+              </Link>
+              <Link
+                href="/products"
+                className="inline-flex items-center justify-center px-8 py-3 border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+              >
+                상품 보러가기
+              </Link>
+            </div>
+          </div>
+        </main>
+
+        <Footer />
+      </div>
+    );
+  }
+
   // 상품 옵션 가져오기 (서버 사이드)
-  const productOptions = await fetchProductOptionsWithSettingsServer(product.id);
+  const productOptions = await fetchProductOptionsWithSettingsServer(
+    product.id
+  );
 
   // 할인 가격 계산
   const discountedPrice =
@@ -80,7 +201,10 @@ export default async function ProductDetailPage({
             </div>
 
             {/* 옵션 선택 및 구매 섹션 */}
-            <ProductPurchaseSection product={product} productOptions={productOptions} />
+            <ProductPurchaseSection
+              product={product}
+              productOptions={productOptions}
+            />
           </div>
         </div>
 
