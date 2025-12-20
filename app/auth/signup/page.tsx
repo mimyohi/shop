@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { validateAndFormatPhone } from "@/lib/phone/validation";
+import { validateAndFormatPhone, formatPhoneInput } from "@/lib/phone/validation";
 import { signIn, signUp, supabaseAuth } from "@/lib/supabaseAuth";
 import { updateKakaoUserProfileAction } from "@/lib/actions/profiles.actions";
 import { saveUserHealthConsultationAction } from "@/lib/actions/health-consultations.actions";
@@ -772,16 +772,7 @@ export default function SignupPage() {
                           type="tel"
                           value={phone}
                           onChange={(e) => {
-                            const input = e.target.value;
-                            const formatted = input
-                              .replace(/[^0-9]/g, "")
-                              .replace(/^(\d{3})(\d{4})(\d{4})$/, "$1-$2-$3")
-                              .replace(
-                                /^(\d{3})(\d{4})(\d{0,4})$/,
-                                "$1-$2-$3"
-                              )
-                              .replace(/^(\d{3})(\d{0,4})$/, "$1-$2")
-                              .replace(/^(\d{0,3})$/, "$1");
+                            const formatted = formatPhoneInput(e.target.value);
                             setPhone(formatted);
                           }}
                           placeholder="010-1234-5678"

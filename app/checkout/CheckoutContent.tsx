@@ -21,6 +21,7 @@ import HealthConsultationForm from "@/components/HealthConsultationForm";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import AddressSearch from "@/components/AddressSearch";
+import PhoneInput from "@/components/PhoneInput";
 import { useCreateOrder } from "@/queries/orders.queries";
 import { deleteOrderByOrderIdAction } from "@/lib/actions/orders.actions";
 import { useCreateAddress } from "@/queries/addresses.queries";
@@ -913,14 +914,12 @@ export default function CheckoutContent({
                     <label className="block text-sm text-gray-600 mb-1">
                       연락처 <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      type="tel"
+                    <PhoneInput
                       value={newAddress.phone}
-                      onChange={(e) =>
-                        setNewAddress({ ...newAddress, phone: e.target.value })
+                      onChange={(value) =>
+                        setNewAddress({ ...newAddress, phone: value })
                       }
-                      placeholder="010-1234-5678"
-                      className="w-full px-3 py-2 border border-gray-200 rounded text-sm focus:outline-none focus:border-gray-400"
+                      className="!py-2 text-sm"
                     />
                   </div>
 

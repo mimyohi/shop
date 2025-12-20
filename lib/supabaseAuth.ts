@@ -1,17 +1,10 @@
 import { createBrowserClient } from "@supabase/ssr";
 import { env } from "@/env";
 
-console.log("Supabase URL:", env.NEXT_PUBLIC_SUPABASE_URL);
-console.log("Supabase Key:", env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.slice(0, 20) + "...");
-
 export const supabaseAuth = createBrowserClient(
   env.NEXT_PUBLIC_SUPABASE_URL,
   env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
-
-console.log("supabaseAuth created:", supabaseAuth);
-console.log("supabaseAuth.auth:", supabaseAuth.auth);
-console.log("supabaseAuth.auth.signOut:", supabaseAuth.auth?.signOut);
 
 // 로그인
 export async function signIn(email: string, password: string) {

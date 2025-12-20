@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import AddressSearch from "@/components/AddressSearch";
+import PhoneInput from "@/components/PhoneInput";
 import { supabaseAuth } from "@/lib/supabaseAuth";
 import {
   useCreateAddress,
@@ -813,17 +814,16 @@ export default function ProfileContent({
                           }
                           className="px-4 py-2 border border-gray-200 rounded focus:outline-none focus:border-gray-400"
                         />
-                        <input
-                          type="tel"
-                          placeholder="연락처"
+                        <PhoneInput
                           value={addressForm.phone}
-                          onChange={(e) =>
+                          onChange={(value) =>
                             setAddressForm({
                               ...addressForm,
-                              phone: e.target.value,
+                              phone: value,
                             })
                           }
-                          className="px-4 py-2 border border-gray-200 rounded focus:outline-none focus:border-gray-400"
+                          placeholder="연락처"
+                          className="!py-2"
                         />
                         <div className="flex gap-2">
                           <input

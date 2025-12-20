@@ -9,6 +9,8 @@ interface PhoneInputProps {
   placeholder?: string;
   error?: string;
   className?: string;
+  showHelperText?: boolean;
+  helperText?: string;
 }
 
 export default function PhoneInput({
@@ -18,6 +20,8 @@ export default function PhoneInput({
   placeholder = '010-1234-5678',
   error,
   className = '',
+  showHelperText = true,
+  helperText = '숫자만 입력하면 자동으로 하이픈(-)이 추가됩니다',
 }: PhoneInputProps) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
@@ -40,6 +44,9 @@ export default function PhoneInput({
         } ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''} ${className}`}
       />
       {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+      {!error && showHelperText && helperText && (
+        <p className="mt-1 text-xs text-gray-500">{helperText}</p>
+      )}
     </div>
   );
 }

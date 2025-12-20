@@ -268,66 +268,24 @@ export async function sendOrderConfirmationAlimtalk(
 ): Promise<AlimtalkResult> {
   const templateId = env.KAKAO_TEMPLATE_ORDER_CONFIRM || "order_confirmation";
 
+  const now = new Date();
+  const paymentDateTime = now.toLocaleString("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Seoul",
+  });
+
   return sendAlimtalkMessage({
     phone,
     templateId,
     variables: {
-      "#{고객명}": orderData.customerName,
       "#{주문번호}": orderData.orderId,
       "#{상품명}": orderData.productNames,
-      "#{결제금액}": `${orderData.totalAmount.toLocaleString()}원`,
-    },
-  });
-}
-
-/**
- * 배송 시작 알림톡 발송
- */
-export async function sendShippingNotificationAlimtalk(
-  phone: string,
-  orderData: {
-    orderId: string;
-    customerName: string;
-    shippingCompany: string;
-    trackingNumber: string;
-  }
-): Promise<AlimtalkResult> {
-  const templateId = env.KAKAO_TEMPLATE_SHIPPING || "shipping_notification";
-
-  return sendAlimtalkMessage({
-    phone,
-    templateId,
-    variables: {
-      "#{고객명}": orderData.customerName,
-      "#{주문번호}": orderData.orderId,
-      "#{택배사}": orderData.shippingCompany,
-      "#{송장번호}": orderData.trackingNumber,
-    },
-  });
-}
-
-/**
- * 주문 취소 알림톡 발송
- */
-export async function sendPaymentCancellationAlimtalk(
-  phone: string,
-  orderData: {
-    orderId: string;
-    customerName: string;
-    totalAmount: number;
-    cancelReason?: string;
-  }
-): Promise<AlimtalkResult> {
-  const templateId = env.KAKAO_TEMPLATE_CANCEL || "order_cancellation";
-
-  return sendAlimtalkMessage({
-    phone,
-    templateId,
-    variables: {
-      "#{고객명}": orderData.customerName,
-      "#{주문번호}": orderData.orderId,
-      "#{환불금액}": `${orderData.totalAmount.toLocaleString()}원`,
-      "#{취소사유}": orderData.cancelReason || "관리자 요청",
+      "#{결제금액}": `${orderData.totalAmount.toLocaleString()}`,
+      "#{결제일시}": paymentDateTime,
     },
   });
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { HealthConsultationDetails } from '@/models';
+import PhoneInput from '@/components/PhoneInput';
 
 interface HealthConsultationFormProps {
   onSubmit: (data: Partial<HealthConsultationDetails>) => void;
@@ -178,13 +179,11 @@ export default function HealthConsultationForm({
               <label className="block text-sm text-gray-500 mb-1">
                 연락처 <span className="text-red-500">*</span>
               </label>
-              <input
-                type="tel"
+              <PhoneInput
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                required
-                className="w-full px-4 py-2 border border-gray-200 rounded focus:outline-none focus:border-gray-400"
+                onChange={(value) => setPhone(value)}
                 placeholder="010-0000-0000"
+                className="!py-2"
               />
             </div>
           </div>

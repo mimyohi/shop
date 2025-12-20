@@ -6,6 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { useShippingFee } from '@/hooks/useShippingFee';
+import PhoneInput from '@/components/PhoneInput';
 
 interface ShippingAddressFormProps {
   orderAmount: number; // 주문 금액
@@ -97,12 +98,10 @@ export function ShippingAddressForm({
       {/* 연락처 */}
       <div>
         <label className="block text-sm font-medium mb-1">연락처</label>
-        <input
-          type="tel"
+        <PhoneInput
           value={addressData.phone}
-          onChange={(e) => handleInputChange('phone', e.target.value)}
-          placeholder="010-1234-5678"
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          onChange={(value) => handleInputChange('phone', value)}
+          className="focus:ring-blue-500"
         />
       </div>
 

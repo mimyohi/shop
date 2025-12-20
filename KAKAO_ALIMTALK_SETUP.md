@@ -194,8 +194,6 @@ KAKAO_SENDER_KEY=your_kakao_sender_key
 # 카카오톡 알림톡 템플릿 코드
 KAKAO_TEMPLATE_OTP=otp_auth
 KAKAO_TEMPLATE_ORDER_CONFIRM=order_confirmation
-KAKAO_TEMPLATE_SHIPPING=shipping_notification
-KAKAO_TEMPLATE_CANCEL=order_cancellation
 ```
 
 **값 채우기:**

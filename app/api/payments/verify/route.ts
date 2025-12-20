@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { env } from "@/env";
 import { recalculateShippingFeeForValidation } from "@/lib/shipping/calculate-shipping-fee";
 import { calculateProductAmount } from "@/lib/utils/price-calculation";
+import { sendOrderConfirmationAlimtalk } from "@/lib/kakao/alimtalk";
 
 const portone = PortOneClient({
   secret: env.PORTONE_API_SECRET,
@@ -62,7 +63,11 @@ export async function POST(request: NextRequest) {
     // 결제 상태 확인
     if (paymentData.status !== "PAID") {
       return NextResponse.json(
-        { error: `결제가 완료되지 않았습니다. 상태: ${String(paymentData.status)}` },
+        {
+          error: `결제가 완료되지 않았습니다. 상태: ${String(
+            paymentData.status
+          )}`,
+        },
         { status: 400 }
       );
     }
@@ -80,6 +85,16 @@ export async function POST(request: NextRequest) {
         { error: "주문 정보를 찾을 수 없습니다." },
         { status: 404 }
       );
+    }
+
+    // 이미 완료된 주문인 경우 중복 처리 방지
+    if (orderData.status === "completed") {
+      console.log("이미 완료된 주문입니다 - paymentId:", paymentId);
+      return NextResponse.json({
+        success: true,
+        message: "이미 처리된 주문입니다.",
+        alreadyProcessed: true,
+      });
     }
 
     // order_items 조회하여 상품 금액 계산
@@ -153,7 +168,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 주문 상태 업데이트 (검증된 배송비 정보 포함)
-    const { error: updateError } = await supabaseAdmin
+    const { error: updateError, data } = await supabaseAdmin
       .from("orders")
       .update({
         status: "completed",
@@ -170,6 +185,32 @@ export async function POST(request: NextRequest) {
         { error: "주문 상태 업데이트에 실패했습니다." },
         { status: 500 }
       );
+    }
+
+    // 주문 확인 알림톡 발송
+    const phone = orderData.user_phone || orderData.shipping_phone;
+    if (phone) {
+      try {
+        // 상품명 생성
+        const firstProduct = orderItems[0].product_name;
+        const productNames =
+          orderItems.length > 1
+            ? `${firstProduct} 외 ${orderItems.length - 1}건`
+            : firstProduct;
+
+        const alimtalkResult = await sendOrderConfirmationAlimtalk(phone, {
+          orderId: orderData.order_id,
+          customerName: orderData.user_name || orderData.shipping_name,
+          totalAmount: paidAmount,
+          productNames,
+        });
+
+        if (!alimtalkResult.success) {
+          console.error("주문 확인 알림톡 발송 실패:", alimtalkResult.error);
+        }
+      } catch (alimtalkError) {
+        console.error("주문 확인 알림톡 발송 중 오류:", alimtalkError);
+      }
     }
 
     return NextResponse.json({

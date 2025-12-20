@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Navigation from "@/components/Navigation";
@@ -12,8 +12,13 @@ function CheckoutSuccessContent() {
   const clearOrder = useOrderStore((state) => state.clearOrder);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const isCalledRef = useRef(false);
 
   useEffect(() => {
+    // Strict Mode에서 두 번 호출 방지
+    if (isCalledRef.current) return;
+    isCalledRef.current = true;
+
     const confirmPayment = async () => {
       const paymentId = searchParams.get("paymentId");
 
