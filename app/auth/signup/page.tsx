@@ -3,7 +3,10 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { validateAndFormatPhone, formatPhoneInput } from "@/lib/phone/validation";
+import {
+  validateAndFormatPhone,
+  formatPhoneInput,
+} from "@/lib/phone/validation";
 import { signIn, signUp, supabaseAuth } from "@/lib/supabaseAuth";
 import { updateKakaoUserProfileAction } from "@/lib/actions/profiles.actions";
 import { saveUserHealthConsultationAction } from "@/lib/actions/health-consultations.actions";
@@ -295,9 +298,54 @@ export default function SignupPage() {
         return;
       }
 
+      // [임시 비활성화] 문진표 단계로 이동
+      // setLoading(false);
+      // setRegisteredUserId(kakaoUserId);
+      // setStep("health");
+      // return;
+
+      // [임시] 문진표 단계 건너뛰고 바로 회원가입 완료 처리
+      // 문진표 임의 데이터 저장
+      const defaultHealthData = {
+        user_id: kakaoUserId,
+        // 1) 개인정보
+        name: formData.displayName.trim(),
+        resident_number: "000000-0000000",
+        phone: verifiedPhoneE164,
+        // 2) 기본 신체 정보
+        current_height: 170,
+        current_weight: 70,
+        min_weight_since_20s: 60,
+        max_weight_since_20s: 80,
+        target_weight: 65,
+        target_weight_loss_period: "3개월",
+        // 3) 다이어트 경험
+        previous_western_medicine: "없음",
+        previous_herbal_medicine: "없음",
+        previous_other_medicine: "없음",
+        // 4) 생활 패턴
+        occupation: "회사원",
+        work_hours: "9-18시",
+        has_shift_work: false,
+        wake_up_time: "07:00",
+        bedtime: "23:00",
+        has_daytime_sleepiness: false,
+        meal_pattern: "3meals" as const,
+        alcohol_frequency: "weekly_1_or_less" as const,
+        water_intake: "over_1L" as const,
+        // 5) 원하는 다이어트 방향
+        diet_approach: "sustainable" as const,
+        preferred_stage: "stage1" as const,
+        // 6) 과거 병력 및 복용 약
+        medical_history: "[자동 생성된 임시 데이터]",
+      };
+
+      await saveUserHealthConsultationAction(defaultHealthData);
+
       setLoading(false);
-      setRegisteredUserId(kakaoUserId);
-      setStep("health");
+      alert("회원가입이 완료되었습니다!");
+      router.push("/");
+      router.refresh();
       return;
     }
 
@@ -331,21 +379,119 @@ export default function SignupPage() {
       return;
     }
 
-    // 회원가입 정보를 임시 저장하고 문진표 단계로 이동
+    // [임시 비활성화] 회원가입 정보를 임시 저장하고 문진표 단계로 이동
     // 실제 회원가입은 문진표 작성 완료 시 수행
-    setPendingSignupData({
-      email: formData.email,
-      password: formData.password,
-      displayName: formData.displayName.trim(),
-      phone: verifiedPhoneE164,
-      agreements: {
-        marketing: agreements.marketing,
-        sms: agreements.sms,
-        email: agreements.email,
-      },
-    });
+    // setPendingSignupData({
+    //   email: formData.email,
+    //   password: formData.password,
+    //   displayName: formData.displayName.trim(),
+    //   phone: verifiedPhoneE164,
+    //   agreements: {
+    //     marketing: agreements.marketing,
+    //     sms: agreements.sms,
+    //     email: agreements.email,
+    //   },
+    // });
+    // setStep("health");
 
-    setStep("health");
+    // [임시] 문진표 단계 건너뛰고 바로 회원가입 처리
+    setLoading(true);
+    try {
+      // 1. 회원가입
+      const { error: signUpError } = await signUp(
+        formData.email,
+        formData.password,
+        {
+          displayName: formData.displayName.trim(),
+          phone: verifiedPhoneE164,
+          phoneVerified: true,
+        }
+      );
+
+      if (signUpError) {
+        setError("회원가입에 실패했습니다. 다시 시도해주세요.");
+        setLoading(false);
+        return;
+      }
+
+      // 2. 자동 로그인
+      const { data: signInData, error: autoLoginError } = await signIn(
+        formData.email,
+        formData.password
+      );
+
+      if (autoLoginError || !signInData?.user) {
+        setLoading(false);
+        alert("회원가입이 완료되었습니다!");
+        router.push("/auth/login");
+        return;
+      }
+
+      const userId = signInData.user.id;
+
+      // 3. 프로필 정보 업데이트
+      try {
+        await supabaseAuth
+          .from("user_profiles")
+          .update({
+            phone: verifiedPhoneE164,
+            phone_verified: true,
+            phone_verified_at: new Date().toISOString(),
+            marketing_consent: agreements.marketing,
+            sms_consent: agreements.sms,
+            email_consent: agreements.email,
+          })
+          .eq("user_id", userId);
+      } catch (profileError) {
+        console.error("Failed to update phone info:", profileError);
+      }
+
+      // 4. 문진표 임의 데이터 저장
+      const defaultHealthData = {
+        user_id: userId,
+        // 1) 개인정보
+        name: formData.displayName.trim(),
+        resident_number: "000000-0000000",
+        phone: verifiedPhoneE164,
+        // 2) 기본 신체 정보
+        current_height: 170,
+        current_weight: 70,
+        min_weight_since_20s: 60,
+        max_weight_since_20s: 80,
+        target_weight: 65,
+        target_weight_loss_period: "3개월",
+        // 3) 다이어트 경험
+        previous_western_medicine: "없음",
+        previous_herbal_medicine: "없음",
+        previous_other_medicine: "없음",
+        // 4) 생활 패턴
+        occupation: "회사원",
+        work_hours: "9-18시",
+        has_shift_work: false,
+        wake_up_time: "07:00",
+        bedtime: "23:00",
+        has_daytime_sleepiness: false,
+        meal_pattern: "3meals" as const,
+        alcohol_frequency: "weekly_1_or_less" as const,
+        water_intake: "over_1L" as const,
+        // 5) 원하는 다이어트 방향
+        diet_approach: "sustainable" as const,
+        preferred_stage: "stage1" as const,
+        // 6) 과거 병력 및 복용 약
+        medical_history: "[자동 생성된 임시 데이터]",
+      };
+
+      await saveUserHealthConsultationAction(defaultHealthData);
+
+      setLoading(false);
+      alert("회원가입이 완료되었습니다!");
+      router.push("/");
+      router.refresh();
+    } catch (error) {
+      console.error("Signup error:", error);
+      setError("회원가입 중 오류가 발생했습니다.");
+      setLoading(false);
+    }
   };
 
   // 문진표 제출 핸들러
@@ -482,16 +628,17 @@ export default function SignupPage() {
                 <span className="ml-1.5 text-gray-400">정보입력</span>
               </div>
               <div className="w-4 h-px bg-gray-300"></div>
-              <div className="flex items-center">
+              {/** TODO */}
+              {/* <div className="flex items-center">
                 <span className="w-5 h-5 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-[10px] font-medium">
                   3
                 </span>
                 <span className="ml-1.5 text-gray-400">문진표</span>
-              </div>
+              </div> */}
               <div className="w-4 h-px bg-gray-300"></div>
               <div className="flex items-center">
                 <span className="w-5 h-5 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-[10px] font-medium">
-                  4
+                  {/** TODO */}3
                 </span>
                 <span className="ml-1.5 text-gray-400">완료</span>
               </div>
@@ -709,16 +856,17 @@ export default function SignupPage() {
                 </span>
               </div>
               <div className="w-4 h-px bg-gray-300"></div>
-              <div className="flex items-center">
+              {/** TODO */}
+              {/* <div className="flex items-center">
                 <span className="w-5 h-5 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-[10px] font-medium">
                   3
                 </span>
                 <span className="ml-1.5 text-gray-400">문진표</span>
-              </div>
+              </div> */}
               <div className="w-4 h-px bg-gray-300"></div>
               <div className="flex items-center">
                 <span className="w-5 h-5 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-[10px] font-medium">
-                  4
+                  {/** TODO */}3
                 </span>
                 <span className="ml-1.5 text-gray-400">완료</span>
               </div>
@@ -1071,16 +1219,17 @@ export default function SignupPage() {
                 <span className="ml-1.5 text-gray-400">정보입력</span>
               </div>
               <div className="w-4 h-px bg-gray-300"></div>
-              <div className="flex items-center">
+              {/** TODO */}
+              {/* <div className="flex items-center">
                 <span className="w-5 h-5 rounded-full bg-[#222222] text-white flex items-center justify-center text-[10px] font-medium">
                   3
                 </span>
                 <span className="ml-1.5 font-medium text-gray-900">문진표</span>
-              </div>
+              </div> */}
               <div className="w-4 h-px bg-gray-300"></div>
               <div className="flex items-center">
                 <span className="w-5 h-5 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-[10px] font-medium">
-                  4
+                  {/** TODO */}3
                 </span>
                 <span className="ml-1.5 text-gray-400">완료</span>
               </div>
@@ -1104,7 +1253,8 @@ export default function SignupPage() {
                 </svg>
                 <div>
                   <p className="text-sm font-medium text-gray-900">
-                    문진표를 작성해주세요 <span className="text-red-500">(필수)</span>
+                    문진표를 작성해주세요{" "}
+                    <span className="text-red-500">(필수)</span>
                   </p>
                   <p className="text-xs text-gray-600 mt-1">
                     정확한 상담과 맞춤 처방을 위해 문진표 작성이 필수입니다.
