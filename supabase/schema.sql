@@ -881,6 +881,12 @@ CREATE TABLE IF NOT EXISTS orders (
       'cancelled',
       'expired'
     )),
+  -- 현금영수증 관련 필드
+  cash_receipt_type VARCHAR(20) CHECK (cash_receipt_type IN ('PERSONAL', 'CORPORATE')),
+  cash_receipt_number VARCHAR(20),
+  cash_receipt_issued BOOLEAN DEFAULT FALSE,
+  cash_receipt_issue_number VARCHAR(50),
+  cash_receipt_issued_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW()),
   updated_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
 );

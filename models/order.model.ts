@@ -13,6 +13,13 @@ export type ConsultationStatus =
   | "shipped" // 배송됨
   | "cancelled"; // 취소됨
 
+/**
+ * 현금영수증 유형
+ * - PERSONAL: 소득공제용 (개인)
+ * - CORPORATE: 지출증빙용 (사업자)
+ */
+export type CashReceiptType = "PERSONAL" | "CORPORATE";
+
 export interface Order {
   id: string;
   user_email: string;
@@ -39,6 +46,12 @@ export interface Order {
   tracking_number?: string;
   shipped_at?: string | null;
   shipping_message?: string;
+  // 현금영수증 관련 필드
+  cash_receipt_type?: CashReceiptType | null;
+  cash_receipt_number?: string | null;
+  cash_receipt_issued?: boolean;
+  cash_receipt_issue_number?: string | null;
+  cash_receipt_issued_at?: string | null;
 }
 
 /**

@@ -187,6 +187,63 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 현금영수증 발급 (신청한 경우)
+    if (orderData.cash_receipt_type && orderData.cash_receipt_number) {
+      try {
+        console.log("현금영수증 발급 요청:", {
+          type: orderData.cash_receipt_type,
+          number: orderData.cash_receipt_number,
+        });
+
+        // 상품명 생성 (현금영수증용)
+        const firstProductName = orderItems[0].product_name;
+        const cashReceiptOrderName =
+          orderItems.length > 1
+            ? `${firstProductName} 외 ${orderItems.length - 1}건`
+            : firstProductName;
+
+        const cashReceiptResult = await portone.payment.cashReceipt.issueCashReceipt({
+          paymentId,
+          channelKey: env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY,
+          type: orderData.cash_receipt_type as "PERSONAL" | "CORPORATE",
+          orderName: cashReceiptOrderName,
+          currency: "KRW",
+          amount: {
+            total: paidAmount,
+          },
+          customer: {
+            identityNumber: orderData.cash_receipt_number,
+            name: orderData.user_name || orderData.shipping_name,
+            phoneNumber: orderData.user_phone || orderData.shipping_phone,
+            email: orderData.user_email,
+          },
+        });
+
+        console.log("현금영수증 발급 성공:", cashReceiptResult);
+
+        // 현금영수증 발급 정보 업데이트
+        await supabaseAdmin
+          .from("orders")
+          .update({
+            cash_receipt_issued: true,
+            cash_receipt_issue_number: cashReceiptResult.cashReceipt?.issueNumber || null,
+            cash_receipt_issued_at: new Date().toISOString(),
+          })
+          .eq("order_id", paymentId);
+      } catch (cashReceiptError) {
+        // 현금영수증 발급 실패해도 결제는 성공으로 처리
+        console.error("현금영수증 발급 실패:", cashReceiptError);
+        // 실패 사유 기록 (관리자 확인용)
+        await supabaseAdmin
+          .from("orders")
+          .update({
+            cash_receipt_issued: false,
+            admin_memo: `현금영수증 발급 실패: ${cashReceiptError instanceof Error ? cashReceiptError.message : "알 수 없는 오류"}`,
+          })
+          .eq("order_id", paymentId);
+      }
+    }
+
     // 주문 확인 알림톡 발송
     const phone = orderData.user_phone || orderData.shipping_phone;
     if (phone) {

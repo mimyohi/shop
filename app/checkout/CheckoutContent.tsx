@@ -15,6 +15,7 @@ import type {
   ShippingAddress,
   UserProfile,
   UserHealthConsultation,
+  CashReceiptType,
 } from "@/models";
 import { productsQueries } from "@/queries/products.queries";
 import HealthConsultationForm from "@/components/HealthConsultationForm";
@@ -122,6 +123,12 @@ export default function CheckoutContent({
   const [healthConsultation, setHealthConsultation] =
     useState<Partial<HealthConsultationDetails> | null>(null);
   const [showHealthForm, setShowHealthForm] = useState(true);
+
+  // 현금영수증 정보
+  const [wantCashReceipt, setWantCashReceipt] = useState(false);
+  const [cashReceiptType, setCashReceiptType] =
+    useState<CashReceiptType>("PERSONAL");
+  const [cashReceiptNumber, setCashReceiptNumber] = useState("");
 
   // 상품 정보 조회 (옵션의 product_id가 있는 경우)
   const productId = item?.option?.product_id || item?.product?.id;
@@ -336,6 +343,28 @@ export default function CheckoutContent({
       }
     }
 
+    // 현금영수증 검증
+    if (wantCashReceipt && !cashReceiptNumber) {
+      alert(
+        cashReceiptType === "PERSONAL"
+          ? "현금영수증 발급을 위해 휴대폰 번호를 입력해주세요."
+          : "현금영수증 발급을 위해 사업자등록번호를 입력해주세요."
+      );
+      return;
+    }
+
+    if (wantCashReceipt) {
+      const minLength = cashReceiptType === "PERSONAL" ? 10 : 10;
+      if (cashReceiptNumber.length < minLength) {
+        alert(
+          cashReceiptType === "PERSONAL"
+            ? "휴대폰 번호를 올바르게 입력해주세요."
+            : "사업자등록번호를 올바르게 입력해주세요."
+        );
+        return;
+      }
+    }
+
     const orderId = `ORDER_${Date.now()}`;
     const orderName = item.option?.name || product?.name || "상품";
 
@@ -383,6 +412,11 @@ export default function CheckoutContent({
         user_coupon_id: selectedUserCouponForPayment?.id || undefined,
         coupon_discount: calculateDiscount(),
         shipping_fee: shippingFee?.totalShippingFee || 0,
+        // 현금영수증 정보
+        ...(wantCashReceipt && {
+          cash_receipt_type: cashReceiptType,
+          cash_receipt_number: cashReceiptNumber,
+        }),
         items: [
           {
             product_id:
@@ -1007,6 +1041,110 @@ export default function CheckoutContent({
               </div>
             </div>
           )}
+
+          {/* 현금영수증 */}
+          <section>
+            <h2 className="text-lg font-medium text-gray-900 mb-4">
+              현금영수증
+            </h2>
+            <div className="border border-gray-200 rounded p-4">
+              {/* 발급 여부 선택 */}
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={wantCashReceipt}
+                  onChange={(e) => {
+                    setWantCashReceipt(e.target.checked);
+                    if (!e.target.checked) {
+                      setCashReceiptNumber("");
+                    }
+                  }}
+                  className="w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-gray-900"
+                />
+                <span className="text-sm text-gray-700">
+                  현금영수증 발급 신청
+                </span>
+              </label>
+
+              {wantCashReceipt && (
+                <div className="mt-4 space-y-4">
+                  {/* 발급 유형 선택 */}
+                  <div>
+                    <span className="text-sm text-gray-700 mb-2 block">
+                      발급 유형
+                    </span>
+                    <div className="flex gap-4">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="cashReceiptType"
+                          value="PERSONAL"
+                          checked={cashReceiptType === "PERSONAL"}
+                          onChange={(e) =>
+                            setCashReceiptType(
+                              e.target.value as CashReceiptType
+                            )
+                          }
+                          className="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-900"
+                        />
+                        <span className="text-sm text-gray-700">
+                          개인 소득공제용
+                        </span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="cashReceiptType"
+                          value="CORPORATE"
+                          checked={cashReceiptType === "CORPORATE"}
+                          onChange={(e) =>
+                            setCashReceiptType(
+                              e.target.value as CashReceiptType
+                            )
+                          }
+                          className="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-900"
+                        />
+                        <span className="text-sm text-gray-700">
+                          사업자 지출증빙용
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* 발급 번호 입력 */}
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">
+                      {cashReceiptType === "PERSONAL"
+                        ? "휴대폰 번호"
+                        : "사업자등록번호"}
+                      <span className="text-red-500 ml-0.5">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={cashReceiptNumber}
+                      onChange={(e) => {
+                        // 숫자만 입력 허용
+                        const value = e.target.value.replace(/[^0-9]/g, "");
+                        setCashReceiptNumber(value);
+                      }}
+                      placeholder={
+                        cashReceiptType === "PERSONAL"
+                          ? "'-' 없이 숫자만 입력 (예: 01012345678)"
+                          : "'-' 없이 숫자만 입력 (예: 1234567890)"
+                      }
+                      maxLength={cashReceiptType === "PERSONAL" ? 11 : 10}
+                      className="w-full px-3 py-2 border border-gray-200 rounded text-sm focus:outline-none focus:border-gray-400"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">
+                      {cashReceiptType === "PERSONAL"
+                        ? "* 휴대폰 번호로 현금영수증이 발급됩니다."
+                        : "* 사업자등록번호로 지출증빙용 현금영수증이 발급됩니다."}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
 
           {/* 문진 정보 TODO */}
           {/* <section>

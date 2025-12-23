@@ -1,5 +1,5 @@
 import { supabaseAuth } from "@/lib/supabaseAuth";
-import { Order, OrderItem, Product, OrderHealthConsultation } from "@/models";
+import { Order, OrderItem, Product, OrderHealthConsultation, CashReceiptType } from "@/models";
 
 export interface OrderWithItems extends Order {
   order_items: (OrderItem & {
@@ -28,6 +28,9 @@ export interface CreateOrderData {
   coupon_discount?: number;
   // 배송비
   shipping_fee?: number;
+  // 현금영수증
+  cash_receipt_type?: CashReceiptType;
+  cash_receipt_number?: string;
   items: {
     product_id?: string;
     product_name: string;
@@ -79,6 +82,9 @@ export const ordersRepository = {
         shipping_postal_code: data.shipping_postal_code,
         shipping_address: data.shipping_address,
         shipping_address_detail: data.shipping_address_detail,
+        // 현금영수증 정보
+        cash_receipt_type: data.cash_receipt_type || null,
+        cash_receipt_number: data.cash_receipt_number || null,
       })
       .select()
       .single();

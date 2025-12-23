@@ -891,8 +891,15 @@ CREATE TABLE IF NOT EXISTS orders (
       'consultation_completed',
       'shipping_on_hold',
       'shipped',
-      'cancelled'
+      'cancelled',
+      'expired'
     )),
+  -- 현금영수증 관련 필드
+  cash_receipt_type VARCHAR(20) CHECK (cash_receipt_type IN ('PERSONAL', 'CORPORATE')),
+  cash_receipt_number VARCHAR(20),
+  cash_receipt_issued BOOLEAN DEFAULT FALSE,
+  cash_receipt_issue_number VARCHAR(50),
+  cash_receipt_issued_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW()),
   updated_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
 );
@@ -909,6 +916,9 @@ CREATE INDEX IF NOT EXISTS idx_orders_handler_admin_id ON orders(handler_admin_i
 CREATE INDEX IF NOT EXISTS idx_orders_tracking_number ON orders(tracking_number);
 CREATE INDEX IF NOT EXISTS idx_orders_shipped_at ON orders(shipped_at);
 CREATE INDEX IF NOT EXISTS idx_orders_status_created_at ON orders(status, created_at);
+CREATE INDEX IF NOT EXISTS idx_orders_cash_receipt_pending
+  ON orders(cash_receipt_type, cash_receipt_issued)
+  WHERE cash_receipt_type IS NOT NULL AND cash_receipt_issued = FALSE;
 
 DROP TRIGGER IF EXISTS update_orders_updated_at ON orders;
 CREATE TRIGGER update_orders_updated_at
