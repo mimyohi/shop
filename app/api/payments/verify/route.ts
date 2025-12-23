@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
     const couponDiscount = orderData.coupon_discount || 0;
 
     // 포인트 사용 금액 (있다면)
-    const pointsUsed = orderData.points_used || 0;
+    const pointsUsed = orderData.used_points || 0;
 
     // 최종 금액 계산
     const expectedTotalAmount =
