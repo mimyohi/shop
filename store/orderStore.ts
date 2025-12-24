@@ -10,7 +10,7 @@ import {
 // 단일 주문 아이템 타입
 export interface OrderItem {
   option: ProductOption | null; // 옵션이 없는 경우 null
-  product?: Product; // 옵션 없는 상품의 경우 상품 정보 직접 저장
+  product?: Product; // 상품 정보 (기본가격, 할인율 포함)
   quantity: number;
   visit_type: VisitType | null; // 옵션이 없으면 null
   selected_settings?: SelectedOptionSetting[];
@@ -29,7 +29,8 @@ interface OrderStore {
     option: ProductOption,
     quantity: number,
     visitType: VisitType,
-    selectedSettings?: SelectedOptionSetting[]
+    selectedSettings?: SelectedOptionSetting[],
+    product?: Product
   ) => void;
 
   // 주문 아이템 설정 (옵션 없는 상품)
@@ -59,11 +60,13 @@ export const useOrderStore = create<OrderStore>()(
         option: ProductOption,
         quantity: number,
         visitType: VisitType,
-        selectedSettings = []
+        selectedSettings = [],
+        product?: Product
       ) => {
         set({
           item: {
             option,
+            product,
             quantity,
             visit_type: visitType,
             selected_settings: selectedSettings.length > 0 ? selectedSettings : undefined,
@@ -101,9 +104,19 @@ export const useOrderStore = create<OrderStore>()(
       getTotalPrice: () => {
         const item = get().item;
         if (!item) return 0;
-        // 옵션이 있으면 옵션 가격, 없으면 상품 가격 사용
-        const price = item.option?.price ?? item.product?.price ?? 0;
-        return price * item.quantity;
+
+        // 할인된 기본 가격 계산 (기본가격에만 할인 적용)
+        const basePrice = item.product?.price ?? 0;
+        const discountRate = item.product?.discount_rate ?? 0;
+        const discountedBasePrice = discountRate > 0
+          ? Math.floor(basePrice * (1 - discountRate / 100))
+          : basePrice;
+
+        // 옵션이 있으면 옵션 추가 가격을 더함
+        const optionPrice = item.option?.price ?? 0;
+        const totalUnitPrice = discountedBasePrice + optionPrice;
+
+        return totalUnitPrice * item.quantity;
       },
     }),
     {

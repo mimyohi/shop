@@ -144,6 +144,16 @@ export default function CheckoutContent({
     return latestProducts.find((p) => p.id === productId) || null;
   }, [productId, latestProducts, item?.product]);
 
+  // 할인된 기본 가격 계산 (기본가격에만 할인 적용)
+  const discountedBasePrice = useMemo(() => {
+    const basePrice = product?.price ?? 0;
+    const discountRate = product?.discount_rate ?? 0;
+    if (discountRate > 0) {
+      return Math.floor(basePrice * (1 - discountRate / 100));
+    }
+    return basePrice;
+  }, [product?.price, product?.discount_rate]);
+
   // 우편번호 추출 (배송비 계산용)
   const currentZipcode = useMemo(() => {
     if (selectedAddressId) {
@@ -422,7 +432,8 @@ export default function CheckoutContent({
             product_id:
               item.option?.product_id || item.product?.id || undefined,
             product_name: product?.name || item.option?.name || "상품",
-            product_price: item.option?.price ?? item.product?.price ?? 0,
+            // 할인된 기본 가격 + 옵션 추가 가격
+            product_price: discountedBasePrice + (item.option?.price ?? 0),
             quantity: item.quantity,
             option_id: item.option?.id,
             option_name: item.option?.name,

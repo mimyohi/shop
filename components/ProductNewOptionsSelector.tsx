@@ -10,6 +10,7 @@ import type {
 
 interface Props {
   options: ProductOptionWithSettings[];
+  basePrice: number;
   onSelectionChange: (
     option: ProductOptionWithSettings | null,
     visitType: VisitType | null,
@@ -21,6 +22,7 @@ interface Props {
 
 export default function ProductNewOptionsSelector({
   options,
+  basePrice,
   onSelectionChange,
   onOptionsLoaded,
   resetTrigger,
@@ -162,7 +164,7 @@ export default function ProductNewOptionsSelector({
             <option value="">옵션을 선택해주세요</option>
             {options.map((option) => (
               <option key={option.id} value={option.id}>
-                {option.name} - {option.price.toLocaleString()}원
+                {option.name} - {(basePrice + option.price).toLocaleString()}원
               </option>
             ))}
           </select>

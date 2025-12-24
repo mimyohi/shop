@@ -105,12 +105,22 @@ export default function ProductPurchaseSection({
     shouldShowSettings,
   ]);
 
-  // 총 가격 계산
+  // 할인된 기본 가격 계산
+  const getDiscountedBasePrice = () => {
+    if (!product.discount_rate || product.discount_rate === 0) {
+      return product.price;
+    }
+    return Math.floor(product.price * (1 - product.discount_rate / 100));
+  };
+
+  const discountedBasePrice = getDiscountedBasePrice();
+
+  // 총 가격 계산 (할인된 기본가격 + 옵션 추가가격)
   const calculateTotalPrice = () => {
     if (!selectedOption) {
-      return product.price * quantity;
+      return discountedBasePrice * quantity;
     }
-    return selectedOption.price * quantity;
+    return (discountedBasePrice + selectedOption.price) * quantity;
   };
 
   // 선택된 아이템 제거
@@ -162,8 +172,8 @@ export default function ProductPurchaseSection({
       updated_at: selectedOption.updated_at,
     };
 
-    // 주문 스토어에 저장
-    setOrderItem(optionForOrder, quantity, selectedVisitType, selectedSettings);
+    // 주문 스토어에 저장 (상품 정보 포함하여 할인율 반영)
+    setOrderItem(optionForOrder, quantity, selectedVisitType, selectedSettings, product);
 
     // 결제 페이지로 이동
     router.push("/checkout");
@@ -178,6 +188,7 @@ export default function ProductPurchaseSection({
       {/* 옵션 선택 드롭다운들 */}
       <ProductNewOptionsSelector
         options={productOptions}
+        basePrice={discountedBasePrice}
         onSelectionChange={handleOptionSelectionChange}
       />
 
@@ -242,7 +253,7 @@ export default function ProductPurchaseSection({
               </div>
               {/* 가격 */}
               <span className="text-sm font-medium text-gray-900 min-w-[80px] text-right">
-                {(selectedOption.price * quantity).toLocaleString()}원
+                {((discountedBasePrice + selectedOption.price) * quantity).toLocaleString()}원
               </span>
               {/* 삭제 버튼 */}
               <button
@@ -320,7 +331,7 @@ export default function ProductPurchaseSection({
               </div>
               {/* 가격 */}
               <span className="text-sm font-medium text-gray-900 min-w-[80px] text-right">
-                {(product.price * quantity).toLocaleString()}원
+                {(discountedBasePrice * quantity).toLocaleString()}원
               </span>
             </div>
           </div>
