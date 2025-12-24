@@ -423,7 +423,10 @@ CREATE TABLE IF NOT EXISTS user_profiles (
   phone_verified BOOLEAN DEFAULT false,
   phone_verified_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW()),
-  updated_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
+  updated_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW()),
+  marketing_consent BOOLEAN DEFAULT false,
+  sms_consent BOOLEAN DEFAULT false,
+  email_consent BOOLEAN DEFAULT false
 );
 
 CREATE INDEX IF NOT EXISTS idx_user_profiles_user_id ON user_profiles(user_id);
@@ -864,6 +867,7 @@ CREATE TABLE IF NOT EXISTS orders (
   shipping_company VARCHAR(100),
   tracking_number VARCHAR(100),
   shipping_message TEXT,
+  shipping_fee INTEGER DEFAULT 0,
   shipped_at TIMESTAMPTZ,
   delivered_at TIMESTAMPTZ,
   order_memo TEXT,
@@ -998,6 +1002,7 @@ CREATE TABLE IF NOT EXISTS order_items (
   option_price INTEGER NOT NULL DEFAULT 0,
   visit_type VARCHAR(50),
   selected_option_settings JSONB,
+  selected_options JSONB,
   created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
 );
 
@@ -1605,6 +1610,62 @@ CREATE POLICY "home_products_select_all"
 -- Service Role 전체 접근
 CREATE POLICY "home_products_service_role_all"
   ON home_products FOR ALL
+  USING (auth.role() = 'service_role')
+  WITH CHECK (auth.role() = 'service_role');
+
+-- ----------------------------------------------------------------------------
+-- Instagram Images (인스타그램 이미지)
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS instagram_images (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  image_url TEXT NOT NULL,
+  link_url TEXT,
+  display_order INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_instagram_images_display_order ON instagram_images(display_order);
+CREATE INDEX IF NOT EXISTS idx_instagram_images_is_active ON instagram_images(is_active);
+
+ALTER TABLE instagram_images ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "instagram_images_select_active"
+  ON instagram_images FOR SELECT
+  USING (is_active = true);
+
+CREATE POLICY "instagram_images_service_role_all"
+  ON instagram_images FOR ALL
+  USING (auth.role() = 'service_role')
+  WITH CHECK (auth.role() = 'service_role');
+
+-- ----------------------------------------------------------------------------
+-- FAQs (자주 묻는 질문)
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS faqs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  question TEXT NOT NULL,
+  answer TEXT NOT NULL,
+  category VARCHAR(100),
+  display_order INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_faqs_category ON faqs(category);
+CREATE INDEX IF NOT EXISTS idx_faqs_display_order ON faqs(display_order);
+CREATE INDEX IF NOT EXISTS idx_faqs_is_active ON faqs(is_active);
+
+ALTER TABLE faqs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "faqs_select_active"
+  ON faqs FOR SELECT
+  USING (is_active = true);
+
+CREATE POLICY "faqs_service_role_all"
+  ON faqs FOR ALL
   USING (auth.role() = 'service_role')
   WITH CHECK (auth.role() = 'service_role');
 
