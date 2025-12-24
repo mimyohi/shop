@@ -86,7 +86,7 @@ export default function CheckoutContent({
   initialHealthConsultation,
 }: CheckoutContentProps) {
   const router = useRouter();
-  const { item, getTotalPrice, updateQuantity, clearOrder, _hasHydrated } =
+  const { item, getTotalPrice, updateQuantity, updateAddonQuantity, clearOrder, _hasHydrated } =
     useOrderStore();
   const createOrderMutation = useCreateOrder();
   const createAddressMutation = useCreateAddress();
@@ -457,6 +457,7 @@ export default function CheckoutContent({
             option_price: item.option?.price,
             visit_type: item.visit_type ?? undefined,
             selected_option_settings: item.selected_settings,
+            selected_addons: item.selected_addons,
           },
         ],
         health_consultation: healthConsultation
@@ -589,7 +590,7 @@ export default function CheckoutContent({
             <h2 className="text-lg font-medium text-gray-900 mb-4">
               주문 상품
             </h2>
-            <div className="border border-gray-200 rounded p-4">
+            <div className="relative border border-gray-200 rounded p-4">
               <div className="flex justify-between items-start gap-4">
                 <div className="flex-1">
                   <p className="text-gray-900 font-medium">
@@ -622,8 +623,8 @@ export default function CheckoutContent({
                       </div>
                     )}
 
-                  {/* 수량 조절 */}
-                  <div className="flex items-center gap-3 mt-4">
+                  {/* 수량 조절 - 옵션/설정 바로 아래 */}
+                  <div className="flex items-center gap-3 mt-3">
                     <span className="text-sm text-gray-500">수량:</span>
                     <div className="flex items-center border border-gray-200 rounded">
                       <button
@@ -644,8 +645,48 @@ export default function CheckoutContent({
                       </button>
                     </div>
                   </div>
+
+                  {/* 추가 상품 */}
+                  {item.selected_addons && item.selected_addons.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-gray-100">
+                      <p className="text-xs text-gray-500 mb-3">추가 상품</p>
+                      <div className="space-y-3">
+                        {item.selected_addons.map((addon) => (
+                          <div
+                            key={addon.addon_id}
+                            className="flex justify-between items-center"
+                          >
+                            <span className="text-sm text-gray-700">{addon.name}</span>
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center border border-gray-200 rounded">
+                                <button
+                                  onClick={() => updateAddonQuantity(addon.addon_id, addon.quantity - 1)}
+                                  disabled={addon.quantity <= 1}
+                                  className="w-7 h-7 flex items-center justify-center text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                                >
+                                  -
+                                </button>
+                                <span className="w-8 text-center text-sm border-x border-gray-200">
+                                  {addon.quantity}
+                                </span>
+                                <button
+                                  onClick={() => updateAddonQuantity(addon.addon_id, addon.quantity + 1)}
+                                  className="w-7 h-7 flex items-center justify-center text-gray-500 hover:bg-gray-50"
+                                >
+                                  +
+                                </button>
+                              </div>
+                              <span className="text-sm text-gray-600 min-w-[80px] text-right">
+                                +{(addon.price * addon.quantity).toLocaleString()}원
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="text-right">
+                <div className="absolute top-4 right-4">
                   <span className="font-medium text-gray-900">
                     {getTotalPrice().toLocaleString()}원
                   </span>

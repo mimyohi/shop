@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabaseServer";
 import type { ProductFilters, ProductListResponse } from "@/repositories/products.repository";
 import type { OrderWithItems } from "@/repositories/orders.repository";
 import type { ProductOptionWithSettings } from "@/repositories/product-options.repository";
-import type { UserPoints, PointHistory, UserCoupon, ShippingAddress, UserProfile, UserHealthConsultation } from "@/models";
+import type { UserPoints, PointHistory, UserCoupon, ShippingAddress, UserProfile, UserHealthConsultation, ProductAddon } from "@/models";
 
 /**
  * 서버 사이드 전용 데이터 패칭 함수들
@@ -312,4 +312,23 @@ export async function fetchUserHealthConsultationServer(userId: string): Promise
   }
 
   return data;
+}
+
+// ===== Product Addons =====
+export async function fetchProductAddonsServer(productId: string): Promise<ProductAddon[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("product_addons")
+    .select("*")
+    .eq("product_id", productId)
+    .eq("is_available", true)
+    .order("display_order");
+
+  if (error) {
+    console.error("Error fetching product addons:", error);
+    return [];
+  }
+
+  return data || [];
 }

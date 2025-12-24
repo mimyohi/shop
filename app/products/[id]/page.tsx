@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createServiceRoleClient } from "@/lib/supabaseServer";
-import { fetchProductOptionsWithSettingsServer } from "@/lib/server-data";
+import { fetchProductOptionsWithSettingsServer, fetchProductAddonsServer } from "@/lib/server-data";
 import ProductPurchaseSection from "@/components/ProductPurchaseSection";
 import ProductInfoSections from "@/components/ProductInfoSections";
 import Navigation from "@/components/Navigation";
@@ -140,10 +140,11 @@ export default async function ProductDetailPage({
     );
   }
 
-  // 상품 옵션 가져오기 (서버 사이드)
-  const productOptions = await fetchProductOptionsWithSettingsServer(
-    product.id
-  );
+  // 상품 옵션 및 추가 상품 가져오기 (서버 사이드)
+  const [productOptions, productAddons] = await Promise.all([
+    fetchProductOptionsWithSettingsServer(product.id),
+    fetchProductAddonsServer(product.id),
+  ]);
 
   // 할인 가격 계산
   const discountedPrice =
@@ -204,6 +205,7 @@ export default async function ProductDetailPage({
             <ProductPurchaseSection
               product={product}
               productOptions={productOptions}
+              productAddons={productAddons}
             />
           </div>
         </div>

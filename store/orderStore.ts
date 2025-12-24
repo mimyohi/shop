@@ -4,6 +4,7 @@ import {
   Product,
   ProductOption,
   SelectedOptionSetting,
+  SelectedAddon,
   VisitType,
 } from '@/models';
 
@@ -14,6 +15,7 @@ export interface OrderItem {
   quantity: number;
   visit_type: VisitType | null; // 옵션이 없으면 null
   selected_settings?: SelectedOptionSetting[];
+  selected_addons?: SelectedAddon[]; // 추가 상품
 }
 
 interface OrderStore {
@@ -30,14 +32,18 @@ interface OrderStore {
     quantity: number,
     visitType: VisitType,
     selectedSettings?: SelectedOptionSetting[],
-    product?: Product
+    product?: Product,
+    selectedAddons?: SelectedAddon[]
   ) => void;
 
   // 주문 아이템 설정 (옵션 없는 상품)
-  setOrderFromProduct: (product: Product, quantity: number) => void;
+  setOrderFromProduct: (product: Product, quantity: number, selectedAddons?: SelectedAddon[]) => void;
 
   // 수량 변경
   updateQuantity: (quantity: number) => void;
+
+  // 추가 상품 수량 변경
+  updateAddonQuantity: (addonId: string, quantity: number) => void;
 
   // 주문 초기화
   clearOrder: () => void;
@@ -61,7 +67,8 @@ export const useOrderStore = create<OrderStore>()(
         quantity: number,
         visitType: VisitType,
         selectedSettings = [],
-        product?: Product
+        product?: Product,
+        selectedAddons = []
       ) => {
         set({
           item: {
@@ -70,17 +77,19 @@ export const useOrderStore = create<OrderStore>()(
             quantity,
             visit_type: visitType,
             selected_settings: selectedSettings.length > 0 ? selectedSettings : undefined,
+            selected_addons: selectedAddons.length > 0 ? selectedAddons : undefined,
           },
         });
       },
 
-      setOrderFromProduct: (product: Product, quantity: number) => {
+      setOrderFromProduct: (product: Product, quantity: number, selectedAddons = []) => {
         set({
           item: {
             option: null,
             product,
             quantity,
             visit_type: null,
+            selected_addons: selectedAddons.length > 0 ? selectedAddons : undefined,
           },
         });
       },
@@ -93,6 +102,23 @@ export const useOrderStore = create<OrderStore>()(
           item: {
             ...currentItem,
             quantity,
+          },
+        });
+      },
+
+      updateAddonQuantity: (addonId: string, quantity: number) => {
+        const currentItem = get().item;
+        if (!currentItem || !currentItem.selected_addons) return;
+
+        const newQuantity = Math.max(1, quantity);
+        set({
+          item: {
+            ...currentItem,
+            selected_addons: currentItem.selected_addons.map((addon) =>
+              addon.addon_id === addonId
+                ? { ...addon, quantity: newQuantity }
+                : addon
+            ),
           },
         });
       },
@@ -116,7 +142,13 @@ export const useOrderStore = create<OrderStore>()(
         const optionPrice = item.option?.price ?? 0;
         const totalUnitPrice = discountedBasePrice + optionPrice;
 
-        return totalUnitPrice * item.quantity;
+        // 추가 상품 가격 계산
+        const addonsPrice = item.selected_addons?.reduce(
+          (sum, addon) => sum + addon.price * addon.quantity,
+          0
+        ) ?? 0;
+
+        return totalUnitPrice * item.quantity + addonsPrice;
       },
     }),
     {

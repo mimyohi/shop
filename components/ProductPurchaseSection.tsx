@@ -7,6 +7,8 @@ import {
   VisitType,
   SelectedOptionSetting,
   ProductOption,
+  ProductAddon,
+  SelectedAddon,
 } from "@/models";
 import { useOrderStore } from "@/store/orderStore";
 import ProductNewOptionsSelector from "./ProductNewOptionsSelector";
@@ -29,11 +31,13 @@ function getVisitTypeLabel(visitType: VisitType): string {
 interface Props {
   product: Product;
   productOptions: ProductOptionWithSettings[];
+  productAddons: ProductAddon[];
 }
 
 export default function ProductPurchaseSection({
   product,
   productOptions,
+  productAddons,
 }: Props) {
   const router = useRouter();
 
@@ -46,8 +50,10 @@ export default function ProductPurchaseSection({
   const [selectedSettings, setSelectedSettings] = useState<
     SelectedOptionSetting[]
   >([]);
+  const [selectedAddons, setSelectedAddons] = useState<SelectedAddon[]>([]);
   const [quantity, setQuantity] = useState(1);
   const hasOptions = productOptions.length > 0;
+  const hasAddons = productAddons.length > 0;
 
   // 주문 스토어
   const setOrderItem = useOrderStore((state) => state.setOrderItem);
@@ -67,6 +73,38 @@ export default function ProductPurchaseSection({
     },
     []
   );
+
+  // 추가 상품 선택/해제
+  const handleAddonToggle = useCallback((addon: ProductAddon) => {
+    setSelectedAddons((prev) => {
+      const existing = prev.find((a) => a.addon_id === addon.id);
+      if (existing) {
+        return prev.filter((a) => a.addon_id !== addon.id);
+      }
+      return [
+        ...prev,
+        {
+          addon_id: addon.id,
+          name: addon.name,
+          price: addon.price,
+          quantity: 1,
+        },
+      ];
+    });
+  }, []);
+
+  // 추가 상품 수량 변경
+  const handleAddonQuantityChange = useCallback((addonId: string, delta: number) => {
+    setSelectedAddons((prev) =>
+      prev.map((addon) => {
+        if (addon.addon_id === addonId) {
+          const newQuantity = Math.max(1, addon.quantity + delta);
+          return { ...addon, quantity: newQuantity };
+        }
+        return addon;
+      })
+    );
+  }, []);
 
   // 설정이 필요한지 확인
   const shouldShowSettings = useCallback(() => {
@@ -115,12 +153,18 @@ export default function ProductPurchaseSection({
 
   const discountedBasePrice = getDiscountedBasePrice();
 
-  // 총 가격 계산 (할인된 기본가격 + 옵션 추가가격)
+  // 추가 상품 총 가격 계산
+  const calculateAddonsPrice = () => {
+    return selectedAddons.reduce((sum, addon) => sum + addon.price * addon.quantity, 0);
+  };
+
+  // 총 가격 계산 (할인된 기본가격 + 옵션 추가가격 + 추가 상품)
   const calculateTotalPrice = () => {
+    const addonsPrice = calculateAddonsPrice();
     if (!selectedOption) {
-      return discountedBasePrice * quantity;
+      return discountedBasePrice * quantity + addonsPrice;
     }
-    return (discountedBasePrice + selectedOption.price) * quantity;
+    return (discountedBasePrice + selectedOption.price) * quantity + addonsPrice;
   };
 
   // 선택된 아이템 제거
@@ -128,6 +172,7 @@ export default function ProductPurchaseSection({
     setSelectedOption(null);
     setSelectedVisitType(null);
     setSelectedSettings([]);
+    setSelectedAddons([]);
     setQuantity(1);
   };
 
@@ -135,7 +180,7 @@ export default function ProductPurchaseSection({
   const handleBuyNow = () => {
     // 옵션이 없는 상품의 경우
     if (hasOptions === false) {
-      setOrderFromProduct(product, quantity);
+      setOrderFromProduct(product, quantity, selectedAddons);
       router.push("/checkout");
       return;
     }
@@ -173,7 +218,7 @@ export default function ProductPurchaseSection({
     };
 
     // 주문 스토어에 저장 (상품 정보 포함하여 할인율 반영)
-    setOrderItem(optionForOrder, quantity, selectedVisitType, selectedSettings, product);
+    setOrderItem(optionForOrder, quantity, selectedVisitType, selectedSettings, product, selectedAddons);
 
     // 결제 페이지로 이동
     router.push("/checkout");
@@ -191,6 +236,95 @@ export default function ProductPurchaseSection({
         basePrice={discountedBasePrice}
         onSelectionChange={handleOptionSelectionChange}
       />
+
+      {/* 추가 상품 선택 */}
+      {hasAddons && (
+        <div className="border-t border-gray-200 pt-4">
+          <p className="text-sm font-medium text-gray-700 mb-3">추가 상품</p>
+          <div className="space-y-2">
+            {productAddons.map((addon) => {
+              const selectedAddon = selectedAddons.find(
+                (a) => a.addon_id === addon.id
+              );
+              const isSelected = !!selectedAddon;
+              return (
+                <div
+                  key={addon.id}
+                  className={`p-3 border rounded-lg transition ${
+                    isSelected
+                      ? "border-gray-900 bg-gray-50"
+                      : "border-gray-200"
+                  }`}
+                >
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => handleAddonToggle(addon)}
+                      className="w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-gray-900"
+                    />
+                    {addon.image_url && (
+                      <img
+                        src={addon.image_url}
+                        alt={addon.name}
+                        className="w-12 h-12 object-cover rounded"
+                      />
+                    )}
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900">
+                        {addon.name}
+                      </p>
+                      {addon.description && (
+                        <p className="text-xs text-gray-500">{addon.description}</p>
+                      )}
+                    </div>
+                    <span className="text-sm font-medium text-gray-900">
+                      +{Number(addon.price).toLocaleString()}원
+                    </span>
+                  </label>
+                  {/* 수량 조절 - 선택된 경우에만 표시 */}
+                  {isSelected && selectedAddon && (
+                    <div className="flex items-center justify-end mt-2 pt-2 border-t border-gray-200">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-gray-500">수량</span>
+                        <div className="flex items-center border border-gray-300 rounded">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handleAddonQuantityChange(addon.id, -1);
+                            }}
+                            className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+                            disabled={selectedAddon.quantity <= 1}
+                          >
+                            -
+                          </button>
+                          <span className="w-8 text-center text-sm font-medium">
+                            {selectedAddon.quantity}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handleAddonQuantityChange(addon.id, 1);
+                            }}
+                            className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-100"
+                          >
+                            +
+                          </button>
+                        </div>
+                        <span className="text-sm font-medium text-gray-900 min-w-[80px] text-right">
+                          +{(Number(addon.price) * selectedAddon.quantity).toLocaleString()}원
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* 선택된 상품 표시 - 옵션이 있는 경우 */}
       {canBuy && selectedOption && selectedVisitType && (

@@ -30,14 +30,15 @@ export function calculateOrderItemPrice(item: OrderItemForCalculation): number {
     });
   }
 
-  // 애드온 가격 추가
+  // 애드온 가격 추가 (addon은 자체 수량 사용, 메인 상품 수량과 별개)
   if (item.selected_addons) {
     const addons = Array.isArray(item.selected_addons)
       ? item.selected_addons
       : [];
     addons.forEach((addon: any) => {
       if (addon.price) {
-        itemTotal += addon.price * item.quantity;
+        const addonQuantity = addon.quantity || 1;
+        itemTotal += addon.price * addonQuantity;
       }
     });
   }

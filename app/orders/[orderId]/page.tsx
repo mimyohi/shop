@@ -412,47 +412,138 @@ export default async function OrderDetailPage({ params }: PageProps) {
                       <p className="font-semibold text-gray-900">
                         {item.product_name}
                       </p>
-                      {item.option_name && (
-                        <p className="text-sm text-gray-600 mt-1">
-                          옵션: {item.option_name}
-                          {item.visit_type && (
-                            <span className="ml-2 inline-block px-2 py-0.5 bg-black-100 text-black-700 rounded text-xs">
-                              {getVisitTypeLabel(item.visit_type)}
-                            </span>
-                          )}
+
+                      {/* 옵션 섹션 */}
+                      {(item.option_name ||
+                        (item.selected_option_settings &&
+                          Array.isArray(item.selected_option_settings) &&
+                          item.selected_option_settings.length > 0)) && (
+                        <div className="mt-2 pb-2">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              {item.option_name && (
+                                <p className="text-sm text-gray-600">
+                                  옵션: {item.option_name}
+                                  {item.visit_type && (
+                                    <span className="ml-2 inline-block px-2 py-0.5 bg-black-100 text-black-700 rounded text-xs">
+                                      {getVisitTypeLabel(item.visit_type)}
+                                    </span>
+                                  )}
+                                </p>
+                              )}
+                              {item.selected_option_settings &&
+                                Array.isArray(item.selected_option_settings) &&
+                                item.selected_option_settings.length > 0 && (
+                                  <div className="mt-2 flex flex-wrap gap-1">
+                                    {item.selected_option_settings.map(
+                                      (setting: any, idx: number) => (
+                                        <span
+                                          key={idx}
+                                          className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded"
+                                        >
+                                          {setting.setting_name}:{" "}
+                                          {setting.type_name}
+                                        </span>
+                                      )
+                                    )}
+                                  </div>
+                                )}
+                              {/* 수량 - 옵션 바로 아래 */}
+                              <p className="text-sm text-gray-500 mt-2">
+                                수량: {item.quantity}개
+                              </p>
+                            </div>
+                            <div className="text-right ml-4">
+                              <p className="font-semibold text-gray-900">
+                                {(
+                                  item.product_price * item.quantity
+                                ).toLocaleString()}
+                                원
+                              </p>
+                              {item.option_price && item.option_price > 0 && (
+                                <p className="text-xs text-gray-500">
+                                  (옵션가 {item.option_price.toLocaleString()}
+                                  원)
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 옵션이 없을 때 수량 표시 */}
+                      {!(
+                        item.option_name ||
+                        (item.selected_option_settings &&
+                          Array.isArray(item.selected_option_settings) &&
+                          item.selected_option_settings.length > 0)
+                      ) && (
+                        <p className="text-sm text-gray-500 mt-2">
+                          수량: {item.quantity}개
                         </p>
                       )}
-                      {item.selected_option_settings &&
-                        Array.isArray(item.selected_option_settings) &&
-                        item.selected_option_settings.length > 0 && (
-                          <div className="mt-2 flex flex-wrap gap-1">
-                            {item.selected_option_settings.map(
-                              (setting: any, idx: number) => (
-                                <span
-                                  key={idx}
-                                  className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded"
-                                >
-                                  {setting.setting_name}: {setting.type_name}
-                                </span>
-                              )
-                            )}
+
+                      {/* 추가 상품 섹션 */}
+                      {item.selected_addons &&
+                        Array.isArray(item.selected_addons) &&
+                        item.selected_addons.length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-gray-100">
+                            <p className="text-xs text-gray-500 mb-2">
+                              추가 상품
+                            </p>
+                            <div className="space-y-1">
+                              {item.selected_addons.map(
+                                (addon: any, idx: number) => (
+                                  <div
+                                    key={idx}
+                                    className="flex justify-between text-sm"
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-gray-700">
+                                        {addon.name}
+                                      </span>
+                                      {(addon.quantity || 1) > 1 && (
+                                        <span className="text-xs text-gray-500">
+                                          x{addon.quantity}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <span className="text-gray-600">
+                                      +
+                                      {(
+                                        Number(addon.price) *
+                                        (addon.quantity || 1)
+                                      ).toLocaleString()}
+                                      원
+                                    </span>
+                                  </div>
+                                )
+                              )}
+                            </div>
                           </div>
                         )}
-                      <p className="text-sm text-gray-500 mt-1">
-                        수량: {item.quantity}개
-                      </p>
                     </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-gray-900">
-                        {(item.product_price * item.quantity).toLocaleString()}
-                        원
-                      </p>
-                      {item.option_price && item.option_price > 0 && (
-                        <p className="text-xs text-gray-500">
-                          (옵션가 {item.option_price.toLocaleString()}원)
+                    {/* 옵션이 없을 때만 오른쪽에 가격 표시 */}
+                    {!(
+                      item.option_name ||
+                      (item.selected_option_settings &&
+                        Array.isArray(item.selected_option_settings) &&
+                        item.selected_option_settings.length > 0)
+                    ) && (
+                      <div className="text-right">
+                        <p className="font-semibold text-gray-900">
+                          {(
+                            item.product_price * item.quantity
+                          ).toLocaleString()}
+                          원
                         </p>
-                      )}
-                    </div>
+                        {item.option_price && item.option_price > 0 && (
+                          <p className="text-xs text-gray-500">
+                            (옵션가 {item.option_price.toLocaleString()}원)
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -473,6 +564,39 @@ export default async function OrderDetailPage({ params }: PageProps) {
                   원
                 </span>
               </div>
+
+              {/* 추가 상품 금액 */}
+              {order.order_items.some(
+                (item) =>
+                  item.selected_addons &&
+                  Array.isArray(item.selected_addons) &&
+                  item.selected_addons.length > 0
+              ) && (
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-500">추가 상품</span>
+                  <span className="text-gray-700">
+                    {order.order_items
+                      .reduce((sum, item) => {
+                        if (
+                          !item.selected_addons ||
+                          !Array.isArray(item.selected_addons)
+                        )
+                          return sum;
+                        return (
+                          sum +
+                          item.selected_addons.reduce(
+                            (addonSum: number, addon: any) =>
+                              addonSum +
+                              Number(addon.price) * (addon.quantity || 1),
+                            0
+                          )
+                        );
+                      }, 0)
+                      .toLocaleString()}
+                    원
+                  </span>
+                </div>
+              )}
 
               {/* 쿠폰 할인 */}
               {order.coupon_discount != null && order.coupon_discount > 0 && (
