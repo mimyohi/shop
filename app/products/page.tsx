@@ -70,7 +70,7 @@ async function ProductsContent({
       <Navigation />
 
       {/* 히어로 배너 */}
-      <div className="relative w-full max-w-7xl mx-auto pt-10 px-4 sm:px-6 lg:px-8">
+      <div className="relative w-full max-w-7xl mx-auto md:pt-10 pt-0 px-4 sm:px-6 lg:px-8">
         {/* PC 배너 */}
         <img
           src="/images/product-pc-banner.png"

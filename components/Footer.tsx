@@ -1,18 +1,22 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Footer() {
   return (
     <footer className="bg-[#f8f8f8]">
       {/* 로고 섹션 */}
       <div className="py-12 border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <Link
-            href="/"
-            className="text-2xl font-semibold tracking-widest text-gray-900 font-montserrat"
-          >
-            MIMYOHI
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-center">
+          <Link href="/">
+            <Image
+              src="/images/logo.png"
+              alt="MIMYOHI"
+              width={150}
+              height={40}
+              className="h-8 w-auto"
+            />
           </Link>
         </div>
       </div>

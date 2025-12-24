@@ -24,7 +24,7 @@ export default function BestItemSection({ products }: BestItemSectionProps) {
   }
 
   return (
-    <section className="py-16 bg-white">
+    <section className="bg-white">
       {/* 데스크톱: 3열 그리드 */}
       <div className="hidden md:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid md:grid-cols-3 gap-x-6 gap-y-10">
@@ -48,7 +48,7 @@ export default function BestItemSection({ products }: BestItemSectionProps) {
       <div className="md:hidden">
         <div
           className="flex gap-4 overflow-x-auto scrollbar-hide px-4 pb-4"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
           {products.map((product) => (
             <div key={product.id} className="flex-shrink-0 w-[200px]">
