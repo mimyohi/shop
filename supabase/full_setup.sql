@@ -1127,7 +1127,7 @@ COMMENT ON TABLE user_health_consultations IS '사용자 저장 문진 정보 (�
 CREATE TABLE IF NOT EXISTS order_health_consultation (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id UUID NOT NULL UNIQUE REFERENCES orders(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE SET NULL,
+  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   -- 1) 개인정보
   name TEXT NOT NULL,
   resident_number TEXT NOT NULL,

@@ -4,11 +4,35 @@ import { createClient } from '@/lib/supabaseServer'
 import { revalidatePath } from 'next/cache'
 import type { UpsertUserHealthConsultationInput } from '@/repositories/user-health-consultations.repository'
 
+// numeric(5,2) 범위 검증 (최대 999.99)
+function validateNumericField(value: number | undefined, fieldName: string, max: number = 999.99): string | null {
+  if (value === undefined) return null
+  if (value < 0) return `${fieldName}은(는) 0 이상이어야 합니다.`
+  if (value > max) return `${fieldName}이(가) 너무 큽니다. (최대: ${max})`
+  return null
+}
+
 /**
  * 사용자 문진 정보 저장/수정 서버 액션
  */
 export async function saveUserHealthConsultationAction(data: UpsertUserHealthConsultationInput) {
   try {
+    // 숫자 필드 범위 검증 (DB: numeric(5,2) - 최대 999.99)
+    const validationErrors = [
+      validateNumericField(data.current_height, '키', 300),
+      validateNumericField(data.current_weight, '체중', 500),
+      validateNumericField(data.min_weight_since_20s, '최저체중', 500),
+      validateNumericField(data.max_weight_since_20s, '최고체중', 500),
+      validateNumericField(data.target_weight, '희망체중', 500),
+    ].filter(Boolean)
+
+    if (validationErrors.length > 0) {
+      return {
+        success: false,
+        error: validationErrors[0],
+      }
+    }
+
     const supabase = await createClient()
 
     // 사용자 인증 확인

@@ -1267,17 +1267,6 @@ export default function CheckoutContent({
             </div>
 
             <div className="border border-gray-200 rounded p-4">
-              {!healthConsultation && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded p-3 mb-4">
-                  <p className="text-sm text-yellow-800 font-medium">
-                    문진 정보를 작성해주세요
-                  </p>
-                  <p className="text-xs text-yellow-700 mt-0.5">
-                    정확한 상담을 위해 문진 정보 입력이 필수입니다.
-                  </p>
-                </div>
-              )}
-
               {!showHealthForm && healthConsultation && (
                 <>
                   <p className="text-sm text-gray-900 font-medium flex items-center gap-1">
@@ -1316,7 +1305,11 @@ export default function CheckoutContent({
           <div className="pt-4 space-y-3">
             <button
               onClick={handlePayment}
-              disabled={isLoading || isCalculatingShipping || (!shippingFee && !!selectedAddressId)}
+              disabled={
+                isLoading ||
+                isCalculatingShipping ||
+                (!shippingFee && !!selectedAddressId)
+              }
               className="w-full bg-gray-900 text-white py-4 rounded font-medium hover:bg-gray-800 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
               {isLoading

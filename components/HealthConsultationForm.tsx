@@ -208,6 +208,7 @@ export default function HealthConsultationForm({
               <input
                 type="number"
                 min="0"
+                max="300"
                 step="0.1"
                 value={currentHeight}
                 onChange={(e) => setCurrentHeight(e.target.value ? Number(e.target.value) : '')}
@@ -223,6 +224,7 @@ export default function HealthConsultationForm({
               <input
                 type="number"
                 min="0"
+                max="500"
                 step="0.1"
                 value={currentWeight}
                 onChange={(e) => setCurrentWeight(e.target.value ? Number(e.target.value) : '')}
@@ -243,6 +245,7 @@ export default function HealthConsultationForm({
                 <input
                   type="number"
                   min="0"
+                  max="500"
                   step="0.1"
                   value={minWeightSince20s}
                   onChange={(e) =>
@@ -258,6 +261,7 @@ export default function HealthConsultationForm({
                 <input
                   type="number"
                   min="0"
+                  max="500"
                   step="0.1"
                   value={maxWeightSince20s}
                   onChange={(e) =>
@@ -279,6 +283,7 @@ export default function HealthConsultationForm({
               <input
                 type="number"
                 min="0"
+                max="500"
                 step="0.1"
                 value={targetWeight}
                 onChange={(e) => setTargetWeight(e.target.value ? Number(e.target.value) : '')}
