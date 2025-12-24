@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import AddressSearch from "@/components/AddressSearch";
 import PhoneInput from "@/components/PhoneInput";
-import { supabaseAuth } from "@/lib/supabaseAuth";
 import {
   useCreateAddress,
   useDeleteAddress,
@@ -78,6 +77,11 @@ export default function ProfileContent({
 
   // 쿠폰 관련 상태
   const [couponCode, setCouponCode] = useState("");
+
+  // 회원탈퇴 관련 상태
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // 포인트 히스토리 필터
   const [pointsFilter, setPointsFilter] = useState<"all" | "earn" | "use">(
@@ -224,6 +228,51 @@ export default function ProfileContent({
     window.location.href = "/";
   };
 
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== "회원탈퇴") {
+      alert("'회원탈퇴'를 정확히 입력해주세요.");
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      const response = await fetch("/api/auth/delete-account", {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "회원 탈퇴에 실패했습니다.");
+      }
+
+      // 로컬 스토리지 및 쿠키 정리
+      const cookies = document.cookie.split(";");
+      for (const cookie of cookies) {
+        const cookieName = cookie.split("=")[0].trim();
+        if (cookieName.includes("supabase") || cookieName.includes("sb-")) {
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+        }
+      }
+
+      for (const key of Object.keys(localStorage)) {
+        if (key.includes("supabase") || key.includes("sb-")) {
+          localStorage.removeItem(key);
+        }
+      }
+
+      alert("회원 탈퇴가 완료되었습니다. 그동안 이용해 주셔서 감사합니다.");
+      window.location.href = "/";
+    } catch (error: any) {
+      alert(error.message || "회원 탈퇴 중 오류가 발생했습니다.");
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteModal(false);
+      setDeleteConfirmText("");
+    }
+  };
+
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
   };
@@ -355,8 +404,34 @@ export default function ProfileContent({
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col md:flex-row gap-8">
-          {/* 좌측 사이드바 */}
-          <aside className="md:w-56 shrink-0">
+          {/* 모바일: 가로 스크롤 탭 */}
+          <div className="md:hidden overflow-x-auto -mx-4 px-4">
+            <div className="flex gap-2 pb-2 min-w-max">
+              {[
+                { key: "info", label: "내 정보" },
+                { key: "orders", label: "주문 내역" },
+                { key: "points", label: "포인트" },
+                { key: "coupons", label: "쿠폰" },
+                { key: "addresses", label: "배송지 관리" },
+                { key: "health", label: "문진 관리" },
+              ].map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => handleTabChange(tab.key as TabType)}
+                  className={`px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition ${
+                    activeTab === tab.key
+                      ? "bg-gray-900 text-white"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* PC: 좌측 사이드바 */}
+          <aside className="hidden md:block md:w-56 shrink-0">
             <nav className="space-y-1">
               {[
                 { key: "info", label: "내 정보" },
@@ -385,6 +460,12 @@ export default function ProfileContent({
                 className="w-full text-left px-4 py-3 text-sm text-gray-500 hover:text-red-600 transition"
               >
                 로그아웃
+              </button>
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="w-full text-left px-4 py-3 text-sm text-gray-400 hover:text-red-600 transition"
+              >
+                회원탈퇴
               </button>
             </div>
           </aside>
@@ -446,6 +527,22 @@ export default function ProfileContent({
                       </button>
                     </div>
                   )}
+                </div>
+
+                {/* 모바일용 로그아웃/회원탈퇴 버튼 */}
+                <div className="md:hidden mt-8 pt-6 border-t border-gray-200 space-y-3">
+                  <button
+                    onClick={handleLogout}
+                    className="w-full py-3 text-sm text-gray-500 hover:text-red-600 border border-gray-200 rounded transition"
+                  >
+                    로그아웃
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteModal(true)}
+                    className="w-full py-3 text-sm text-gray-400 hover:text-red-600 border border-gray-200 rounded transition"
+                  >
+                    회원탈퇴
+                  </button>
                 </div>
               </div>
             )}
@@ -1009,6 +1106,63 @@ export default function ProfileContent({
       </main>
 
       <Footer />
+
+      {/* 회원탈퇴 확인 모달 */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              회원탈퇴
+            </h3>
+            <div className="space-y-4">
+              <div className="p-4 bg-red-50 rounded text-sm text-red-700">
+                <p className="font-medium mb-2">주의사항</p>
+                <ul className="list-disc list-inside space-y-1 text-red-600">
+                  <li>탈퇴 시 모든 개인정보가 삭제됩니다.</li>
+                  <li>보유 포인트와 쿠폰이 모두 소멸됩니다.</li>
+                  <li>주문 내역은 법적 보관 기간 동안 유지됩니다.</li>
+                  <li>삭제된 정보는 복구할 수 없습니다.</li>
+                </ul>
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-600 mb-2">
+                  탈퇴를 원하시면 아래에 <strong>'회원탈퇴'</strong>를
+                  입력해주세요.
+                </label>
+                <input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="회원탈퇴"
+                  className="w-full px-4 py-2 border border-gray-200 rounded focus:outline-none focus:border-red-400"
+                  disabled={isDeleting}
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setDeleteConfirmText("");
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-200 rounded text-gray-600 hover:bg-gray-50 transition"
+                  disabled={isDeleting}
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={deleteConfirmText !== "회원탈퇴" || isDeleting}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                  {isDeleting ? "처리 중..." : "탈퇴하기"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
