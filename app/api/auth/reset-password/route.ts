@@ -34,10 +34,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 비밀번호 길이 검증
-    if (newPassword.length < 6) {
+    // 비밀번호 정책 검증 (최소 8자, 영문+숫자 조합)
+    if (newPassword.length < 8) {
       return NextResponse.json(
-        { success: false, error: '비밀번호는 최소 6자 이상이어야 합니다.' },
+        { success: false, error: '비밀번호는 최소 8자 이상이어야 합니다.' },
+        { status: 400 }
+      );
+    }
+
+    // 영문자 포함 검증
+    if (!/[a-zA-Z]/.test(newPassword)) {
+      return NextResponse.json(
+        { success: false, error: '비밀번호에 영문자가 포함되어야 합니다.' },
+        { status: 400 }
+      );
+    }
+
+    // 숫자 포함 검증
+    if (!/[0-9]/.test(newPassword)) {
+      return NextResponse.json(
+        { success: false, error: '비밀번호에 숫자가 포함되어야 합니다.' },
         { status: 400 }
       );
     }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PortOneClient, PortOneError } from "@portone/server-sdk";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { createClient } from "@/lib/supabaseServer";
 import { env } from "@/env";
 import { recalculateShippingFeeForValidation } from "@/lib/shipping/calculate-shipping-fee";
 import { calculateProductAmount } from "@/lib/utils/price-calculation";
@@ -23,7 +24,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("결제 확인 요청 - paymentId:", paymentId);
+    // 사용자 인증 확인 (로그인한 경우 권한 검사)
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    console.log("결제 확인 요청 - paymentId:", paymentId, "user:", user?.id);
 
     // API Secret 확인
     if (!env.PORTONE_API_SECRET) {
@@ -90,6 +95,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 권한 검사: 로그인한 사용자의 경우 본인 주문인지 확인
+    if (user && orderData.user_id && orderData.user_id !== user.id) {
+      console.error("권한 없음: 다른 사용자의 주문", {
+        userId: user.id,
+        orderUserId: orderData.user_id,
+      });
+      return NextResponse.json(
+        { error: "이 주문에 대한 권한이 없습니다." },
+        { status: 403 }
+      );
+    }
+
     // 이미 완료된 주문인 경우 중복 처리 방지
     if (orderData.status === "completed") {
       console.log("이미 완료된 주문입니다 - paymentId:", paymentId);
@@ -133,11 +150,70 @@ export async function POST(request: NextRequest) {
       zipcode
     );
 
-    // 쿠폰 할인 금액 (있다면)
-    const couponDiscount = orderData.coupon_discount || 0;
+    // 쿠폰 할인 금액 서버 검증
+    let couponDiscount = 0;
+    if (orderData.user_coupon_id) {
+      const { data: userCoupon } = await supabaseAdmin
+        .from("user_coupons")
+        .select("*, coupon:coupons(*)")
+        .eq("id", orderData.user_coupon_id)
+        .single();
 
-    // 포인트 사용 금액 (있다면)
-    const pointsUsed = orderData.used_points || 0;
+      if (userCoupon && !userCoupon.is_used) {
+        const coupon = userCoupon.coupon;
+        // 쿠폰 유효성 검사
+        const now = new Date();
+        const validFrom = coupon.valid_from ? new Date(coupon.valid_from) : null;
+        const validUntil = coupon.valid_until ? new Date(coupon.valid_until) : null;
+
+        if (coupon.is_active &&
+            (!validFrom || now >= validFrom) &&
+            (!validUntil || now <= validUntil) &&
+            productAmount >= (coupon.min_purchase || 0)) {
+          if (coupon.discount_type === "percentage") {
+            couponDiscount = Math.floor(productAmount * (coupon.discount_value / 100));
+            if (coupon.max_discount) {
+              couponDiscount = Math.min(couponDiscount, coupon.max_discount);
+            }
+          } else {
+            couponDiscount = coupon.discount_value;
+          }
+        }
+      }
+
+      // DB에 저장된 할인 금액과 서버 계산 금액 비교
+      if (Math.abs(couponDiscount - (orderData.coupon_discount || 0)) > 1) {
+        console.error("쿠폰 할인 금액 불일치:", {
+          serverCalculated: couponDiscount,
+          stored: orderData.coupon_discount,
+        });
+        return NextResponse.json(
+          { error: "쿠폰 할인 금액이 올바르지 않습니다." },
+          { status: 400 }
+        );
+      }
+    }
+
+    // 포인트 사용 금액 서버 검증
+    let pointsUsed = orderData.used_points || 0;
+    if (pointsUsed > 0 && orderData.user_id) {
+      const { data: userPoints } = await supabaseAdmin
+        .from("user_points")
+        .select("points")
+        .eq("user_id", orderData.user_id)
+        .single();
+
+      if (!userPoints || userPoints.points < pointsUsed) {
+        console.error("포인트 사용 불가:", {
+          requested: pointsUsed,
+          available: userPoints?.points || 0,
+        });
+        return NextResponse.json(
+          { error: "사용 가능한 포인트가 부족합니다." },
+          { status: 400 }
+        );
+      }
+    }
 
     // 최종 금액 계산
     const expectedTotalAmount =

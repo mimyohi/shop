@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
-import { supabaseAuth } from '@/lib/supabaseAuth';
+import { createServiceClient } from '@/lib/supabaseServiceServer';
 import { validateAndFormatPhone } from '@/lib/phone/validation';
 import { validateOTP } from '@/lib/phone/otp';
 import { checkOTPVerifyRateLimit } from '@/lib/ratelimit';
@@ -24,6 +23,8 @@ import { checkOTPVerifyRateLimit } from '@/lib/ratelimit';
  */
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createServiceClient();
+
     // 1. Request Body 파싱
     const body = await request.json();
     const { phone, otp, flow: rawFlow } = body;
@@ -166,19 +167,18 @@ export async function POST(request: NextRequest) {
       // 신규 사용자 회원가입
       isNewUser = true;
 
-      // Supabase Auth에 사용자 생성 (이메일 없이)
+      // Supabase Auth에 사용자 생성 (서비스 클라이언트 사용)
       // 임시 이메일: phone@phone.local (실제로는 이메일 확인 불필요)
       const tempEmail = `${e164Phone.replace(/\+/g, '')}@phone.local`;
       const tempPassword = Math.random().toString(36).slice(-16) + Math.random().toString(36).slice(-16); // 랜덤 비밀번호
 
-      const { data: authData, error: authError } = await supabaseAuth.auth.signUp({
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email: tempEmail,
         password: tempPassword,
-        options: {
-          data: {
-            phone: e164Phone,
-            phone_verified: true,
-          },
+        email_confirm: true,
+        user_metadata: {
+          phone: e164Phone,
+          phone_verified: true,
         },
       });
 

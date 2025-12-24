@@ -96,6 +96,9 @@ export async function updateKakaoUserProfileAction(
   }
 }
 
+// 허용된 프로필 업데이트 필드 (화이트리스트)
+const ALLOWED_PROFILE_UPDATE_FIELDS = ['display_name', 'phone'] as const;
+
 /**
  * 사용자 프로필 업데이트 서버 액션
  */
@@ -124,11 +127,19 @@ export async function updateUserProfileAction(userId: string, data: UpdateUserPr
       }
     }
 
+    // 화이트리스트에 있는 필드만 업데이트 허용
+    const sanitizedData: Record<string, unknown> = {}
+    for (const field of ALLOWED_PROFILE_UPDATE_FIELDS) {
+      if (field in data && data[field as keyof UpdateUserProfileData] !== undefined) {
+        sanitizedData[field] = data[field as keyof UpdateUserProfileData]
+      }
+    }
+
     // 프로필 업데이트
     const { data: updated, error } = await supabase
       .from('user_profiles')
       .update({
-        ...data,
+        ...sanitizedData,
         updated_at: new Date().toISOString(),
       })
       .eq('user_id', userId)

@@ -14,25 +14,31 @@ export async function POST(request: NextRequest) {
     const body = await request.text();
     const webhookSecret = env.PORTONE_WEBHOOK_SECRET;
 
-    // 웹훅 시크릿이 설정된 경우 검증
-    if (webhookSecret) {
-      const signatureHeader = request.headers.get("webhook-signature") || "";
-      const timestampHeader = request.headers.get("webhook-timestamp") || "";
-      const idHeader = request.headers.get("webhook-id") || "";
+    // 웹훅 시크릿 필수 검증
+    if (!webhookSecret) {
+      console.error("PORTONE_WEBHOOK_SECRET 환경 변수가 설정되지 않았습니다.");
+      return NextResponse.json(
+        { error: "서버 설정 오류입니다." },
+        { status: 500 }
+      );
+    }
 
-      try {
-        Webhook.verify(webhookSecret, body, {
-          "webhook-signature": signatureHeader,
-          "webhook-timestamp": timestampHeader,
-          "webhook-id": idHeader,
-        });
-      } catch (e) {
-        console.error("웹훅 검증 실패:", e);
-        return NextResponse.json(
-          { error: "웹훅 검증에 실패했습니다." },
-          { status: 400 }
-        );
-      }
+    const signatureHeader = request.headers.get("webhook-signature") || "";
+    const timestampHeader = request.headers.get("webhook-timestamp") || "";
+    const idHeader = request.headers.get("webhook-id") || "";
+
+    try {
+      Webhook.verify(webhookSecret, body, {
+        "webhook-signature": signatureHeader,
+        "webhook-timestamp": timestampHeader,
+        "webhook-id": idHeader,
+      });
+    } catch (e) {
+      console.error("웹훅 검증 실패:", e);
+      return NextResponse.json(
+        { error: "웹훅 검증에 실패했습니다." },
+        { status: 401 }
+      );
     }
 
     const webhookData = JSON.parse(body);
@@ -83,6 +89,22 @@ export async function POST(request: NextRequest) {
           success: true,
           message: "이미 처리된 주문입니다.",
         });
+      }
+
+      // 금액 검증 추가
+      const paidAmountFromPG = (paymentData as any).amount?.total || 0;
+      const expectedAmount = orderData.total_amount || 0;
+
+      if (Math.abs(paidAmountFromPG - expectedAmount) > 1) {
+        console.error("금액 불일치:", {
+          expected: expectedAmount,
+          paid: paidAmountFromPG,
+          orderId: paymentId,
+        });
+        return NextResponse.json(
+          { error: "결제 금액이 일치하지 않습니다." },
+          { status: 400 }
+        );
       }
 
       // 주문 상태 업데이트

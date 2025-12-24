@@ -1,8 +1,23 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabaseServiceServer";
+import { checkRateLimit, RateLimitPresets, getClientIP } from "@/lib/ratelimit";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    // Rate Limiting - IP당
+    const clientIP = getClientIP(request.headers);
+    const ipRateLimit = checkRateLimit(clientIP, RateLimitPresets.EMAIL_CHECK_PER_IP);
+    if (!ipRateLimit.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: ipRateLimit.error,
+          resetAt: ipRateLimit.resetAt,
+        },
+        { status: 429 }
+      );
+    }
+
     const { email } = await request.json();
 
     if (!email || typeof email !== "string") {

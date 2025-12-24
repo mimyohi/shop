@@ -178,6 +178,24 @@ export const RateLimitPresets = {
     windowMs: 15 * 60 * 1000, // 15분
     prefix: 'login:ip',
   } as RateLimitConfig,
+
+  /**
+   * 이메일 체크: IP당 5분에 10회
+   */
+  EMAIL_CHECK_PER_IP: {
+    maxRequests: 10,
+    windowMs: 5 * 60 * 1000, // 5분
+    prefix: 'email:check:ip',
+  } as RateLimitConfig,
+
+  /**
+   * 아이디 찾기: IP당 15분에 5회
+   */
+  FIND_ID_PER_IP: {
+    maxRequests: 5,
+    windowMs: 15 * 60 * 1000, // 15분
+    prefix: 'find:id:ip',
+  } as RateLimitConfig,
 };
 
 /**

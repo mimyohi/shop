@@ -221,10 +221,13 @@ export async function deleteOrderByOrderIdAction(order_id: string) {
   try {
     const supabase = await createClient();
 
+    // 사용자 인증 확인
+    const { data: { user } } = await supabase.auth.getUser();
+
     // 1. 주문 조회
     const { data: order, error: findError } = await supabase
       .from("orders")
-      .select("id, status")
+      .select("id, status, user_id, user_email")
       .eq("order_id", order_id)
       .single();
 
@@ -233,6 +236,24 @@ export async function deleteOrderByOrderIdAction(order_id: string) {
         success: false,
         error: "Order not found",
       };
+    }
+
+    // 권한 검사: 로그인한 사용자의 경우 본인 주문인지 확인
+    if (user) {
+      if (order.user_id && order.user_id !== user.id) {
+        return {
+          success: false,
+          error: "Unauthorized to delete this order",
+        };
+      }
+    } else {
+      // 비로그인 사용자는 user_id가 null인 주문만 삭제 가능
+      if (order.user_id) {
+        return {
+          success: false,
+          error: "Unauthorized to delete this order",
+        };
+      }
     }
 
     // pending 상태인 주문만 삭제 가능 (결제 완료된 주문은 삭제 불가)

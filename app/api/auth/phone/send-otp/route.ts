@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { createServiceClient } from "@/lib/supabaseServiceServer";
 import { validateAndFormatPhone } from "@/lib/phone/validation";
 import { createOTP } from "@/lib/phone/otp";
 import { sendOTP } from "@/lib/kakao/alimtalk";
@@ -26,6 +26,8 @@ import {
  */
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createServiceClient();
+
     // 1. Request Body 파싱
     const body = await request.json();
     const { phone } = body;

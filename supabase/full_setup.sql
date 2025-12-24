@@ -920,24 +920,68 @@ CREATE TRIGGER update_orders_updated_at
 
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 
+-- 보안 정책: 인증된 사용자만 본인 주문 조회 가능
+-- 비로그인 사용자의 주문은 API를 통해 order_id로만 조회 가능 (service_role 사용)
 CREATE POLICY "orders_select_own"
   ON orders FOR SELECT
   USING (
-    (auth.uid() IS NOT NULL AND user_id = auth.uid()) OR
-    (auth.uid() IS NULL AND user_email = current_setting('request.headers', true)::json->>'x-user-email')
+    -- 로그인한 사용자는 본인 주문만 조회
+    (auth.uid() IS NOT NULL AND user_id = auth.uid())
+    -- OR service_role은 모든 주문 조회 가능
+    OR (auth.role() = 'service_role'::text)
   );
 
 CREATE POLICY "orders_insert_authenticated"
   ON orders FOR INSERT
   WITH CHECK (
-    (auth.uid() IS NOT NULL AND user_id = auth.uid()) OR
-    (auth.uid() IS NULL)
+    (auth.uid() IS NOT NULL AND (user_id = auth.uid() OR user_id IS NULL)) OR
+    (auth.uid() IS NULL AND user_id IS NULL)
+  );
+
+CREATE POLICY "orders_update_own"
+  ON orders FOR UPDATE
+  USING (
+    -- 로그인한 사용자는 본인 주문만 수정
+    (auth.uid() IS NOT NULL AND user_id = auth.uid())
+    -- OR service_role은 모든 주문 수정 가능
+    OR (auth.role() = 'service_role'::text)
+  )
+  WITH CHECK (
+    (auth.uid() IS NOT NULL AND user_id = auth.uid())
+    OR (auth.role() = 'service_role'::text)
+  );
+
+CREATE POLICY "orders_delete_own"
+  ON orders FOR DELETE
+  USING (
+    -- 로그인한 사용자는 본인 주문만 삭제
+    (auth.uid() IS NOT NULL AND user_id = auth.uid())
+    -- OR service_role은 모든 주문 삭제 가능
+    OR (auth.role() = 'service_role'::text)
   );
 
 CREATE POLICY "orders_service_role_all"
   ON orders FOR ALL
   USING (auth.role() = 'service_role')
   WITH CHECK (auth.role() = 'service_role');
+
+-- 비로그인 사용자 주문 조회를 위한 보안 함수 (order_id + email 검증)
+CREATE OR REPLACE FUNCTION get_order_by_order_id(p_order_id TEXT, p_user_email TEXT DEFAULT NULL)
+RETURNS SETOF orders
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT o.*
+  FROM orders o
+  WHERE o.order_id = p_order_id
+    AND (
+      (p_user_email IS NOT NULL AND o.user_email = p_user_email)
+      OR (p_user_email IS NULL AND o.user_id IS NULL)
+    );
+END;
+$$;
 
 CREATE TABLE IF NOT EXISTS order_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -968,17 +1012,16 @@ CREATE INDEX IF NOT EXISTS idx_order_items_option_id ON order_items(option_id);
 
 ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
 
+-- 보안 정책: 인증된 사용자만 본인 주문 아이템 조회 가능
 CREATE POLICY "order_items_select_own"
   ON order_items FOR SELECT
   USING (
     EXISTS (
       SELECT 1 FROM orders o
       WHERE o.id = order_items.order_id
-      AND (
-        (auth.uid() IS NOT NULL AND o.user_id = auth.uid()) OR
-        (auth.uid() IS NULL AND o.user_email = current_setting('request.headers', true)::json->>'x-user-email')
-      )
+      AND (auth.uid() IS NOT NULL AND o.user_id = auth.uid())
     )
+    OR (auth.role() = 'service_role'::text)
   );
 
 CREATE POLICY "order_items_insert_own"
@@ -988,10 +1031,11 @@ CREATE POLICY "order_items_insert_own"
       SELECT 1 FROM orders o
       WHERE o.id = order_items.order_id
       AND (
-        (auth.uid() IS NOT NULL AND o.user_id = auth.uid()) OR
-        (auth.uid() IS NULL)
+        (auth.uid() IS NOT NULL AND (o.user_id = auth.uid() OR o.user_id IS NULL)) OR
+        (auth.uid() IS NULL AND o.user_id IS NULL)
       )
     )
+    OR (auth.role() = 'service_role'::text)
   );
 
 CREATE POLICY "order_items_service_role_all"
@@ -1193,18 +1237,16 @@ CREATE POLICY "user_health_consultations_delete_own"
     user_id = auth.uid()
   );
 
--- order_health_consultation: 본인 주문의 문진만
+-- order_health_consultation: 본인 주문의 문진만 (보안 강화)
 CREATE POLICY "order_health_consultation_select_own"
   ON order_health_consultation FOR SELECT
   USING (
     EXISTS (
       SELECT 1 FROM orders o
       WHERE o.id = order_health_consultation.order_id
-      AND (
-        (auth.uid() IS NOT NULL AND o.user_id = auth.uid()) OR
-        (auth.uid() IS NULL AND o.user_email = current_setting('request.headers', true)::json->>'x-user-email')
-      )
+      AND (auth.uid() IS NOT NULL AND o.user_id = auth.uid())
     )
+    OR (auth.role() = 'service_role'::text)
   );
 
 CREATE POLICY "order_health_consultation_insert_own"
@@ -1214,10 +1256,11 @@ CREATE POLICY "order_health_consultation_insert_own"
       SELECT 1 FROM orders o
       WHERE o.id = order_health_consultation.order_id
       AND (
-        (auth.uid() IS NOT NULL AND o.user_id = auth.uid()) OR
-        (auth.uid() IS NULL)
+        (auth.uid() IS NOT NULL AND (o.user_id = auth.uid() OR o.user_id IS NULL)) OR
+        (auth.uid() IS NULL AND o.user_id IS NULL)
       )
     )
+    OR (auth.role() = 'service_role'::text)
   );
 
 CREATE POLICY "user_health_profiles_service_role_all"
