@@ -364,8 +364,7 @@ export default function ProfileContent({
                 { key: "points", label: "포인트" },
                 { key: "coupons", label: "쿠폰" },
                 { key: "addresses", label: "배송지 관리" },
-                // TODO
-                // { key: "health", label: "문진 관리" },
+                { key: "health", label: "문진 관리" },
               ].map((tab) => (
                 <button
                   key={tab.key}

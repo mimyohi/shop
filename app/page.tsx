@@ -180,19 +180,19 @@ export default async function Home() {
       {/* 메인 배너 */}
       <MainBanner banners={mainBanners} />
 
-      {/* 상품 배너 TODO */}
-      {/* <ProductBanner banners={productBanners} /> */}
+      {/* 상품 배너 */}
+      <ProductBanner banners={productBanners} />
 
       {/* BEST ITEM 섹션 */}
       <BestItemSection products={products} />
 
-      {/* 브랜드 소개 섹션 TODO */}
-      {/* <BrandIntroSection /> */}
+      {/* 브랜드 소개 섹션 */}
+      <BrandIntroSection />
 
-      {/* 인스타그램 섹션 TODO */}
-      {/* {instagramImages.length > 0 && (
+      {/* 인스타그램 섹션 */}
+      {instagramImages.length > 0 && (
         <InstagramSection images={instagramImages} />
-      )} */}
+      )}
 
       <div className="h-10" />
       {/* Footer */}

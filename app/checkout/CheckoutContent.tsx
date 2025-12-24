@@ -1157,8 +1157,8 @@ export default function CheckoutContent({
             </div>
           </section>
 
-          {/* 문진 정보 TODO */}
-          {/* <section>
+          {/* 문진 정보 */}
+          <section>
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-medium text-gray-900 flex items-center gap-2">
                 문진 정보
@@ -1217,7 +1217,7 @@ export default function CheckoutContent({
                 </div>
               )}
             </div>
-          </section> */}
+          </section>
 
           {/* 결제 버튼 */}
           <div className="pt-4 space-y-3">
