@@ -887,6 +887,14 @@ CREATE TABLE IF NOT EXISTS orders (
   cash_receipt_issued BOOLEAN DEFAULT FALSE,
   cash_receipt_issue_number VARCHAR(50),
   cash_receipt_issued_at TIMESTAMPTZ,
+  -- 결제 방법 관련 필드
+  payment_method VARCHAR(30) DEFAULT 'CARD' CHECK (payment_method IN ('CARD', 'VIRTUAL_ACCOUNT')),
+  -- 가상계좌 관련 필드
+  virtual_account_bank VARCHAR(50),
+  virtual_account_number VARCHAR(50),
+  virtual_account_holder VARCHAR(100),
+  virtual_account_due_date TIMESTAMPTZ,
+  virtual_account_deposited_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW()),
   updated_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
 );

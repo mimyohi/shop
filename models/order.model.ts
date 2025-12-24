@@ -20,6 +20,13 @@ export type ConsultationStatus =
  */
 export type CashReceiptType = "PERSONAL" | "CORPORATE";
 
+/**
+ * 결제 방법
+ * - CARD: 카드 결제
+ * - VIRTUAL_ACCOUNT: 가상계좌 (무통장입금)
+ */
+export type PaymentMethod = "CARD" | "VIRTUAL_ACCOUNT";
+
 export interface Order {
   id: string;
   user_email: string;
@@ -52,6 +59,14 @@ export interface Order {
   cash_receipt_issued?: boolean;
   cash_receipt_issue_number?: string | null;
   cash_receipt_issued_at?: string | null;
+  // 결제 방법 관련 필드
+  payment_method?: PaymentMethod;
+  // 가상계좌 관련 필드
+  virtual_account_bank?: string | null;
+  virtual_account_number?: string | null;
+  virtual_account_holder?: string | null;
+  virtual_account_due_date?: string | null;
+  virtual_account_deposited_at?: string | null;
 }
 
 /**

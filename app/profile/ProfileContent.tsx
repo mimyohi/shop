@@ -501,11 +501,19 @@ export default function ProfileContent({
                         const consultationStatusInfo =
                           getConsultationStatusInfo(order.consultation_status);
 
+                        // 입금 대기 상태인 가상계좌 결제 확인
+                        const isPaymentPending =
+                          order.status === "payment_pending";
+
                         return (
                           <a
                             key={order.id}
                             href={`/orders/${order.order_id}`}
-                            className="block border border-gray-200 rounded p-4 hover:border-gray-400 transition"
+                            className={`block border rounded p-4 hover:border-gray-400 transition ${
+                              isPaymentPending
+                                ? "border-black-300 bg-black-50"
+                                : "border-gray-200"
+                            }`}
                           >
                             <div className="flex justify-between items-start mb-3">
                               <div>
@@ -519,11 +527,15 @@ export default function ProfileContent({
                                 </p>
                               </div>
                               <div className="flex flex-col items-end gap-1">
-                                {consultationStatusInfo && (
+                                {isPaymentPending ? (
+                                  <span className="text-sm text-black-600 font-medium">
+                                    입금 대기
+                                  </span>
+                                ) : consultationStatusInfo ? (
                                   <span className={`text-sm`}>
                                     {consultationStatusInfo.label}
                                   </span>
-                                )}
+                                ) : null}
                               </div>
                             </div>
                             <div className="border-t border-gray-100 pt-3">

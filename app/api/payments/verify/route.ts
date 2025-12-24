@@ -60,8 +60,11 @@ export async function POST(request: NextRequest) {
       throw e;
     }
 
-    // 결제 상태 확인
-    if (paymentData.status !== "PAID") {
+    // 결제 상태 확인 (카드: PAID, 가상계좌: VIRTUAL_ACCOUNT_ISSUED)
+    const isCardPaid = paymentData.status === "PAID";
+    const isVirtualAccountIssued = paymentData.status === "VIRTUAL_ACCOUNT_ISSUED";
+
+    if (!isCardPaid && !isVirtualAccountIssued) {
       return NextResponse.json(
         {
           error: `결제가 완료되지 않았습니다. 상태: ${String(
@@ -141,7 +144,7 @@ export async function POST(request: NextRequest) {
       productAmount + recalculatedShippingFee - couponDiscount - pointsUsed;
 
     // PG사에서 받은 결제 금액
-    const paidAmount = paymentData.amount?.total || 0;
+    const paidAmount = (paymentData as any).amount?.total || 0;
 
     // 금액 검증
     if (Math.abs(expectedTotalAmount - paidAmount) > 1) {
@@ -168,15 +171,76 @@ export async function POST(request: NextRequest) {
     }
 
     // 주문 상태 업데이트 (검증된 배송비 정보 포함)
+    // 가상계좌인 경우 가상계좌 정보 저장
+    let updateData: Record<string, unknown> = {
+      payment_key: (paymentData as any).id,
+      shipping_fee: recalculatedShippingFee, // 검증된 배송비
+      total_amount: paidAmount,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (isVirtualAccountIssued) {
+      // 가상계좌 발급 상태 - 입금 대기
+      // PortOne V2: 가상계좌 정보는 method 객체에 직접 있음
+      const method = (paymentData as any).method;
+      console.log("PortOne method 데이터:", JSON.stringify(method, null, 2));
+
+      // 은행 코드를 한글 이름으로 변환
+      const bankCodeToName: Record<string, string> = {
+        "NONGHYUP": "NH농협은행",
+        "KOOKMIN": "KB국민은행",
+        "SHINHAN": "신한은행",
+        "WOORI": "우리은행",
+        "HANA": "하나은행",
+        "IBK": "IBK기업은행",
+        "SC": "SC제일은행",
+        "CITI": "한국씨티은행",
+        "KAKAOBANK": "카카오뱅크",
+        "KBANK": "케이뱅크",
+        "TOSSBANK": "토스뱅크",
+        "BUSAN": "부산은행",
+        "DAEGU": "대구은행",
+        "GWANGJU": "광주은행",
+        "JEONBUK": "전북은행",
+        "JEJU": "제주은행",
+        "KYONGNAM": "경남은행",
+        "SUHYUP": "수협은행",
+        "SAEMAUL": "새마을금고",
+        "SHINHYUP": "신협",
+        "POST": "우체국",
+        "KDB": "KDB산업은행",
+      };
+
+      const bankName = bankCodeToName[method?.bank] || method?.bank || null;
+
+      updateData = {
+        ...updateData,
+        status: "payment_pending",
+        payment_method: "VIRTUAL_ACCOUNT",
+        virtual_account_bank: bankName,
+        virtual_account_number: method?.accountNumber || null,
+        virtual_account_holder: method?.remitterName || null,
+        virtual_account_due_date: method?.expiredAt || null,
+      };
+
+      console.log("가상계좌 DB 저장 데이터:", {
+        bank: updateData.virtual_account_bank,
+        number: updateData.virtual_account_number,
+        holder: updateData.virtual_account_holder,
+        dueDate: updateData.virtual_account_due_date,
+      });
+    } else {
+      // 카드 결제 완료
+      updateData = {
+        ...updateData,
+        status: "completed",
+        payment_method: "CARD",
+      };
+    }
+
     const { error: updateError, data } = await supabaseAdmin
       .from("orders")
-      .update({
-        status: "completed",
-        payment_key: paymentData.id,
-        shipping_fee: recalculatedShippingFee, // 검증된 배송비
-        total_amount: paidAmount,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq("order_id", paymentId);
 
     if (updateError) {
@@ -187,8 +251,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 현금영수증 발급 (신청한 경우)
-    if (orderData.cash_receipt_type && orderData.cash_receipt_number) {
+    // 현금영수증 발급 (신청한 경우) - 카드 결제 완료 시에만 발급
+    // 가상계좌의 경우 입금 완료 웹훅에서 발급
+    if (isCardPaid && orderData.cash_receipt_type && orderData.cash_receipt_number) {
       try {
         console.log("현금영수증 발급 요청:", {
           type: orderData.cash_receipt_type,
@@ -244,9 +309,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 주문 확인 알림톡 발송
+    // 주문 확인 알림톡 발송 - 카드 결제 완료 시에만 발송
+    // 가상계좌의 경우 입금 완료 웹훅에서 발송
     const phone = orderData.user_phone || orderData.shipping_phone;
-    if (phone) {
+    if (isCardPaid && phone) {
       try {
         // 상품명 생성
         const firstProduct = orderItems[0].product_name;
@@ -270,9 +336,52 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // 가상계좌 정보 추가
+    let virtualAccountInfo = null;
+    if (isVirtualAccountIssued) {
+      const method = (paymentData as any).method;
+
+      // 은행 코드를 한글 이름으로 변환
+      const bankCodeToName: Record<string, string> = {
+        "NONGHYUP": "NH농협은행",
+        "KOOKMIN": "KB국민은행",
+        "SHINHAN": "신한은행",
+        "WOORI": "우리은행",
+        "HANA": "하나은행",
+        "IBK": "IBK기업은행",
+        "SC": "SC제일은행",
+        "CITI": "한국씨티은행",
+        "KAKAOBANK": "카카오뱅크",
+        "KBANK": "케이뱅크",
+        "TOSSBANK": "토스뱅크",
+        "BUSAN": "부산은행",
+        "DAEGU": "대구은행",
+        "GWANGJU": "광주은행",
+        "JEONBUK": "전북은행",
+        "JEJU": "제주은행",
+        "KYONGNAM": "경남은행",
+        "SUHYUP": "수협은행",
+        "SAEMAUL": "새마을금고",
+        "SHINHYUP": "신협",
+        "POST": "우체국",
+        "KDB": "KDB산업은행",
+      };
+
+      virtualAccountInfo = {
+        bank: bankCodeToName[method?.bank] || method?.bank || "",
+        accountNumber: method?.accountNumber || "",
+        holder: method?.remitterName || "",
+        dueDate: method?.expiredAt || "",
+      };
+
+      console.log("가상계좌 응답 데이터:", virtualAccountInfo);
+    }
+
     return NextResponse.json({
       success: true,
       payment: paymentData,
+      paymentMethod: isVirtualAccountIssued ? "VIRTUAL_ACCOUNT" : "CARD",
+      virtualAccount: virtualAccountInfo,
       verification: {
         productAmount,
         shippingFee: recalculatedShippingFee,

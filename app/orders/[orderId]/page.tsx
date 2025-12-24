@@ -117,6 +117,39 @@ function getPreferredStageLabel(stage: string | null): string {
   }
 }
 
+// 결제 상태 라벨
+function getPaymentStatusLabel(status: string | null): {
+  label: string;
+  color: string;
+} {
+  if (!status) return { label: "-", color: "text-gray-500" };
+  switch (status) {
+    case "payment_pending":
+      return { label: "입금 대기", color: "text-orange-600" };
+    case "completed":
+      return { label: "결제 완료", color: "text-green-600" };
+    case "cancelled":
+      return { label: "결제 취소", color: "text-red-600" };
+    case "refunded":
+      return { label: "환불 완료", color: "text-gray-600" };
+    default:
+      return { label: status, color: "text-gray-500" };
+  }
+}
+
+// 결제 방법 라벨
+function getPaymentMethodLabel(method: string | null | undefined): string {
+  if (!method) return "-";
+  switch (method) {
+    case "VIRTUAL_ACCOUNT":
+      return "가상계좌 (무통장입금)";
+    case "CARD":
+      return "신용/체크카드";
+    default:
+      return method;
+  }
+}
+
 interface PageProps {
   params: Promise<{ orderId: string }>;
 }
@@ -235,13 +268,103 @@ export default async function OrderDetailPage({ params }: PageProps) {
                 </p>
               </div>
               <div>
-                <span className="text-gray-500">주문 상태</span>
-                <p className={`font-semibold`}>
-                  {consultationStatusInfo.label}
+                <span className="text-gray-500">결제 방법</span>
+                <p className="font-semibold text-gray-900">
+                  {getPaymentMethodLabel(order.payment_method)}
                 </p>
               </div>
+              <div>
+                <span className="text-gray-500">결제 상태</span>
+                <p
+                  className={`font-semibold ${
+                    getPaymentStatusLabel(order.status).color
+                  }`}
+                >
+                  {getPaymentStatusLabel(order.status).label}
+                </p>
+              </div>
+              {/* 입금 대기 상태가 아닐 때만 주문 상태 표시 */}
+              {order.status !== "payment_pending" && (
+                <div>
+                  <span className="text-gray-500">주문 상태</span>
+                  <p className="font-semibold text-gray-900">
+                    {consultationStatusInfo.label}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
+
+          {/* 가상계좌 정보 (입금 대기 중인 경우) */}
+          {order.payment_method === "VIRTUAL_ACCOUNT" &&
+            order.virtual_account_number && (
+              <div
+                className={`border rounded p-6 ${
+                  order.status === "payment_pending"
+                    ? "border-black-300 bg-black-50"
+                    : "border-gray-200"
+                }`}
+              >
+                <h2 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+                  {order.status === "payment_pending" ? (
+                    <>입금 대기 중</>
+                  ) : (
+                    "가상계좌 정보"
+                  )}
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-500">은행</span>
+                    <p className="font-semibold text-gray-900">
+                      {order.virtual_account_bank}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">계좌번호</span>
+                    <p className="font-semibold text-gray-900 font-mono">
+                      {order.virtual_account_number}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">예금주</span>
+                    <p className="font-semibold text-gray-900">
+                      {order.virtual_account_holder}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">입금액</span>
+                    <p className="font-semibold text-black-600">
+                      {order.total_amount.toLocaleString()}원
+                    </p>
+                  </div>
+                  {order.status === "payment_pending" &&
+                    order.virtual_account_due_date && (
+                      <div className="md:col-span-2">
+                        <span className="text-gray-500">입금 기한</span>
+                        <p className="font-semibold text-red-600">
+                          {new Date(
+                            order.virtual_account_due_date
+                          ).toLocaleString("ko-KR")}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          * 입금 기한 내 미입금 시 주문이 자동 취소됩니다.
+                        </p>
+                      </div>
+                    )}
+                  {order.status === "completed" &&
+                    order.virtual_account_deposited_at && (
+                      <div className="md:col-span-2">
+                        <span className="text-gray-500">입금 완료</span>
+                        <p className="font-semibold text-green-600">
+                          {new Date(
+                            order.virtual_account_deposited_at
+                          ).toLocaleString("ko-KR")}
+                        </p>
+                      </div>
+                    )}
+                </div>
+              </div>
+            )}
 
           {/* 배송 정보 */}
           {(order.shipping_address || order.shipping_name) && (
@@ -293,7 +416,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
                         <p className="text-sm text-gray-600 mt-1">
                           옵션: {item.option_name}
                           {item.visit_type && (
-                            <span className="ml-2 inline-block px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
+                            <span className="ml-2 inline-block px-2 py-0.5 bg-black-100 text-black-700 rounded text-xs">
                               {getVisitTypeLabel(item.visit_type)}
                             </span>
                           )}
@@ -445,7 +568,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
                   </div>
                   <div>
                     <span className="text-gray-500">목표 체중</span>
-                    <p className="font-semibold text-blue-600">
+                    <p className="font-semibold text-black-600">
                       {consultation.target_weight
                         ? `${consultation.target_weight}kg`
                         : "-"}

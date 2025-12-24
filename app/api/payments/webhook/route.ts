@@ -1,0 +1,192 @@
+import { NextRequest, NextResponse } from "next/server";
+import { PortOneClient, Webhook } from "@portone/server-sdk";
+import { supabaseAdmin } from "@/lib/supabase-admin";
+import { env } from "@/env";
+import { sendOrderConfirmationAlimtalk } from "@/lib/kakao/alimtalk";
+
+const portone = PortOneClient({
+  secret: env.PORTONE_API_SECRET,
+  storeId: env.NEXT_PUBLIC_PORTONE_STORE_ID,
+});
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.text();
+    const webhookSecret = env.PORTONE_WEBHOOK_SECRET;
+
+    // 웹훅 시크릿이 설정된 경우 검증
+    if (webhookSecret) {
+      const signatureHeader = request.headers.get("webhook-signature") || "";
+      const timestampHeader = request.headers.get("webhook-timestamp") || "";
+      const idHeader = request.headers.get("webhook-id") || "";
+
+      try {
+        Webhook.verify(webhookSecret, body, {
+          "webhook-signature": signatureHeader,
+          "webhook-timestamp": timestampHeader,
+          "webhook-id": idHeader,
+        });
+      } catch (e) {
+        console.error("웹훅 검증 실패:", e);
+        return NextResponse.json(
+          { error: "웹훅 검증에 실패했습니다." },
+          { status: 400 }
+        );
+      }
+    }
+
+    const webhookData = JSON.parse(body);
+    console.log("웹훅 데이터 수신:", webhookData);
+
+    // 결제 완료 이벤트 처리 (가상계좌 입금 완료)
+    if (webhookData.type === "Transaction.Paid") {
+      const paymentId = webhookData.data?.paymentId;
+
+      if (!paymentId) {
+        console.error("paymentId가 없습니다.");
+        return NextResponse.json(
+          { error: "paymentId가 필요합니다." },
+          { status: 400 }
+        );
+      }
+
+      // 포트원에서 결제 정보 조회
+      const paymentData = await portone.payment.getPayment({ paymentId });
+
+      if (paymentData.status !== "PAID") {
+        console.log("결제 상태가 PAID가 아닙니다:", paymentData.status);
+        return NextResponse.json({
+          success: true,
+          message: "결제 상태가 PAID가 아닙니다.",
+        });
+      }
+
+      // 주문 정보 조회
+      const { data: orderData, error: orderError } = await supabaseAdmin
+        .from("orders")
+        .select("*")
+        .eq("order_id", paymentId)
+        .single();
+
+      if (orderError || !orderData) {
+        console.error("주문 정보 조회 실패:", orderError);
+        return NextResponse.json(
+          { error: "주문 정보를 찾을 수 없습니다." },
+          { status: 404 }
+        );
+      }
+
+      // 이미 완료된 주문인 경우 중복 처리 방지
+      if (orderData.status === "completed") {
+        console.log("이미 완료된 주문입니다:", paymentId);
+        return NextResponse.json({
+          success: true,
+          message: "이미 처리된 주문입니다.",
+        });
+      }
+
+      // 주문 상태 업데이트
+      const { error: updateError } = await supabaseAdmin
+        .from("orders")
+        .update({
+          status: "completed",
+          virtual_account_deposited_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("order_id", paymentId);
+
+      if (updateError) {
+        console.error("주문 상태 업데이트 실패:", updateError);
+        return NextResponse.json(
+          { error: "주문 상태 업데이트에 실패했습니다." },
+          { status: 500 }
+        );
+      }
+
+      console.log("가상계좌 입금 완료 처리 성공:", paymentId);
+
+      // order_items 조회
+      const { data: orderItems } = await supabaseAdmin
+        .from("order_items")
+        .select("*")
+        .eq("order_id", orderData.id);
+
+      const paidAmount = paymentData.amount?.total || 0;
+
+      // 주문 확인 알림톡 발송
+      const phone = orderData.user_phone || orderData.shipping_phone;
+      if (phone && orderItems) {
+        try {
+          const firstProduct = orderItems[0]?.product_name || "상품";
+          const productNames =
+            orderItems.length > 1
+              ? `${firstProduct} 외 ${orderItems.length - 1}건`
+              : firstProduct;
+
+          const alimtalkResult = await sendOrderConfirmationAlimtalk(phone, {
+            orderId: orderData.order_id,
+            customerName: orderData.user_name || orderData.shipping_name,
+            totalAmount: paidAmount,
+            productNames,
+          });
+
+          if (!alimtalkResult.success) {
+            console.error("주문 확인 알림톡 발송 실패:", alimtalkResult.error);
+          }
+        } catch (alimtalkError) {
+          console.error("주문 확인 알림톡 발송 중 오류:", alimtalkError);
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: "가상계좌 입금이 확인되었습니다.",
+      });
+    }
+
+    // 가상계좌 발급 취소/만료 이벤트 처리
+    if (webhookData.type === "Transaction.VirtualAccountIssued") {
+      // 이미 verify에서 처리하므로 여기서는 로깅만
+      console.log("가상계좌 발급 이벤트:", webhookData.data?.paymentId);
+      return NextResponse.json({
+        success: true,
+        message: "가상계좌 발급 이벤트 처리됨.",
+      });
+    }
+
+    // 결제 취소/환불 이벤트 처리
+    if (webhookData.type === "Transaction.Cancelled" || webhookData.type === "Transaction.PartialCancelled") {
+      const paymentId = webhookData.data?.paymentId;
+      console.log("결제 취소/환불 이벤트:", paymentId);
+
+      if (paymentId) {
+        await supabaseAdmin
+          .from("orders")
+          .update({
+            status: "cancelled",
+            consultation_status: "cancelled",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("order_id", paymentId);
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: "결제 취소/환불 이벤트 처리됨.",
+      });
+    }
+
+    // 기타 이벤트
+    console.log("처리되지 않은 웹훅 타입:", webhookData.type);
+    return NextResponse.json({
+      success: true,
+      message: "이벤트가 처리되지 않았습니다.",
+    });
+  } catch (error) {
+    console.error("웹훅 처리 중 오류:", error);
+    return NextResponse.json(
+      { error: "웹훅 처리 중 오류가 발생했습니다." },
+      { status: 500 }
+    );
+  }
+}
