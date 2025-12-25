@@ -440,7 +440,18 @@ export default function CheckoutContent({
           : undefined,
       });
 
-      // 가상계좌 결제 시 추가 옵션 설정
+      // 결제 방법에 따라 payMethod 설정
+      const getPayMethod = () => {
+        switch (paymentMethod) {
+          case "VIRTUAL_ACCOUNT":
+            return "VIRTUAL_ACCOUNT";
+          case "TRANSFER":
+            return "TRANSFER";
+          default:
+            return "CARD";
+        }
+      };
+
       const paymentRequest: Parameters<typeof PortOne.requestPayment>[0] = {
         storeId,
         paymentId: orderId,
@@ -448,8 +459,7 @@ export default function CheckoutContent({
         totalAmount: calculateFinalPrice(),
         currency: "CURRENCY_KRW",
         channelKey: NEXT_PUBLIC_PORTONE_CHANNEL_KEY,
-        payMethod:
-          paymentMethod === "VIRTUAL_ACCOUNT" ? "VIRTUAL_ACCOUNT" : "CARD",
+        payMethod: getPayMethod(),
         customer: {
           fullName: customerName,
           phoneNumber: customerPhone,
@@ -507,10 +517,14 @@ export default function CheckoutContent({
 
       clearOrder();
 
-      // 가상계좌 결제인 경우 추가 파라미터 전달
+      // 결제 방법에 따라 추가 파라미터 전달
       if (paymentMethod === "VIRTUAL_ACCOUNT") {
         router.push(
           `/checkout/success?paymentId=${orderId}&paymentMethod=VIRTUAL_ACCOUNT`
+        );
+      } else if (paymentMethod === "TRANSFER") {
+        router.push(
+          `/checkout/success?paymentId=${orderId}&paymentMethod=TRANSFER`
         );
       } else {
         router.push(`/checkout/success?paymentId=${orderId}`);
@@ -1130,7 +1144,7 @@ export default function CheckoutContent({
               결제 방법
             </h2>
             <div className="border border-gray-200 rounded p-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <button
                   type="button"
                   onClick={() => setPaymentMethod("CARD")}
@@ -1141,6 +1155,17 @@ export default function CheckoutContent({
                   }`}
                 >
                   <span className="text-sm font-medium">카드/간편 결제</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod("TRANSFER")}
+                  className={`flex items-center justify-center gap-2 p-4 border rounded transition ${
+                    paymentMethod === "TRANSFER"
+                      ? "border-gray-900 bg-gray-50"
+                      : "border-gray-200 hover:bg-gray-50"
+                  }`}
+                >
+                  <span className="text-sm font-medium">계좌이체</span>
                 </button>
                 <button
                   type="button"
@@ -1155,12 +1180,20 @@ export default function CheckoutContent({
                 </button>
               </div>
 
-              {paymentMethod === "VIRTUAL_ACCOUNT" && (
+              {paymentMethod === "TRANSFER" && (
                 <div className="mt-4 p-3 bg-black-50 border border-black-200 rounded">
                   <p className="text-sm text-black-800">
+                    계좌이체 결제 시 등록된 계좌에서 즉시 출금됩니다.
+                  </p>
+                </div>
+              )}
+
+              {paymentMethod === "VIRTUAL_ACCOUNT" && (
+                <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded">
+                  <p className="text-sm text-gray-800">
                     가상계좌 결제 시 발급된 계좌로 입금해 주세요.
                   </p>
-                  <p className="text-xs text-black-600 mt-1">
+                  <p className="text-xs text-gray-600 mt-1">
                     * 입금 기한 내 미입금 시 주문이 자동 취소됩니다.
                   </p>
                 </div>
@@ -1236,6 +1269,8 @@ export default function CheckoutContent({
                 ? "배송비 계산 중..."
                 : paymentMethod === "VIRTUAL_ACCOUNT"
                 ? `${calculateFinalPrice().toLocaleString()}원 가상계좌 발급받기`
+                : paymentMethod === "TRANSFER"
+                ? `${calculateFinalPrice().toLocaleString()}원 계좌이체 결제하기`
                 : `${calculateFinalPrice().toLocaleString()}원 결제하기`}
             </button>
           </div>

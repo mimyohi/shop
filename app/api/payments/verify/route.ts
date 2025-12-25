@@ -306,12 +306,24 @@ export async function POST(request: NextRequest) {
         dueDate: updateData.virtual_account_due_date,
       });
     } else {
-      // 카드 결제 완료
+      // 카드 또는 실시간 계좌이체 결제 완료
+      const method = (paymentData as any).method;
+      const methodType = method?.type;
+
+      // PortOne에서 결제 수단 타입 확인
+      // Transfer: 실시간 계좌이체
+      // Card: 카드 결제
+      const isTransfer = methodType === "PaymentMethodTransfer" ||
+                         methodType === "Transfer" ||
+                         orderData.payment_method === "TRANSFER";
+
       updateData = {
         ...updateData,
         status: "completed",
-        payment_method: "CARD",
+        payment_method: isTransfer ? "TRANSFER" : "CARD",
       };
+
+      console.log("결제 완료 - method type:", methodType, "payment_method:", updateData.payment_method);
     }
 
     const { error: updateError, data } = await supabaseAdmin
@@ -453,10 +465,24 @@ export async function POST(request: NextRequest) {
       console.log("가상계좌 응답 데이터:", virtualAccountInfo);
     }
 
+    // 결제 방법 결정
+    let responsePaymentMethod = "CARD";
+    if (isVirtualAccountIssued) {
+      responsePaymentMethod = "VIRTUAL_ACCOUNT";
+    } else {
+      const method = (paymentData as any).method;
+      const methodType = method?.type;
+      if (methodType === "PaymentMethodTransfer" ||
+          methodType === "Transfer" ||
+          orderData.payment_method === "TRANSFER") {
+        responsePaymentMethod = "TRANSFER";
+      }
+    }
+
     return NextResponse.json({
       success: true,
       payment: paymentData,
-      paymentMethod: isVirtualAccountIssued ? "VIRTUAL_ACCOUNT" : "CARD",
+      paymentMethod: responsePaymentMethod,
       virtualAccount: virtualAccountInfo,
       verification: {
         productAmount,

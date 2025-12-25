@@ -131,8 +131,30 @@ function CheckoutSuccessContent() {
     }
   };
 
-  // 가상계좌 결제인 경우
+  // 결제 방법별 상태
   const isVirtualAccount = paymentMethod === "VIRTUAL_ACCOUNT";
+  const isTransfer = paymentMethod === "TRANSFER";
+
+  // 페이지 타이틀 결정
+  const getPageTitle = () => {
+    if (isVirtualAccount) return "가상계좌 발급 완료";
+    if (isTransfer) return "계좌이체 결제 완료";
+    return "결제 완료";
+  };
+
+  // 메인 메시지 결정
+  const getMainMessage = () => {
+    if (isVirtualAccount) return "가상계좌가 발급되었습니다";
+    if (isTransfer) return "계좌이체 결제가 완료되었습니다";
+    return "주문이 완료되었습니다";
+  };
+
+  // 서브 메시지 결정
+  const getSubMessage = () => {
+    if (isVirtualAccount) return "아래 계좌로 입금해 주시면 결제가 완료됩니다.";
+    if (isTransfer) return "계좌에서 결제 금액이 출금되었습니다.";
+    return "주문하신 상품이 정상적으로 결제되었습니다.";
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -143,7 +165,7 @@ function CheckoutSuccessContent() {
         <div className="absolute inset-0 bg-gradient-to-r from-gray-900/80 to-gray-900/40" />
         <div className="relative h-full flex flex-col items-center justify-center text-white">
           <h1 className="text-xl md:text-2xl font-medium tracking-wide">
-            {isVirtualAccount ? "가상계좌 발급 완료" : "결제 완료"}
+            {getPageTitle()}
           </h1>
         </div>
       </div>
@@ -151,17 +173,13 @@ function CheckoutSuccessContent() {
       <main className="max-w-md mx-auto px-4 py-12">
         <div className="text-center">
           <h2 className="text-xl font-medium text-gray-900 mb-2">
-            {isVirtualAccount
-              ? "가상계좌가 발급되었습니다"
-              : "주문이 완료되었습니다"}
+            {getMainMessage()}
           </h2>
           <p className="text-sm text-gray-500 mb-2">
             주문번호: {searchParams.get("paymentId")}
           </p>
           <p className="text-sm text-gray-400 mb-6">
-            {isVirtualAccount
-              ? "아래 계좌로 입금해 주시면 결제가 완료됩니다."
-              : "주문하신 상품이 정상적으로 결제되었습니다."}
+            {getSubMessage()}
           </p>
 
           {/* 가상계좌 정보 */}

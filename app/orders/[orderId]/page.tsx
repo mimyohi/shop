@@ -145,6 +145,8 @@ function getPaymentMethodLabel(method: string | null | undefined): string {
       return "가상계좌 (무통장입금)";
     case "CARD":
       return "신용/체크카드";
+    case "TRANSFER":
+      return "실시간 계좌이체";
     default:
       return method;
   }

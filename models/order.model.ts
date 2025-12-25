@@ -17,8 +17,9 @@ export type ConsultationStatus =
  * 결제 방법
  * - CARD: 카드 결제
  * - VIRTUAL_ACCOUNT: 가상계좌 (무통장입금)
+ * - TRANSFER: 실시간 계좌이체
  */
-export type PaymentMethod = "CARD" | "VIRTUAL_ACCOUNT";
+export type PaymentMethod = "CARD" | "VIRTUAL_ACCOUNT" | "TRANSFER";
 
 export interface Order {
   id: string;
