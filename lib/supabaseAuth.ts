@@ -75,10 +75,6 @@ export async function getSession() {
 
 // Kakao 로그인 (Supabase에서 Kakao 설정 필요)
 export async function signInWithKakao() {
-  console.log(
-    "${window.location.origin}/auth/callback:",
-    `${window.location.origin}/auth/callback`
-  );
   const { data, error } = await supabaseAuth.auth.signInWithOAuth({
     provider: "kakao",
     options: {
