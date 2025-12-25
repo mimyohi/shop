@@ -465,6 +465,8 @@ export default function CheckoutContent({
           phoneNumber: customerPhone,
           email: customerEmail,
         },
+        // 모바일에서는 리다이렉션 방식이 사용되므로 redirectUrl 필수
+        redirectUrl: `${window.location.origin}/checkout/success?paymentId=${orderId}&paymentMethod=${paymentMethod}`,
       };
 
       // 가상계좌인 경우 가상계좌 설정 추가
