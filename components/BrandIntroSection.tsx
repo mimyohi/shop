@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
 
 export default function BrandIntroSection() {
@@ -68,83 +67,143 @@ export default function BrandIntroSection() {
         </div>
       </div>
 
-      {/* 하단 2x2 그리드 섹션 */}
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4 px-4 sm:px-6 lg:px-8">
-        {/* 왼쪽 상단 - 스틱 제품 이미지 (민트 배경) */}
-        <div className="relative aspect-square bg-[#e8f4f3] rounded-[30px] overflow-hidden">
+      {/* 하단 그리드 섹션 - PC */}
+      <div className="hidden lg:flex max-w-7xl mx-auto flex-col gap-y-[40px] px-4 sm:px-6 lg:px-8">
+        {/* 상단 행 */}
+        <div className="flex gap-x-[30px]">
+          {/* 왼쪽 상단 - 915*611 */}
+          <div className="relative flex-1 aspect-915/611 rounded-[30px] overflow-hidden">
+            <Image
+              src="/home/pc_top_left.png"
+              alt="MIMYOHI"
+              fill
+              className="object-cover"
+            />
+          </div>
+
+          {/* 오른쪽 상단 - 915*611 */}
+          <div className="relative flex-1 aspect-915/611 rounded-[30px] overflow-hidden">
+            <Image
+              src="/home/pc_top_right.png"
+              alt="MIMYOHI"
+              fill
+              className="object-cover"
+            />
+          </div>
+        </div>
+
+        {/* 하단 행 */}
+        <div className="flex gap-x-[30px]">
+          {/* 왼쪽 하단 - 724*611 */}
+          <div className="relative aspect-724/611 rounded-[30px] overflow-hidden" style={{ flex: '724' }}>
+            <Image
+              src="/home/pc_bottom_left.png"
+              alt="MIMYOHI"
+              fill
+              className="object-cover"
+            />
+          </div>
+
+          {/* 오른쪽 하단 - 1106*611 */}
+          <div className="relative aspect-1106/611 rounded-[30px] overflow-hidden" style={{ flex: '1106' }}>
+            <Image
+              src="/home/pc_bottom_right.png"
+              alt="MIMYOHI"
+              fill
+              className="object-cover"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* 하단 그리드 섹션 - 태블릿 */}
+      <div className="hidden md:flex lg:hidden max-w-3xl mx-auto flex-col gap-y-[40px] px-4 sm:px-6">
+        {/* 상단 행 */}
+        <div className="flex gap-x-[30px]">
+          {/* 왼쪽 상단 - 675*611 */}
+          <div className="relative flex-1 aspect-675/611 rounded-[30px] overflow-hidden">
+            <Image
+              src="/home/tablet_top_left.png"
+              alt="MIMYOHI"
+              fill
+              className="object-cover"
+            />
+          </div>
+
+          {/* 오른쪽 상단 - 675*611 */}
+          <div className="relative flex-1 aspect-675/611 rounded-[30px] overflow-hidden">
+            <Image
+              src="/home/tablet_top_right.png"
+              alt="MIMYOHI"
+              fill
+              className="object-cover"
+            />
+          </div>
+        </div>
+
+        {/* 하단 행 */}
+        <div className="flex gap-x-[30px]">
+          {/* 왼쪽 하단 - 563*611 */}
+          <div className="relative aspect-563/611 rounded-[30px] overflow-hidden" style={{ flex: '563' }}>
+            <Image
+              src="/home/tablet_bottom_left.png"
+              alt="MIMYOHI"
+              fill
+              className="object-cover"
+            />
+          </div>
+
+          {/* 오른쪽 하단 - 787*611 */}
+          <div className="relative aspect-787/611 rounded-[30px] overflow-hidden" style={{ flex: '787' }}>
+            <Image
+              src="/home/tablet_bottom_right.png"
+              alt="MIMYOHI"
+              fill
+              className="object-cover"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* 하단 그리드 섹션 - 모바일 */}
+      <div className="flex md:hidden flex-col gap-y-[20px] px-4">
+        {/* mobile_1 - 353*506 */}
+        <div className="relative w-full aspect-[353/506] rounded-[20px] overflow-hidden">
           <Image
-            src="/home/home-stick.png"
-            alt="MIMYOHI 스틱"
+            src="/home/mobile_1.png"
+            alt="MIMYOHI"
             fill
-            className="object-contain p-12"
+            className="object-cover"
           />
         </div>
 
-        {/* 오른쪽 상단 - 텍스트 (회색 배경) */}
-        <div className="bg-[#f0f0f0] p-8 md:p-12 flex flex-col justify-center rounded-[30px]">
-          <p className="text-sm text-gray-400 tracking-wider mb-6">MIMYOHI</p>
-          <h3 className="text-xl md:text-2xl font-medium text-[#5a9a9a] mb-6">
-            미묘히,
-            <br />
-            과정에서 피어나는 아름다움
-          </h3>
-          <div className="text-xs md:text-sm text-gray-500 leading-relaxed space-y-0.5 mb-8">
-            <p>
-              세상에서 가장 부드러운 물이 단단한 바위를 이기는 이유는 흐름에
-              있습니다.
-            </p>
-            <p>물은 그저 자연스럽게 흘러가며,</p>
-            <p>시간이 지나면 바위도 물의 모양을 따라 변해갑니다.</p>
-            <p>우리의 몸도 강제로 틀을 맞추려 할 수록 저항이 생기고,</p>
-            <p>억지로 잡으려 할 수록 반발이 커집니다.</p>
-            <p>하지만 몸의 자연스러운 흐름을 따라</p>
-            <p>다채로운 변화를 채워가면 놀랍도록 부드럽게,</p>
-            <p>그리고 확실히 변화가 일어납니다.</p>
-          </div>
-          <Link
-            href="/brand"
-            className="inline-flex items-center text-sm text-gray-600 border border-gray-400 rounded-full px-4 py-2 hover:bg-gray-200 transition w-fit"
-          >
-            브랜드스토리 →
-          </Link>
-        </div>
-
-        {/* 왼쪽 하단 - 텍스트 (연노랑 배경) */}
-        <div className="bg-[#fefbf3] p-8 md:p-12 flex flex-col justify-center rounded-[30px]">
-          <p className="text-sm text-gray-400 tracking-wider mb-6">MIMYOHI</p>
-          <h3 className="text-xl md:text-2xl font-medium text-gray-800 mb-6">
-            미묘히,
-            <br />
-            과정에서 피어나는 아름다움
-          </h3>
-          <div className="text-xs md:text-sm text-gray-500 leading-relaxed space-y-0.5 mb-8">
-            <p>
-              세상에서 가장 부드러운 물이 단단한 바위를 이기는 이유는 흐름에
-              있습니다.
-            </p>
-            <p>물은 그저 자연스럽게 흘러가며,</p>
-            <p>시간이 지나면 바위도 물의 모양을 따라 변해갑니다.</p>
-            <p>우리의 몸도 강제로 틀을 맞추려 할 수록 저항이 생기고,</p>
-            <p>억지로 잡으려 할 수록 반발이 커집니다.</p>
-            <p>하지만 몸의 자연스러운 흐름을 따라</p>
-            <p>다채로운 변화를 채워가면 놀랍도록 부드럽게,</p>
-            <p>그리고 확실히 변화가 일어납니다.</p>
-          </div>
-          <Link
-            href="/brand"
-            className="inline-flex items-center text-sm text-gray-600 border border-gray-400 rounded-full px-4 py-2 hover:bg-gray-100 transition w-fit"
-          >
-            브랜드스토리 →
-          </Link>
-        </div>
-
-        {/* 오른쪽 하단 - 알약 제품 이미지 (베이지 배경) */}
-        <div className="relative aspect-square bg-[#f9f5e8] rounded-[30px] overflow-hidden">
+        {/* mobile_2 - 353*280 */}
+        <div className="relative w-full aspect-[353/280] rounded-[20px] overflow-hidden">
           <Image
-            src="/home/home-pills.png"
-            alt="MIMYOHI 다이어트환"
+            src="/home/mobile_2.png"
+            alt="MIMYOHI"
             fill
-            className="object-contain p-12"
+            className="object-cover"
+          />
+        </div>
+
+        {/* mobile_3 - 353*479 */}
+        <div className="relative w-full aspect-[353/479] rounded-[20px] overflow-hidden">
+          <Image
+            src="/home/mobile_3.png"
+            alt="MIMYOHI"
+            fill
+            className="object-cover"
+          />
+        </div>
+
+        {/* mobile_4 - 353*280 */}
+        <div className="relative w-full aspect-[353/280] rounded-[20px] overflow-hidden">
+          <Image
+            src="/home/mobile_4.png"
+            alt="MIMYOHI"
+            fill
+            className="object-cover"
           />
         </div>
       </div>
