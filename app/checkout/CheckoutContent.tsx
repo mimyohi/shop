@@ -86,8 +86,14 @@ export default function CheckoutContent({
   initialHealthConsultation,
 }: CheckoutContentProps) {
   const router = useRouter();
-  const { item, getTotalPrice, updateQuantity, updateAddonQuantity, clearOrder, _hasHydrated } =
-    useOrderStore();
+  const {
+    item,
+    getTotalPrice,
+    updateQuantity,
+    updateAddonQuantity,
+    clearOrder,
+    _hasHydrated,
+  } = useOrderStore();
   const createOrderMutation = useCreateOrder();
   const createAddressMutation = useCreateAddress();
 
@@ -656,11 +662,18 @@ export default function CheckoutContent({
                             key={addon.addon_id}
                             className="flex justify-between items-center"
                           >
-                            <span className="text-sm text-gray-700">{addon.name}</span>
+                            <span className="text-sm text-gray-700">
+                              {addon.name}
+                            </span>
                             <div className="flex items-center gap-3">
                               <div className="flex items-center border border-gray-200 rounded">
                                 <button
-                                  onClick={() => updateAddonQuantity(addon.addon_id, addon.quantity - 1)}
+                                  onClick={() =>
+                                    updateAddonQuantity(
+                                      addon.addon_id,
+                                      addon.quantity - 1
+                                    )
+                                  }
                                   disabled={addon.quantity <= 1}
                                   className="w-7 h-7 flex items-center justify-center text-gray-500 hover:bg-gray-50 disabled:opacity-50"
                                 >
@@ -670,14 +683,23 @@ export default function CheckoutContent({
                                   {addon.quantity}
                                 </span>
                                 <button
-                                  onClick={() => updateAddonQuantity(addon.addon_id, addon.quantity + 1)}
+                                  onClick={() =>
+                                    updateAddonQuantity(
+                                      addon.addon_id,
+                                      addon.quantity + 1
+                                    )
+                                  }
                                   className="w-7 h-7 flex items-center justify-center text-gray-500 hover:bg-gray-50"
                                 >
                                   +
                                 </button>
                               </div>
                               <span className="text-sm text-gray-600 min-w-[80px] text-right">
-                                +{(addon.price * addon.quantity).toLocaleString()}원
+                                +
+                                {(
+                                  addon.price * addon.quantity
+                                ).toLocaleString()}
+                                원
                               </span>
                             </div>
                           </div>
@@ -1152,7 +1174,7 @@ export default function CheckoutContent({
                       : "border-gray-200 hover:bg-gray-50"
                   }`}
                 >
-                  <span className="text-sm font-medium">카드 결제</span>
+                  <span className="text-sm font-medium">카드/간편 결제</span>
                 </button>
                 <button
                   type="button"

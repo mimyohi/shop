@@ -1,15 +1,84 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { NEXT_PUBLIC_CHANNEL_TALK_PLUGIN_KEY } from "@/env";
+import { useOptionalAuthContext } from "@/providers/AuthProvider";
+import { supabaseAuth } from "@/lib/supabaseAuth";
 
 interface ChannelTalkProps {
   pluginKey?: string;
 }
 
 export default function ChannelTalk({ pluginKey }: ChannelTalkProps) {
-  const channelPluginKey =
-    pluginKey || NEXT_PUBLIC_CHANNEL_TALK_PLUGIN_KEY;
+  const channelPluginKey = pluginKey || NEXT_PUBLIC_CHANNEL_TALK_PLUGIN_KEY;
+  const { user, profile } = useOptionalAuthContext();
+  const [purchasedProducts, setPurchasedProducts] = useState<string>("");
+  const [lastOrderAt, setLastOrderAt] = useState<string>("");
+  const [lastAccessAt, setLastAccessAt] = useState<string>("");
+
+  // 최근 접속시간 업데이트
+  useEffect(() => {
+    if (user?.id) {
+      setLastAccessAt(new Date().toISOString());
+    } else {
+      setLastAccessAt("");
+    }
+  }, [user?.id]);
+
+  // 구매한 상품 목록 및 최근 주문시간 조회
+  useEffect(() => {
+    async function fetchOrderData() {
+      if (!user?.id) {
+        setPurchasedProducts("");
+        setLastOrderAt("");
+        return;
+      }
+
+      try {
+        const { data, error } = await supabaseAuth
+          .from("orders")
+          .select(
+            `
+            created_at,
+            order_items (
+              product_name
+            )
+          `
+          )
+          .eq("user_id", user.id)
+          .in("status", ["paid", "preparing", "shipping", "delivered", "completed"])
+          .order("created_at", { ascending: false });
+
+        if (error) {
+          console.error("주문 정보 조회 오류:", error);
+          return;
+        }
+
+        // 최근 주문시간 설정
+        if (data && data.length > 0) {
+          setLastOrderAt(data[0].created_at);
+        } else {
+          setLastOrderAt("");
+        }
+
+        // 모든 주문에서 상품명 추출 및 중복 제거
+        const productNames = new Set<string>();
+        data?.forEach((order: any) => {
+          order.order_items?.forEach((item: any) => {
+            if (item.product_name) {
+              productNames.add(item.product_name);
+            }
+          });
+        });
+
+        setPurchasedProducts(Array.from(productNames).join(", "));
+      } catch (error) {
+        console.error("주문 정보 조회 오류:", error);
+      }
+    }
+
+    fetchOrderData();
+  }, [user?.id]);
 
   useEffect(() => {
     if (!channelPluginKey) {
@@ -18,11 +87,6 @@ export default function ChannelTalk({ pluginKey }: ChannelTalkProps) {
     }
 
     const w = window as any;
-
-    // 이미 초기화된 경우 중복 실행 방지
-    if (w.ChannelIOInitialized) {
-      return;
-    }
 
     // 채널톡 placeholder 함수 설정
     if (!w.ChannelIO) {
@@ -37,24 +101,41 @@ export default function ChannelTalk({ pluginKey }: ChannelTalkProps) {
     }
 
     // 채널톡 스크립트 로드
-    w.ChannelIOInitialized = true;
-    const s = document.createElement("script");
-    s.type = "text/javascript";
-    s.async = true;
-    s.src = "https://cdn.channel.io/plugin/ch-plugin-web.js";
-    s.onload = () => {
-      w.ChannelIO("boot", {
-        pluginKey: channelPluginKey,
-      });
+    if (!w.ChannelIOInitialized) {
+      w.ChannelIOInitialized = true;
+      const s = document.createElement("script");
+      s.type = "text/javascript";
+      s.async = true;
+      s.src = "https://cdn.channel.io/plugin/ch-plugin-web.js";
+      document.head.appendChild(s);
+    }
+
+    // 사용자 정보가 있으면 로그인 사용자로 boot, 없으면 익명 boot
+    const bootSettings: any = {
+      pluginKey: channelPluginKey,
     };
-    document.head.appendChild(s);
+
+    if (user && profile) {
+      bootSettings.memberId = user.id;
+      bootSettings.profile = {
+        name: profile.display_name || "",
+        mobileNumber: profile.phone || "",
+        purchasedProducts: purchasedProducts,
+        lastAccessAt: lastAccessAt,
+        lastOrderAt: lastOrderAt || null,
+      };
+    }
+
+    // updateUser 또는 boot 호출
+    if (w.ChannelIO) {
+      w.ChannelIO("shutdown");
+      w.ChannelIO("boot", bootSettings);
+    }
 
     return () => {
-      if (w.ChannelIO) {
-        w.ChannelIO("shutdown");
-      }
+      // cleanup은 하지 않음 - 다른 페이지에서도 채널톡 유지
     };
-  }, [channelPluginKey]);
+  }, [channelPluginKey, user?.id, profile?.display_name, profile?.phone, purchasedProducts, lastAccessAt, lastOrderAt]);
 
   return null;
 }
