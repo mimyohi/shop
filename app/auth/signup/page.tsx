@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { Suspense, useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { validateAndFormatPhone, formatPhoneInput } from "@/lib/phone/validation";
@@ -15,7 +15,7 @@ import { HealthConsultationDetails } from "@/models";
 
 type SignupStep = "agreement" | "form" | "health";
 
-export default function SignupPage() {
+function SignupContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [step, setStep] = useState<SignupStep>("agreement");
@@ -1138,11 +1138,43 @@ export default function SignupPage() {
     return null;
   };
 
+  // 카카오 모드일 때 체크가 완료될 때까지 로딩 표시
+  if (searchParams?.get("mode") === "kakao" && !kakaoCheckDone) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col">
+        <Navigation />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+            <p className="text-sm text-gray-600">카카오 계정 확인 중...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <Navigation />
       <main className="flex-1">{renderContent()}</main>
       <Footer />
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-white flex flex-col">
+        <Navigation />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        </main>
+        <Footer />
+      </div>
+    }>
+      <SignupContent />
+    </Suspense>
   );
 }
