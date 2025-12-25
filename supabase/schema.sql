@@ -895,6 +895,8 @@ CREATE TABLE IF NOT EXISTS orders (
   virtual_account_holder VARCHAR(100),
   virtual_account_due_date TIMESTAMPTZ,
   virtual_account_deposited_at TIMESTAMPTZ,
+  -- 취소 관련 필드
+  cancel_reason TEXT,
   created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW()),
   updated_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
 );
@@ -911,6 +913,7 @@ CREATE INDEX IF NOT EXISTS idx_orders_handler_admin_id ON orders(handler_admin_i
 CREATE INDEX IF NOT EXISTS idx_orders_tracking_number ON orders(tracking_number);
 CREATE INDEX IF NOT EXISTS idx_orders_shipped_at ON orders(shipped_at);
 CREATE INDEX IF NOT EXISTS idx_orders_status_created_at ON orders(status, created_at);
+CREATE INDEX IF NOT EXISTS idx_orders_cancel_reason ON orders(cancel_reason) WHERE status = 'cancelled';
 
 DROP TRIGGER IF EXISTS update_orders_updated_at ON orders;
 CREATE TRIGGER update_orders_updated_at

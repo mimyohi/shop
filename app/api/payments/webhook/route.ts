@@ -198,6 +198,41 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // 가상계좌 입금 기한 만료 이벤트 처리 (결제 실패)
+    if (webhookData.type === "Transaction.PaymentFailed") {
+      const paymentId = webhookData.data?.paymentId;
+      console.log("결제 실패 이벤트 (가상계좌 만료 포함):", paymentId);
+
+      if (paymentId) {
+        // 해당 주문이 가상계좌 결제인지 확인
+        const { data: orderData } = await supabaseAdmin
+          .from("orders")
+          .select("*")
+          .eq("order_id", paymentId)
+          .single();
+
+        if (orderData && orderData.payment_method === "VIRTUAL_ACCOUNT" && orderData.status === "pending") {
+          // 가상계좌 입금 기한 만료로 인한 취소 처리
+          await supabaseAdmin
+            .from("orders")
+            .update({
+              status: "cancelled",
+              consultation_status: "cancelled",
+              cancel_reason: "가상계좌 입금 기한 만료",
+              updated_at: new Date().toISOString(),
+            })
+            .eq("order_id", paymentId);
+
+          console.log("가상계좌 입금 기한 만료로 주문 취소:", paymentId);
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: "결제 실패 이벤트 처리됨.",
+      });
+    }
+
     // 기타 이벤트
     console.log("처리되지 않은 웹훅 타입:", webhookData.type);
     return NextResponse.json({
