@@ -43,9 +43,6 @@ export async function createOrderAction(data: CreateOrderData) {
         coupon_discount: data.coupon_discount || 0,
         // 배송비
         shipping_fee: data.shipping_fee || 0,
-        // 현금영수증 정보
-        cash_receipt_type: data.cash_receipt_type || null,
-        cash_receipt_number: data.cash_receipt_number || null,
       })
       .select()
       .single();
