@@ -77,11 +77,6 @@ export async function getSession() {
 export async function signInWithKakao() {
   const { data, error } = await supabaseAuth.auth.signInWithOAuth({
     provider: "kakao",
-    options: {
-      redirectTo: `${
-        process.env.NEXT_PUBLIC_ORIGIN_URL ?? window.location.origin
-      }/auth/callback`,
-    },
   });
   return { data, error };
 }
