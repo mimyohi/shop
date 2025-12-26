@@ -1667,6 +1667,24 @@ CREATE POLICY "faqs_service_role_all"
   WITH CHECK (auth.role() = 'service_role');
 
 -- ----------------------------------------------------------------------------
+-- Email check RPC (성능 최적화)
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION check_email_exists(email_to_check TEXT)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = auth, public
+AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM auth.users WHERE email = LOWER(email_to_check) LIMIT 1
+  );
+END;
+$$;
+
+COMMENT ON FUNCTION check_email_exists IS '이메일 존재 여부 확인 (전체 사용자 조회 대신 직접 쿼리로 성능 최적화)';
+
+-- ----------------------------------------------------------------------------
 -- Seed data
 
 

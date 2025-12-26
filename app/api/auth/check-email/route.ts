@@ -59,26 +59,34 @@ export async function POST(request: NextRequest) {
     }
 
     // auth.users에서도 확인 (프로필 생성 전일 수 있음)
-    const { data: authData, error: authError } = await supabase.auth.admin.listUsers({
-      page: 1,
-      perPage: 1,
-    });
+    // 성능 개선: 전체 사용자 조회 대신 특정 이메일만 직접 쿼리
+    const { data: authUser, error: authError } = await supabase
+      .rpc("check_email_exists", { email_to_check: normalizedEmail });
 
     if (authError) {
-      console.error("Auth check error:", authError);
-      return NextResponse.json(
-        { success: false, error: "서버 연결에 문제가 발생했습니다. 잠시 후 다시 시도해주세요." },
-        { status: 500 }
-      );
-    }
+      // RPC가 없으면 직접 쿼리 시도
+      const { data: directCheck, error: directError } = await supabase
+        .from("user_profiles")
+        .select("id")
+        .ilike("email", normalizedEmail)
+        .limit(1);
 
-    // 이메일로 사용자 검색
-    const { data: users } = await supabase.auth.admin.listUsers();
-    const existingUser = users?.users?.find(
-      (user) => user.email?.toLowerCase() === normalizedEmail
-    );
+      if (directError) {
+        console.error("Auth check error:", directError);
+        return NextResponse.json(
+          { success: false, error: "서버 연결에 문제가 발생했습니다. 잠시 후 다시 시도해주세요." },
+          { status: 500 }
+        );
+      }
 
-    if (existingUser) {
+      if (directCheck && directCheck.length > 0) {
+        return NextResponse.json({
+          success: true,
+          exists: true,
+          message: "이미 가입된 이메일입니다.",
+        });
+      }
+    } else if (authUser === true) {
       return NextResponse.json({
         success: true,
         exists: true,

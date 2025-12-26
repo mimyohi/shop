@@ -326,10 +326,17 @@ export async function POST(request: NextRequest) {
       console.log("결제 완료 - method type:", methodType, "payment_method:", updateData.payment_method);
     }
 
-    const { error: updateError, data } = await supabaseAdmin
+    // 동시성 제어: 아직 처리되지 않은 주문만 업데이트 (중복 결제 방지)
+    const allowedStatuses = isVirtualAccountIssued
+      ? ["pending"] // 가상계좌: pending -> payment_pending
+      : ["pending", "payment_pending"]; // 카드/계좌이체: pending 또는 payment_pending -> completed
+
+    const { error: updateError, data: updatedRows } = await supabaseAdmin
       .from("orders")
       .update(updateData)
-      .eq("order_id", paymentId);
+      .eq("order_id", paymentId)
+      .in("status", allowedStatuses)
+      .select("id");
 
     if (updateError) {
       console.error("주문 상태 업데이트 실패:", updateError);
@@ -337,6 +344,16 @@ export async function POST(request: NextRequest) {
         { error: "주문 상태 업데이트에 실패했습니다." },
         { status: 500 }
       );
+    }
+
+    // 업데이트된 행이 없으면 이미 다른 요청에서 처리됨
+    if (!updatedRows || updatedRows.length === 0) {
+      console.log("이미 처리된 주문 (동시성 제어) - paymentId:", paymentId);
+      return NextResponse.json({
+        success: true,
+        message: "이미 처리된 주문입니다.",
+        alreadyProcessed: true,
+      });
     }
 
     // 현금영수증 발급 (신청한 경우) - 카드 결제 완료 시에만 발급
