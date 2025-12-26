@@ -9,8 +9,8 @@ type TabType =
   | "orders"
   | "points"
   | "coupons"
-  | "addresses"
-  | "health";
+  | "addresses";
+  // | "health"; // 문진표 탭 주석 처리
 
 interface ProfilePageProps {
   searchParams: Promise<{
@@ -114,7 +114,7 @@ async function ProfilePageContent({ searchParams }: ProfilePageProps) {
     "points",
     "coupons",
     "addresses",
-    "health",
+    // "health", // 문진표 탭 주석 처리
   ];
   const initialTab: TabType = allowedTabs.includes(params.tab as TabType)
     ? (params.tab as TabType)
@@ -126,7 +126,7 @@ async function ProfilePageContent({ searchParams }: ProfilePageProps) {
     pointsResult,
     ordersResult,
     addressesResult,
-    healthResult,
+    // healthResult, // 문진표 관련 주석 처리
     couponsResult,
     historyResult,
   ] = await Promise.all([
@@ -160,12 +160,12 @@ async function ProfilePageContent({ searchParams }: ProfilePageProps) {
       .eq("user_id", user.id)
       .order("is_default", { ascending: false })
       .order("created_at", { ascending: false }),
-    // Health Consultation
-    supabase
-      .from("user_health_consultations")
-      .select("*")
-      .eq("user_id", user.id)
-      .single(),
+    // Health Consultation - 문진표 관련 주석 처리
+    // supabase
+    //   .from("user_health_consultations")
+    //   .select("*")
+    //   .eq("user_id", user.id)
+    //   .single(),
     // Coupons
     supabase
       .from("user_coupons")
@@ -191,7 +191,7 @@ async function ProfilePageContent({ searchParams }: ProfilePageProps) {
     userPoints: pointsResult.data || null,
     orders: ordersResult.data || [],
     addresses: addressesResult.data || [],
-    healthConsultation: healthResult.data || null,
+    // healthConsultation: healthResult.data || null, // 문진표 관련 주석 처리
     coupons: couponsResult.data || [],
     pointsHistory: historyResult.data || [],
   };

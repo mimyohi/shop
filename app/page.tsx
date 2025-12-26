@@ -187,12 +187,12 @@ export default async function Home() {
       <BestItemSection products={products} />
 
       {/* 브랜드 소개 섹션 */}
-      <BrandIntroSection />
+      {/* <BrandIntroSection /> */}
 
       {/* 인스타그램 섹션 */}
-      {instagramImages.length > 0 && (
+      {/* {instagramImages.length > 0 && (
         <InstagramSection images={instagramImages} />
-      )}
+      )} */}
 
       <div className="h-10" />
       {/* Footer */}

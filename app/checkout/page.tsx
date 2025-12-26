@@ -5,7 +5,7 @@ import {
   fetchAvailableUserCouponsServer,
   fetchShippingAddressesServer,
   fetchUserProfileServer,
-  fetchUserHealthConsultationServer,
+  // fetchUserHealthConsultationServer, // 문진표 관련 주석 처리
 } from "@/lib/server-data";
 import CheckoutContent from "./CheckoutContent";
 
@@ -22,13 +22,13 @@ export default async function CheckoutPage() {
   }
 
   // 서버에서 모든 데이터 병렬 가져오기
-  const [userPoints, availableCoupons, addresses, profile, savedHealthConsultation] =
+  const [userPoints, availableCoupons, addresses, profile] =
     await Promise.all([
       fetchUserPointsServer(user.id),
       fetchAvailableUserCouponsServer(user.id),
       fetchShippingAddressesServer(user.id),
       fetchUserProfileServer(user.id),
-      fetchUserHealthConsultationServer(user.id),
+      // fetchUserHealthConsultationServer(user.id), // 문진표 관련 주석 처리
     ]);
 
   return (
@@ -38,7 +38,7 @@ export default async function CheckoutPage() {
       initialAvailableCoupons={availableCoupons}
       initialAddresses={addresses}
       initialProfile={profile}
-      initialHealthConsultation={savedHealthConsultation}
+      // initialHealthConsultation={savedHealthConsultation} // 문진표 관련 주석 처리
     />
   );
 }

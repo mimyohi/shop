@@ -112,7 +112,7 @@ export default function Footer() {
             </div>
 
             {/* SOCIAL */}
-            <div>
+            {/* <div>
               <h4 className="text-xs font-medium text-gray-700 mb-4 tracking-wide">
                 SOCIAL
               </h4>
@@ -128,7 +128,7 @@ export default function Footer() {
                   </a>
                 </li>
               </ul>
-            </div>
+            </div> */}
 
             {/* OFFICIAL */}
             <div>
