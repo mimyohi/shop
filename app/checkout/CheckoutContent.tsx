@@ -82,8 +82,8 @@ export default function CheckoutContent({
   initialAvailableCoupons,
   initialAddresses,
   initialProfile,
-  // initialHealthConsultation, // 문진표 관련 주석 처리
-}: CheckoutContentProps) {
+}: // initialHealthConsultation, // 문진표 관련 주석 처리
+CheckoutContentProps) {
   const router = useRouter();
   const {
     item,
@@ -1172,7 +1172,7 @@ export default function CheckoutContent({
                 >
                   <span className="text-sm font-medium">계좌이체</span>
                 </button>
-                {/* <button
+                <button
                   type="button"
                   onClick={() => setPaymentMethod("VIRTUAL_ACCOUNT")}
                   className={`flex items-center justify-center gap-2 p-4 border rounded transition ${
@@ -1182,7 +1182,7 @@ export default function CheckoutContent({
                   }`}
                 >
                   <span className="text-sm font-medium">가상계좌</span>
-                </button> */}
+                </button>
               </div>
 
               {paymentMethod === "TRANSFER" && (
