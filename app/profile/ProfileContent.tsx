@@ -92,7 +92,9 @@ export default function ProfileContent({
   // 로컬 상태로 데이터 관리 (mutation 후 업데이트용)
   const [profile] = useState(initialData.profile);
   const [userPoints] = useState(initialData.userPoints);
-  const [orders] = useState(initialData.orders);
+  const [orders] = useState(
+    initialData.orders.filter((order) => order.status !== "pending")
+  );
   const [addresses, setAddresses] = useState(initialData.addresses);
   // 문진표 관련 상태 주석 처리
   // const [savedHealthConsultation, setSavedHealthConsultation] = useState<
