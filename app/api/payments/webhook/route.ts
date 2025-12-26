@@ -107,15 +107,17 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // 주문 상태 업데이트
-      const { error: updateError } = await supabaseAdmin
+      // 동시성 제어: payment_pending 상태인 주문만 업데이트 (중복 처리 방지)
+      const { error: updateError, data: updatedRows } = await supabaseAdmin
         .from("orders")
         .update({
           status: "completed",
           virtual_account_deposited_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
-        .eq("order_id", paymentId);
+        .eq("order_id", paymentId)
+        .in("status", ["pending", "payment_pending"])
+        .select("id");
 
       if (updateError) {
         console.error("주문 상태 업데이트 실패:", updateError);
@@ -123,6 +125,15 @@ export async function POST(request: NextRequest) {
           { error: "주문 상태 업데이트에 실패했습니다." },
           { status: 500 }
         );
+      }
+
+      // 업데이트된 행이 없으면 이미 다른 요청에서 처리됨
+      if (!updatedRows || updatedRows.length === 0) {
+        console.log("이미 처리된 주문 (동시성 제어) - paymentId:", paymentId);
+        return NextResponse.json({
+          success: true,
+          message: "이미 처리된 주문입니다.",
+        });
       }
 
       console.log("가상계좌 입금 완료 처리 성공:", paymentId);
