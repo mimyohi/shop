@@ -5,28 +5,28 @@ import Image from "next/image";
 
 export default function Footer() {
   return (
-    <footer className="bg-[#f8f8f8]">
+    <footer className="bg-[#EBF6F4] rounded-t-[40px]">
       {/* 로고 섹션 */}
-      <div className="py-12 border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-center">
+      <div className="border-b border-[#67645E]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-[60px] flex justify-center">
           <Link href="/">
             <Image
-              src="/images/logo.png"
+              src="/footer_logo.png"
               alt="MIMYOHI"
-              width={150}
-              height={40}
-              className="h-8 w-auto"
+              width={264}
+              height={64}
+              className="h-[48px] w-auto"
             />
           </Link>
         </div>
       </div>
 
-      {/* 메인 콘텐츠 */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        {/* PC 레이아웃 */}
-        <div className="hidden md:grid md:grid-cols-2 gap-8">
+      {/* PC 메인 콘텐츠 */}
+      <div className="hidden md:block">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-2">
           {/* 왼쪽: 쇼핑몰 기본정보 */}
-          <div className="text-xs text-gray-500 leading-relaxed border-r border-gray-200 pr-8">
+          <div className="text-xs text-gray-500 leading-relaxed border-r border-[#67645E] pr-8 py-10">
             <div className="mb-6">
               <p className="font-medium text-gray-700 mb-2">쇼핑몰 기본정보</p>
               <p>
@@ -85,7 +85,7 @@ export default function Footer() {
           </div>
 
           {/* 오른쪽: 네비게이션 링크들 */}
-          <div className="grid grid-cols-3 gap-8 pl-8">
+          <div className="grid grid-cols-3 gap-8 pl-8 py-10">
             {/* NAVIGATE */}
             <div>
               <h4 className="text-xs font-medium text-gray-700 mb-4 tracking-wide">
@@ -175,13 +175,15 @@ export default function Footer() {
                 </li>
               </ul>
             </div>
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* 모바일 레이아웃 */}
-        <div className="md:hidden">
-          {/* 네비게이션 링크들 */}
-          <div className="grid grid-cols-3 gap-4 pb-8 border-b border-gray-200">
+      {/* 모바일 레이아웃 - 네비게이션 */}
+      <div className="md:hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <div className="grid grid-cols-3 gap-4">
             {/* NAVIGATE */}
             <div>
               <h4 className="text-xs font-medium text-gray-700 mb-3 tracking-wide">
@@ -272,9 +274,16 @@ export default function Footer() {
               </ul>
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* 쇼핑몰 기본정보 */}
-          <div className="text-xs text-gray-500 leading-relaxed pt-8">
+      {/* 모바일 구분선 - 전체 너비 */}
+      <div className="md:hidden border-b border-[#67645E]"></div>
+
+      {/* 모바일 레이아웃 - 쇼핑몰 기본정보 */}
+      <div className="md:hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <div className="text-xs text-gray-500 leading-relaxed">
             <div className="mb-6">
               <p className="font-medium text-gray-700 mb-2">쇼핑몰 기본정보</p>
               <p>
@@ -335,9 +344,9 @@ export default function Footer() {
       </div>
 
       {/* 저작권 */}
-      <div className="border-t border-gray-200 py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-xs text-gray-400">
+      <div className="border-t border-[#67645E]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <p className="text-xs text-[#67645E]">
             Copyright © 미묘히. All Rights Reserved.
           </p>
         </div>
