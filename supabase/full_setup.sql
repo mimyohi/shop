@@ -698,12 +698,30 @@ CREATE POLICY "coupon_products_service_role_all"
   USING (auth.role() = 'service_role')
   WITH CHECK (auth.role() = 'service_role');
 
+-- handle_new_user: 사용자 가입 시 프로필 및 포인트 자동 생성
+-- display_name은 일반 가입(display_name), 카카오(name, full_name) 순으로 확인
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.user_profiles (user_id, email)
-  VALUES (NEW.id, NEW.email)
-  ON CONFLICT (user_id) DO NOTHING;
+  INSERT INTO public.user_profiles (user_id, email, display_name, phone, phone_verified)
+  VALUES (
+    NEW.id,
+    NEW.email,
+    COALESCE(
+      NEW.raw_user_meta_data->>'display_name',
+      NEW.raw_user_meta_data->>'name',
+      NEW.raw_user_meta_data->>'full_name'
+    ),
+    NEW.raw_user_meta_data->>'phone',
+    COALESCE((NEW.raw_user_meta_data->>'phone_verified')::boolean, false)
+  )
+  ON CONFLICT (user_id) DO UPDATE SET
+    display_name = COALESCE(
+      EXCLUDED.display_name,
+      user_profiles.display_name
+    ),
+    phone = COALESCE(EXCLUDED.phone, user_profiles.phone),
+    phone_verified = COALESCE(EXCLUDED.phone_verified, user_profiles.phone_verified);
 
   INSERT INTO public.user_points (user_id, points)
   VALUES (NEW.id, 0)
