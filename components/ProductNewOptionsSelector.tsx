@@ -35,6 +35,7 @@ export default function ProductNewOptionsSelector({
   };
 
   // 초진/재진 먼저 선택 → 옵션 선택 → 설정 선택
+  // TODO 임시로 null 처리
   const [selectedVisitType, setSelectedVisitType] = useState<VisitType | null>(
     null
   );
@@ -52,7 +53,6 @@ export default function ProductNewOptionsSelector({
   // resetTrigger가 변경되면 선택 초기화
   useEffect(() => {
     if (resetTrigger !== undefined) {
-      setSelectedVisitType(null);
       setSelectedOption(null);
       setSelectedSettings({});
     }
@@ -84,8 +84,9 @@ export default function ProductNewOptionsSelector({
   };
 
   // Notify parent of changes
+  // TODO: 임시로 visitType null이어도 구매 가능하도록 수정
   useEffect(() => {
-    if (!selectedOption || !selectedVisitType) {
+    if (!selectedOption) {
       onSelectionChange(null, null, []);
       return;
     }
@@ -106,14 +107,15 @@ export default function ProductNewOptionsSelector({
     onSelectionChange(selectedOption, selectedVisitType, settingsArray);
   }, [selectedOption, selectedVisitType, selectedSettings, onSelectionChange]);
 
-  const handleVisitTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value as VisitType;
-    if (value) {
-      setSelectedVisitType(value);
-      setSelectedOption(null);
-      setSelectedSettings({});
-    }
-  };
+  // TODO: 임시 주석 처리
+  // const handleVisitTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  //   const value = e.target.value as VisitType;
+  //   if (value) {
+  //     setSelectedVisitType(value);
+  //     setSelectedOption(null);
+  //     setSelectedSettings({});
+  //   }
+  // };
 
   const handleOptionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const optionId = e.target.value;
@@ -140,8 +142,9 @@ export default function ProductNewOptionsSelector({
 
   return (
     <div className="space-y-3 border-t border-gray-200 pt-6">
+      {/* TODO: 초진/재진 선택 임시 주석 처리 */}
       {/* 1. 초진/재진 선택 (드롭다운) - 항상 먼저 표시 */}
-      <div className="relative">
+      {/* <div className="relative">
         <select
           value={selectedVisitType || ""}
           onChange={handleVisitTypeChange}
@@ -165,10 +168,10 @@ export default function ProductNewOptionsSelector({
             d="M19 9l-7 7-7-7"
           />
         </svg>
-      </div>
+      </div> */}
 
-      {/* 2. 옵션 선택 (드롭다운) - 초진/재진 선택 후 표시 */}
-      {selectedVisitType && (
+      {/* 2. 옵션 선택 (드롭다운) - TODO: 임시로 visitType 조건 제거 */}
+      {/* {selectedVisitType && ( */}
         <div className="relative">
           <select
             value={selectedOption?.id || ""}
@@ -201,7 +204,7 @@ export default function ProductNewOptionsSelector({
             />
           </svg>
         </div>
-      )}
+      {/* )} */}
 
       {/* 3. 상세 설정 (드롭다운) - 옵션에 개월수 설정이 있고 방문 타입에 따라 필요한 경우에만 표시 */}
       {showSettings &&
