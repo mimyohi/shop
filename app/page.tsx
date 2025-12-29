@@ -33,6 +33,14 @@ interface ProductBannerType {
   is_active: boolean;
 }
 
+interface RepresentativeOptionData {
+  id: string;
+  name: string;
+  price: number;
+  discount_rate: number;
+  discounted_price: number;
+}
+
 interface HomeProduct {
   id: string;
   product_id: string;
@@ -40,12 +48,11 @@ interface HomeProduct {
   name: string;
   slug: string;
   description: string | null;
-  price: number;
-  discount_rate: number | null;
   image_url: string | null;
   is_new_badge: boolean;
   is_sale_badge: boolean;
   created_at: string;
+  representative_option?: RepresentativeOptionData;
 }
 
 interface InstagramImageType {
@@ -100,8 +107,6 @@ async function getHomeProducts(): Promise<HomeProduct[]> {
         name,
         slug,
         description,
-        price,
-        discount_rate,
         image_url,
         is_new_badge,
         is_sale_badge,
@@ -119,6 +124,31 @@ async function getHomeProducts(): Promise<HomeProduct[]> {
     return [];
   }
 
+  // 대표 옵션 조회
+  const productIds = (data || []).map((item: any) => item.product_id);
+  const { data: repOptions } = await supabase
+    .from("product_options")
+    .select("id, product_id, name, price, discount_rate")
+    .in("product_id", productIds)
+    .eq("is_representative", true);
+
+  const repOptionsMap = new Map<string, RepresentativeOptionData>();
+  repOptions?.forEach((option: any) => {
+    if (option.product_id) {
+      const discountRate = option.discount_rate || 0;
+      const discountedPrice = discountRate > 0
+        ? Math.floor(option.price * (1 - discountRate / 100))
+        : option.price;
+      repOptionsMap.set(option.product_id, {
+        id: option.id,
+        name: option.name,
+        price: option.price,
+        discount_rate: discountRate,
+        discounted_price: discountedPrice,
+      });
+    }
+  });
+
   return (data || []).map((item: any) => ({
     id: item.id,
     product_id: item.product_id,
@@ -126,12 +156,11 @@ async function getHomeProducts(): Promise<HomeProduct[]> {
     name: item.products?.name || "",
     slug: item.products?.slug || item.product_id,
     description: item.products?.description || null,
-    price: item.products?.price || 0,
-    discount_rate: item.products?.discount_rate || null,
     image_url: item.products?.image_url || null,
     is_new_badge: item.products?.is_new_badge || false,
     is_sale_badge: item.products?.is_sale_badge || false,
     created_at: item.products?.created_at || "",
+    representative_option: repOptionsMap.get(item.product_id),
   }));
 }
 
@@ -164,13 +193,14 @@ export default async function Home() {
     id: hp.product_id,
     slug: hp.slug,
     name: hp.name,
-    description: hp.description,
-    price: hp.price,
-    discount_rate: hp.discount_rate,
-    image_url: hp.image_url,
+    description: hp.description || "",
+    image_url: hp.image_url || "",
     is_new_badge: hp.is_new_badge,
     is_sale_badge: hp.is_sale_badge,
     created_at: hp.created_at,
+    updated_at: hp.created_at,
+    category: "",
+    representative_option: hp.representative_option,
   }));
 
   return (

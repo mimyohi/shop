@@ -2,12 +2,70 @@ import { createClient } from "@/lib/supabaseServer";
 import type { ProductFilters, ProductListResponse } from "@/repositories/products.repository";
 import type { OrderWithItems } from "@/repositories/orders.repository";
 import type { ProductOptionWithSettings } from "@/repositories/product-options.repository";
-import type { UserPoints, PointHistory, UserCoupon, ShippingAddress, UserProfile, UserHealthConsultation, ProductAddon } from "@/models";
+import type { UserPoints, PointHistory, UserCoupon, ShippingAddress, UserProfile, UserHealthConsultation, ProductAddon, Product, RepresentativeOption } from "@/models";
 
 /**
  * 서버 사이드 전용 데이터 패칭 함수들
  * 이 파일은 Server Component에서만 import 가능합니다.
  */
+
+/**
+ * 상품 ID 목록에 대한 대표 옵션 조회 (서버용)
+ */
+async function fetchRepresentativeOptionsServer(
+  supabase: any,
+  productIds: string[]
+): Promise<Map<string, RepresentativeOption>> {
+  if (productIds.length === 0) {
+    return new Map();
+  }
+
+  const { data, error } = await supabase
+    .from("product_options")
+    .select("id, product_id, name, price, discount_rate")
+    .in("product_id", productIds)
+    .eq("is_representative", true);
+
+  if (error) {
+    console.error("Error fetching representative options:", error);
+    return new Map();
+  }
+
+  const map = new Map<string, RepresentativeOption>();
+  data?.forEach((option: any) => {
+    if (option.product_id) {
+      const discountRate = option.discount_rate || 0;
+      const discountedPrice =
+        discountRate > 0
+          ? Math.floor(option.price * (1 - discountRate / 100))
+          : option.price;
+
+      map.set(option.product_id, {
+        id: option.id,
+        name: option.name,
+        price: option.price,
+        discount_rate: discountRate,
+        discounted_price: discountedPrice,
+      });
+    }
+  });
+
+  return map;
+}
+
+/**
+ * DB에서 조회한 상품에 대표 옵션 정보를 매핑
+ */
+function mapProductWithRepresentativeOption(
+  product: any,
+  representativeOptions: Map<string, RepresentativeOption>
+): Product {
+  const repOption = representativeOptions.get(product.id);
+  return {
+    ...product,
+    representative_option: repOption || undefined,
+  };
+}
 
 // ===== Products =====
 export async function fetchProductsServer(filters: ProductFilters = {}): Promise<ProductListResponse> {
@@ -15,8 +73,6 @@ export async function fetchProductsServer(filters: ProductFilters = {}): Promise
   const {
     search,
     category,
-    minPrice = 0,
-    maxPrice = 10000000,
     sortBy = "latest",
     page = 1,
     limit = 20,
@@ -39,21 +95,11 @@ export async function fetchProductsServer(filters: ProductFilters = {}): Promise
     query = query.eq("category", category);
   }
 
-  query = query.gte("price", minPrice).lte("price", maxPrice);
-
-  switch (sortBy) {
-    case "price_asc":
-      query = query.order("price", { ascending: true });
-      break;
-    case "price_desc":
-      query = query.order("price", { ascending: false });
-      break;
-    case "name":
-      query = query.order("name", { ascending: true });
-      break;
-    case "latest":
-    default:
-      query = query.order("created_at", { ascending: false });
+  // 정렬 (price 정렬은 클라이언트 사이드에서 처리)
+  if (sortBy === "name") {
+    query = query.order("name", { ascending: true });
+  } else {
+    query = query.order("created_at", { ascending: false });
   }
 
   query = query.range(from, to);
@@ -65,8 +111,34 @@ export async function fetchProductsServer(filters: ProductFilters = {}): Promise
     throw new Error("Failed to fetch products");
   }
 
+  const products = data || [];
+  const productIds = products.map((p: any) => p.id);
+
+  // 대표 옵션 조회
+  const representativeOptions = await fetchRepresentativeOptionsServer(supabase, productIds);
+
+  // 상품에 대표 옵션 정보 매핑
+  let mappedProducts = products.map((p: any) =>
+    mapProductWithRepresentativeOption(p, representativeOptions)
+  );
+
+  // 가격 정렬은 클라이언트 사이드에서 처리
+  if (sortBy === "price_asc") {
+    mappedProducts.sort((a, b) => {
+      const priceA = a.representative_option?.discounted_price || 0;
+      const priceB = b.representative_option?.discounted_price || 0;
+      return priceA - priceB;
+    });
+  } else if (sortBy === "price_desc") {
+    mappedProducts.sort((a, b) => {
+      const priceA = a.representative_option?.discounted_price || 0;
+      const priceB = b.representative_option?.discounted_price || 0;
+      return priceB - priceA;
+    });
+  }
+
   return {
-    products: data || [],
+    products: mappedProducts,
     totalCount: count || 0,
     totalPages: Math.ceil((count || 0) / limit),
     currentPage: page,

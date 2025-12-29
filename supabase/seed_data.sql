@@ -1,14 +1,14 @@
 -- ----------------------------------------------------------------------------
 
--- 한방 다이어트 제품
-INSERT INTO products (slug, name, description, price, image_url, category, is_visible_on_main, detail_images)
+-- 한방 다이어트 제품 (가격은 옵션에서 관리)
+INSERT INTO products (slug, name, description, image_url, category, is_visible_on_main, detail_images)
 VALUES
-  ('diet-stage1', '1단계 다이어트 한약', '체질 개선 및 기초 대사 향상을 위한 1단계 맞춤 한약. 건강한 체중 감량의 첫 걸음을 시작하세요.', 450000, 'https://via.placeholder.com/300', '다이어트 한약', true, '[]'::jsonb),
-  ('diet-stage2', '2단계 다이어트 한약', '본격적인 체중 감량을 위한 2단계 맞춤 한약. 지방 분해와 식욕 조절에 효과적입니다.', 520000, 'https://via.placeholder.com/300', '다이어트 한약', true, '[]'::jsonb),
-  ('diet-stage3', '3단계 다이어트 한약', '목표 체중 달성 및 유지를 위한 3단계 맞춤 한약. 요요 방지와 건강한 체형 유지를 돕습니다.', 480000, 'https://via.placeholder.com/300', '다이어트 한약', true, '[]'::jsonb),
-  ('metabolism-tea', '대사촉진 한방차', '신진대사를 촉진하고 체내 노폐물 배출을 돕는 한방차. 하루 2-3회 드시면 좋습니다.', 89000, 'https://via.placeholder.com/300', '한방차', true, '[]'::jsonb),
-  ('detox-tea', '해독 한방차', '체내 독소 배출과 부종 완화에 도움을 주는 해독 한방차. 다이어트와 병행하면 효과적입니다.', 95000, 'https://via.placeholder.com/300', '한방차', true, '[]'::jsonb),
-  ('slim-patch', '한방 슬림 패치', '국소 부위 지방 분해를 돕는 한방 패치. 복부, 허벅지 등에 부착하여 사용합니다.', 120000, 'https://via.placeholder.com/300', '부가 제품', true, '[]'::jsonb)
+  ('diet-stage1', '1단계 다이어트 한약', '체질 개선 및 기초 대사 향상을 위한 1단계 맞춤 한약. 건강한 체중 감량의 첫 걸음을 시작하세요.', 'https://via.placeholder.com/300', '다이어트 한약', true, '[]'::jsonb),
+  ('diet-stage2', '2단계 다이어트 한약', '본격적인 체중 감량을 위한 2단계 맞춤 한약. 지방 분해와 식욕 조절에 효과적입니다.', 'https://via.placeholder.com/300', '다이어트 한약', true, '[]'::jsonb),
+  ('diet-stage3', '3단계 다이어트 한약', '목표 체중 달성 및 유지를 위한 3단계 맞춤 한약. 요요 방지와 건강한 체형 유지를 돕습니다.', 'https://via.placeholder.com/300', '다이어트 한약', true, '[]'::jsonb),
+  ('metabolism-tea', '대사촉진 한방차', '신진대사를 촉진하고 체내 노폐물 배출을 돕는 한방차. 하루 2-3회 드시면 좋습니다.', 'https://via.placeholder.com/300', '한방차', true, '[]'::jsonb),
+  ('detox-tea', '해독 한방차', '체내 독소 배출과 부종 완화에 도움을 주는 해독 한방차. 다이어트와 병행하면 효과적입니다.', 'https://via.placeholder.com/300', '한방차', true, '[]'::jsonb),
+  ('slim-patch', '한방 슬림 패치', '국소 부위 지방 분해를 돕는 한방 패치. 복부, 허벅지 등에 부착하여 사용합니다.', 'https://via.placeholder.com/300', '부가 제품', true, '[]'::jsonb)
 ON CONFLICT (slug) DO NOTHING;
 
 -- 한방 다이어트 쿠폰
@@ -145,14 +145,14 @@ BEGIN
   -- 다이어트 한약 Product ID 조회
   SELECT id INTO v_product_diet FROM products WHERE slug = 'diet-stage1';
 
-  -- 1개월 다이어트 패키지 옵션 생성
+  -- 1개월 다이어트 패키지 옵션 생성 (대표 옵션)
   INSERT INTO product_options (
-    product_id, slug, name, category, price,
+    product_id, slug, name, category, price, discount_rate, is_representative,
     use_settings_on_first, use_settings_on_revisit_with_consult, use_settings_on_revisit_no_consult,
     display_order, image_url
   ) VALUES (
     v_product_diet, 'pkg-1m', '1개월',
-    '다이어트 패키지', 450000,
+    '다이어트 패키지', 450000, 0, true,
     false, true, true,
     0, 'https://via.placeholder.com/300'
   ) RETURNING id INTO v_group_1month;
@@ -170,12 +170,12 @@ BEGIN
 
   -- 2개월 다이어트 패키지 옵션 생성
   INSERT INTO product_options (
-    product_id, slug, name, category, price,
+    product_id, slug, name, category, price, discount_rate, is_representative,
     use_settings_on_first, use_settings_on_revisit_with_consult, use_settings_on_revisit_no_consult,
     display_order, image_url
   ) VALUES (
     v_product_diet, 'pkg-2m', '2개월',
-    '다이어트 패키지', 900000,
+    '다이어트 패키지', 900000, 10, false,
     false, true, true,
     1, 'https://via.placeholder.com/300'
   ) RETURNING id INTO v_group_2month;
@@ -202,12 +202,12 @@ BEGIN
 
   -- 3개월 다이어트 패키지 옵션 생성
   INSERT INTO product_options (
-    product_id, slug, name, category, price,
+    product_id, slug, name, category, price, discount_rate, is_representative,
     use_settings_on_first, use_settings_on_revisit_with_consult, use_settings_on_revisit_no_consult,
     display_order, image_url
   ) VALUES (
     v_product_diet, 'pkg-3m', '3개월',
-    '다이어트 패키지', 1200000,
+    '다이어트 패키지', 1200000, 15, false,
     false, true, true,
     2, 'https://via.placeholder.com/300'
   ) RETURNING id INTO v_group_3month;
@@ -242,6 +242,42 @@ BEGIN
   (v_setting_3rd, '2단계', 1),
   (v_setting_3rd, '3단계', 2);
 
+END $$;
+
+-- ----------------------------------------------------------------------------
+-- 옵션이 없는 상품들에 기본 옵션 생성 (모든 상품에 최소 1개 옵션 필수)
+-- ----------------------------------------------------------------------------
+DO $$
+DECLARE
+  v_product RECORD;
+BEGIN
+  -- diet-stage2, diet-stage3, metabolism-tea, detox-tea, slim-patch에 기본 옵션 생성
+  FOR v_product IN
+    SELECT id, slug, name FROM products
+    WHERE slug IN ('diet-stage2', 'diet-stage3', 'metabolism-tea', 'detox-tea', 'slim-patch')
+  LOOP
+    INSERT INTO product_options (
+      product_id, name, price, discount_rate, is_representative,
+      use_settings_on_first, use_settings_on_revisit_with_consult, use_settings_on_revisit_no_consult,
+      display_order
+    ) VALUES (
+      v_product.id,
+      '기본',
+      CASE v_product.slug
+        WHEN 'diet-stage2' THEN 520000
+        WHEN 'diet-stage3' THEN 480000
+        WHEN 'metabolism-tea' THEN 89000
+        WHEN 'detox-tea' THEN 95000
+        WHEN 'slim-patch' THEN 120000
+        ELSE 0
+      END,
+      0,
+      true,
+      false, false, false,
+      0
+    )
+    ON CONFLICT DO NOTHING;
+  END LOOP;
 END $$;
 
 -- ----------------------------------------------------------------------------

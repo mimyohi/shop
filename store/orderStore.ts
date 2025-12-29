@@ -131,16 +131,12 @@ export const useOrderStore = create<OrderStore>()(
         const item = get().item;
         if (!item) return 0;
 
-        // 할인된 기본 가격 계산 (기본가격에만 할인 적용)
-        const basePrice = item.product?.price ?? 0;
-        const discountRate = item.product?.discount_rate ?? 0;
-        const discountedBasePrice = discountRate > 0
-          ? Math.floor(basePrice * (1 - discountRate / 100))
-          : basePrice;
-
-        // 옵션이 있으면 옵션 추가 가격을 더함
+        // 옵션의 할인된 가격 계산 (옵션에 price, discount_rate 포함)
         const optionPrice = item.option?.price ?? 0;
-        const totalUnitPrice = discountedBasePrice + optionPrice;
+        const discountRate = item.option?.discount_rate ?? 0;
+        const discountedOptionPrice = discountRate > 0
+          ? Math.floor(optionPrice * (1 - discountRate / 100))
+          : optionPrice;
 
         // 추가 상품 가격 계산
         const addonsPrice = item.selected_addons?.reduce(
@@ -148,7 +144,7 @@ export const useOrderStore = create<OrderStore>()(
           0
         ) ?? 0;
 
-        return totalUnitPrice * item.quantity + addonsPrice;
+        return discountedOptionPrice * item.quantity + addonsPrice;
       },
     }),
     {

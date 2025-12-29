@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { Product } from "@/models";
+import { Product, RepresentativeOption } from "@/models";
 
 export interface ProductFilters {
   search?: string;
@@ -18,6 +18,63 @@ export interface ProductListResponse {
   currentPage: number;
 }
 
+/**
+ * DB에서 조회한 상품에 대표 옵션 정보를 매핑
+ */
+function mapProductWithRepresentativeOption(
+  product: any,
+  representativeOptions: Map<string, RepresentativeOption>
+): Product {
+  const repOption = representativeOptions.get(product.id);
+  return {
+    ...product,
+    representative_option: repOption || undefined,
+  };
+}
+
+/**
+ * 상품 ID 목록에 대한 대표 옵션 조회
+ */
+async function fetchRepresentativeOptions(
+  productIds: string[]
+): Promise<Map<string, RepresentativeOption>> {
+  if (productIds.length === 0) {
+    return new Map();
+  }
+
+  const { data, error } = await supabase
+    .from("product_options")
+    .select("id, product_id, name, price, discount_rate")
+    .in("product_id", productIds)
+    .eq("is_representative", true);
+
+  if (error) {
+    console.error("Error fetching representative options:", error);
+    return new Map();
+  }
+
+  const map = new Map<string, RepresentativeOption>();
+  data?.forEach((option) => {
+    if (option.product_id) {
+      const discountRate = option.discount_rate || 0;
+      const discountedPrice =
+        discountRate > 0
+          ? Math.floor(option.price * (1 - discountRate / 100))
+          : option.price;
+
+      map.set(option.product_id, {
+        id: option.id,
+        name: option.name,
+        price: option.price,
+        discount_rate: discountRate,
+        discounted_price: discountedPrice,
+      });
+    }
+  });
+
+  return map;
+}
+
 export const productsRepository = {
   /**
    * 상품 목록 조회 (필터링, 정렬, 페이지네이션)
@@ -26,8 +83,6 @@ export const productsRepository = {
     const {
       search,
       category,
-      minPrice = 0,
-      maxPrice = 10000000,
       sortBy = "latest",
       page = 1,
       limit = 20,
@@ -42,7 +97,7 @@ export const productsRepository = {
       .from("products")
       .select("*", { count: "exact" })
       .eq("is_visible_on_main", true)
-      .is("deleted_at", null); // Soft delete된 상품 제외
+      .is("deleted_at", null);
 
     // 검색 필터
     if (search) {
@@ -54,23 +109,11 @@ export const productsRepository = {
       query = query.eq("category", category);
     }
 
-    // 가격 범위 필터
-    query = query.gte("price", minPrice).lte("price", maxPrice);
-
-    // 정렬
-    switch (sortBy) {
-      case "price_asc":
-        query = query.order("price", { ascending: true });
-        break;
-      case "price_desc":
-        query = query.order("price", { ascending: false });
-        break;
-      case "name":
-        query = query.order("name", { ascending: true });
-        break;
-      case "latest":
-      default:
-        query = query.order("created_at", { ascending: false });
+    // 정렬 (price 정렬은 클라이언트 사이드에서 처리)
+    if (sortBy === "name") {
+      query = query.order("name", { ascending: true });
+    } else {
+      query = query.order("created_at", { ascending: false });
     }
 
     // 페이지네이션 적용
@@ -83,8 +126,34 @@ export const productsRepository = {
       throw new Error("Failed to fetch products");
     }
 
+    const products = data || [];
+    const productIds = products.map((p) => p.id);
+
+    // 대표 옵션 조회
+    const representativeOptions = await fetchRepresentativeOptions(productIds);
+
+    // 상품에 대표 옵션 정보 매핑
+    let mappedProducts = products.map((p) =>
+      mapProductWithRepresentativeOption(p, representativeOptions)
+    );
+
+    // 가격 정렬은 클라이언트 사이드에서 처리
+    if (sortBy === "price_asc") {
+      mappedProducts.sort((a, b) => {
+        const priceA = a.representative_option?.discounted_price || 0;
+        const priceB = b.representative_option?.discounted_price || 0;
+        return priceA - priceB;
+      });
+    } else if (sortBy === "price_desc") {
+      mappedProducts.sort((a, b) => {
+        const priceA = a.representative_option?.discounted_price || 0;
+        const priceB = b.representative_option?.discounted_price || 0;
+        return priceB - priceA;
+      });
+    }
+
     return {
-      products: data || [],
+      products: mappedProducts,
       totalCount: count || 0,
       totalPages: Math.ceil((count || 0) / limit),
       currentPage: page,
@@ -130,7 +199,10 @@ export const productsRepository = {
       return null;
     }
 
-    return data;
+    // 대표 옵션 조회
+    const representativeOptions = await fetchRepresentativeOptions([id]);
+
+    return mapProductWithRepresentativeOption(data, representativeOptions);
   },
 
   /**
@@ -149,7 +221,10 @@ export const productsRepository = {
       return null;
     }
 
-    return data;
+    // 대표 옵션 조회
+    const representativeOptions = await fetchRepresentativeOptions([data.id]);
+
+    return mapProductWithRepresentativeOption(data, representativeOptions);
   },
 
   /**
@@ -186,7 +261,15 @@ export const productsRepository = {
       return [];
     }
 
-    return data || [];
+    const products = data || [];
+    const productIds = products.map((p) => p.id);
+
+    // 대표 옵션 조회
+    const representativeOptions = await fetchRepresentativeOptions(productIds);
+
+    return products.map((p) =>
+      mapProductWithRepresentativeOption(p, representativeOptions)
+    );
   },
 
   /**
@@ -206,7 +289,15 @@ export const productsRepository = {
       return [];
     }
 
-    return data || [];
+    const products = data || [];
+    const productIds = products.map((p) => p.id);
+
+    // 대표 옵션 조회
+    const representativeOptions = await fetchRepresentativeOptions(productIds);
+
+    return products.map((p) =>
+      mapProductWithRepresentativeOption(p, representativeOptions)
+    );
   },
 
   /**
@@ -228,7 +319,13 @@ export const productsRepository = {
       throw new Error("Failed to fetch products");
     }
 
-    return data || [];
-  },
+    const products = data || [];
 
+    // 대표 옵션 조회
+    const representativeOptions = await fetchRepresentativeOptions(ids);
+
+    return products.map((p) =>
+      mapProductWithRepresentativeOption(p, representativeOptions)
+    );
+  },
 };

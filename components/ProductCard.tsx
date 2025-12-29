@@ -12,16 +12,12 @@ export default function ProductCard({ product }: ProductCardProps) {
   // slug가 있으면 slug 사용, 없으면 id 사용
   const productUrl = `/products/${product.slug || product.id}`;
 
-  // 할인된 가격 계산
-  const getDiscountedPrice = () => {
-    if (!product.discount_rate || product.discount_rate === 0) {
-      return product.price;
-    }
-    return Math.floor(product.price * (1 - product.discount_rate / 100));
-  };
-
-  const discountedPrice = getDiscountedPrice();
-  const hasDiscount = product.discount_rate && product.discount_rate > 0;
+  // 대표 옵션에서 가격 정보 가져오기
+  const repOption = product.representative_option;
+  const originalPrice = repOption?.price || 0;
+  const discountRate = repOption?.discount_rate || 0;
+  const discountedPrice = repOption?.discounted_price || originalPrice;
+  const hasDiscount = discountRate > 0;
 
   // DB에서 설정된 뱃지 여부 사용
   const isNew = product.is_new_badge ?? false;
@@ -87,7 +83,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             </span>
             {hasDiscount === true && (
               <span className="text-xs text-gray-400 line-through">
-                {product.price.toLocaleString()}원
+                {originalPrice.toLocaleString()}원
               </span>
             )}
           </div>

@@ -147,15 +147,15 @@ CheckoutContentProps) {
     return latestProducts.find((p) => p.id === productId) || null;
   }, [productId, latestProducts, item?.product]);
 
-  // 할인된 기본 가격 계산 (기본가격에만 할인 적용)
-  const discountedBasePrice = useMemo(() => {
-    const basePrice = product?.price ?? 0;
-    const discountRate = product?.discount_rate ?? 0;
+  // 옵션의 할인된 가격 계산
+  const discountedOptionPrice = useMemo(() => {
+    const optionPrice = item?.option?.price ?? 0;
+    const discountRate = item?.option?.discount_rate ?? 0;
     if (discountRate > 0) {
-      return Math.floor(basePrice * (1 - discountRate / 100));
+      return Math.floor(optionPrice * (1 - discountRate / 100));
     }
-    return basePrice;
-  }, [product?.price, product?.discount_rate]);
+    return optionPrice;
+  }, [item?.option?.price, item?.option?.discount_rate]);
 
   // 우편번호 추출 (배송비 계산용)
   const currentZipcode = useMemo(() => {
@@ -423,8 +423,8 @@ CheckoutContentProps) {
             product_id:
               item.option?.product_id || item.product?.id || undefined,
             product_name: product?.name || item.option?.name || "상품",
-            // 할인된 기본 가격 + 옵션 추가 가격
-            product_price: discountedBasePrice + (item.option?.price ?? 0),
+            // 옵션 할인 적용 가격
+            product_price: discountedOptionPrice,
             quantity: item.quantity,
             option_id: item.option?.id,
             option_name: item.option?.name,
@@ -588,9 +588,28 @@ CheckoutContentProps) {
                     {product?.name || item.option?.name || "상품"}
                   </p>
                   {item.option && (
-                    <p className="text-sm text-gray-500 mt-1">
-                      옵션: {item.option.name}
-                    </p>
+                    <div className="mt-2 text-sm">
+                      <p className="text-gray-600">옵션: {item.option.name}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        {(item.option.discount_rate ?? 0) > 0 ? (
+                          <>
+                            <span className="text-gray-900 font-medium">
+                              {discountedOptionPrice.toLocaleString()}원
+                            </span>
+                            <span className="text-gray-400 line-through text-xs">
+                              {item.option.price.toLocaleString()}원
+                            </span>
+                            <span className="text-red-500 text-xs">
+                              {item.option.discount_rate}% 할인
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-gray-900 font-medium">
+                            {item.option.price.toLocaleString()}원
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   )}
                   {item.visit_type && (
                     <div className="flex items-center gap-2 mt-2">
@@ -703,9 +722,34 @@ CheckoutContentProps) {
 
             {/* 금액 요약 */}
             <div className="mt-4 pt-4 border-t border-gray-100 space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-500">상품 금액</span>
-                <span className="text-gray-900">
+              {/* 옵션 금액 */}
+              {item.option && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">
+                    옵션 금액 ({discountedOptionPrice.toLocaleString()}원 × {item.quantity}개)
+                  </span>
+                  <span className="text-gray-900">
+                    {(discountedOptionPrice * item.quantity).toLocaleString()}원
+                  </span>
+                </div>
+              )}
+
+              {/* 추가 상품 금액 */}
+              {item.selected_addons && item.selected_addons.length > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">추가 상품</span>
+                  <span className="text-gray-900">
+                    +{item.selected_addons
+                      .reduce((sum, addon) => sum + addon.price * addon.quantity, 0)
+                      .toLocaleString()}원
+                  </span>
+                </div>
+              )}
+
+              {/* 상품 금액 소계 */}
+              <div className="flex justify-between pt-1">
+                <span className="text-gray-700 font-medium">상품 금액 소계</span>
+                <span className="text-gray-900 font-medium">
                   {getTotalPrice().toLocaleString()}원
                 </span>
               </div>

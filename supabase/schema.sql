@@ -115,8 +115,6 @@ CREATE TABLE IF NOT EXISTS products (
   slug VARCHAR(20) UNIQUE,
   name VARCHAR(255) NOT NULL,
   description TEXT,
-  price INTEGER NOT NULL CHECK (price >= 0),
-  discount_rate INTEGER DEFAULT 0 CHECK (discount_rate >= 0 AND discount_rate <= 100),
   image_url TEXT,
   detail_images JSONB DEFAULT '[]'::jsonb,
   category VARCHAR(100),
@@ -131,14 +129,12 @@ CREATE TABLE IF NOT EXISTS products (
   deleted_at TIMESTAMPTZ DEFAULT NULL
 );
 
-COMMENT ON COLUMN products.discount_rate IS '할인률 (0-100%, 0이면 할인 없음)';
 COMMENT ON COLUMN products.is_new_badge IS 'NEW 뱃지 표시 여부';
 COMMENT ON COLUMN products.is_sale_badge IS 'SALE 뱃지 표시 여부';
 COMMENT ON COLUMN products.deleted_at IS 'Soft delete timestamp. NULL means the product is active.';
 
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
 CREATE INDEX IF NOT EXISTS idx_products_slug ON products(slug);
-CREATE INDEX IF NOT EXISTS idx_products_price ON products(price);
 CREATE INDEX IF NOT EXISTS idx_products_created_at ON products(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_products_visible ON products(is_visible_on_main) WHERE is_visible_on_main = true;
 CREATE INDEX IF NOT EXISTS idx_products_sale_dates ON products(sale_start_at, sale_end_at);
@@ -255,8 +251,10 @@ CREATE TABLE IF NOT EXISTS product_options (
   image_url TEXT,
   detail_images JSONB DEFAULT '[]'::jsonb,
 
-  -- 가격 (Group 단위로 설정, Type 선택과 무관)
+  -- 가격 및 할인
   price INTEGER NOT NULL CHECK (price >= 0),
+  discount_rate INTEGER DEFAULT 0 CHECK (discount_rate >= 0 AND discount_rate <= 100),
+  is_representative BOOLEAN DEFAULT false,
 
   -- 방문 타입별 옵션 사용 여부 플래그
   use_settings_on_first BOOLEAN NOT NULL DEFAULT true,
@@ -274,7 +272,9 @@ CREATE TABLE IF NOT EXISTS product_options (
 
 COMMENT ON TABLE product_options IS '상품 옵션 (Option-Setting-Type 구조의 최상위)';
 COMMENT ON COLUMN product_options.product_id IS 'Product와의 1:N 관계 (한 Product에 여러 Option 가능)';
-COMMENT ON COLUMN product_options.price IS 'Option 판매 가격 (추가 가격)';
+COMMENT ON COLUMN product_options.price IS '옵션 판매 가격';
+COMMENT ON COLUMN product_options.discount_rate IS '옵션별 할인률 (0-100%, 0이면 할인 없음)';
+COMMENT ON COLUMN product_options.is_representative IS '대표 옵션 여부. 상품 목록에서 이 옵션의 가격/할인율이 표시됨';
 COMMENT ON COLUMN product_options.use_settings_on_first IS '초진일 때 설정 사용 여부';
 COMMENT ON COLUMN product_options.use_settings_on_revisit_with_consult IS '재진(상담필요)일 때 설정 사용 여부';
 COMMENT ON COLUMN product_options.use_settings_on_revisit_no_consult IS '재진(상담불필요)일 때 설정 사용 여부';
@@ -284,6 +284,10 @@ CREATE INDEX IF NOT EXISTS idx_product_options_slug ON product_options(slug);
 CREATE INDEX IF NOT EXISTS idx_product_options_category ON product_options(category);
 CREATE INDEX IF NOT EXISTS idx_product_options_display_order ON product_options(display_order);
 CREATE INDEX IF NOT EXISTS idx_product_options_price ON product_options(price);
+
+-- 대표 옵션 고유 인덱스 (상품당 1개만 가능)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_product_options_representative
+ON product_options(product_id) WHERE is_representative = true;
 
 DROP TRIGGER IF EXISTS trigger_set_product_group_slug ON product_options;
 CREATE TRIGGER trigger_set_product_group_slug
@@ -372,6 +376,32 @@ CREATE POLICY "product_option_setting_types_service_role_all"
   WITH CHECK (auth.role() = 'service_role');
 
 -- Helper Functions
+
+-- 대표 옵션 자동 관리 트리거 함수
+CREATE OR REPLACE FUNCTION set_representative_option()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.is_representative = true THEN
+    -- 같은 상품의 다른 옵션들은 is_representative를 false로
+    UPDATE product_options
+    SET is_representative = false
+    WHERE product_id = NEW.product_id
+      AND id != NEW.id
+      AND is_representative = true;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trigger_set_representative_option ON product_options;
+CREATE TRIGGER trigger_set_representative_option
+  BEFORE INSERT OR UPDATE ON product_options
+  FOR EACH ROW
+  WHEN (NEW.is_representative = true)
+  EXECUTE FUNCTION set_representative_option();
+
+COMMENT ON FUNCTION set_representative_option IS '대표 옵션이 설정되면 같은 상품의 다른 옵션들의 대표 여부를 false로 변경';
+
 CREATE OR REPLACE FUNCTION get_option_use_settings(
   p_option_id UUID,
   p_visit_type VARCHAR(50)
@@ -409,7 +439,58 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION get_option_price IS 'Option의 판매 가격을 반환합니다. Type 선택과 무관하게 Option 가격이 적용됩니다.';
+COMMENT ON FUNCTION get_option_price IS 'Option의 판매 가격을 반환합니다.';
+
+-- 옵션 할인가 계산 함수
+CREATE OR REPLACE FUNCTION get_option_discounted_price(p_option_id UUID)
+RETURNS INTEGER AS $$
+DECLARE
+  v_price INTEGER;
+  v_discount_rate INTEGER;
+BEGIN
+  SELECT price, COALESCE(discount_rate, 0) INTO v_price, v_discount_rate
+  FROM product_options
+  WHERE id = p_option_id;
+
+  IF v_discount_rate > 0 THEN
+    RETURN FLOOR(v_price * (1 - v_discount_rate::NUMERIC / 100));
+  END IF;
+
+  RETURN COALESCE(v_price, 0);
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION get_option_discounted_price IS '옵션의 할인 적용된 가격을 반환합니다.';
+
+-- 대표 옵션 조회 함수
+CREATE OR REPLACE FUNCTION get_representative_option(p_product_id UUID)
+RETURNS TABLE(
+  option_id UUID,
+  option_name VARCHAR(255),
+  price INTEGER,
+  discount_rate INTEGER,
+  discounted_price INTEGER
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    po.id,
+    po.name,
+    po.price,
+    COALESCE(po.discount_rate, 0),
+    CASE
+      WHEN COALESCE(po.discount_rate, 0) > 0
+      THEN FLOOR(po.price * (1 - po.discount_rate::NUMERIC / 100))::INTEGER
+      ELSE po.price
+    END
+  FROM product_options po
+  WHERE po.product_id = p_product_id
+    AND po.is_representative = true
+  LIMIT 1;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION get_representative_option IS '상품의 대표 옵션 정보를 반환합니다.';
 
 -- ----------------------------------------------------------------------------
 -- User profiles, shipping, rewards, coupons
@@ -776,11 +857,17 @@ SELECT
   c.name AS coupon_name,
   p.id AS product_id,
   p.name AS product_name,
-  p.price,
+  COALESCE(ro.price, 0) AS price,
   p.image_url
 FROM coupons c
 JOIN coupon_products cp ON c.id = cp.coupon_id
 JOIN products p ON cp.product_id = p.id
+LEFT JOIN LATERAL (
+  SELECT po.price
+  FROM product_options po
+  WHERE po.product_id = p.id AND po.is_representative = true
+  LIMIT 1
+) ro ON true
 WHERE c.is_active = true;
 
 CREATE OR REPLACE FUNCTION is_coupon_applicable_to_product(

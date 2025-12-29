@@ -10,7 +10,6 @@ import type {
 
 interface Props {
   options: ProductOptionWithSettings[];
-  basePrice: number;
   onSelectionChange: (
     option: ProductOptionWithSettings | null,
     visitType: VisitType | null,
@@ -22,12 +21,20 @@ interface Props {
 
 export default function ProductNewOptionsSelector({
   options,
-  basePrice,
   onSelectionChange,
   onOptionsLoaded,
   resetTrigger,
 }: Props) {
-  // 방문 타입을 먼저 선택
+  // 옵션의 할인된 가격 계산
+  const getOptionDiscountedPrice = (option: ProductOptionWithSettings) => {
+    const discountRate = option.discount_rate || 0;
+    if (discountRate === 0) {
+      return option.price;
+    }
+    return Math.floor(option.price * (1 - discountRate / 100));
+  };
+
+  // 초진/재진 먼저 선택 → 옵션 선택 → 설정 선택
   const [selectedVisitType, setSelectedVisitType] = useState<VisitType | null>(
     null
   );
@@ -36,6 +43,11 @@ export default function ProductNewOptionsSelector({
   const [selectedSettings, setSelectedSettings] = useState<
     Record<string, string>
   >({});
+
+  // 선택된 옵션에 설정(개월수)이 있는지 확인
+  const optionHasSettings = (option: ProductOptionWithSettings | null) => {
+    return (option?.settings?.length ?? 0) > 0;
+  };
 
   // resetTrigger가 변경되면 선택 초기화
   useEffect(() => {
@@ -54,8 +66,10 @@ export default function ProductNewOptionsSelector({
   }, [options.length, onOptionsLoaded]);
 
   // Check if settings should be shown based on visit type
+  // 개월수(settings)가 없으면 설정 선택 불필요
   const shouldShowSettings = () => {
     if (!selectedOption || !selectedVisitType) return false;
+    if (!optionHasSettings(selectedOption)) return false;
 
     switch (selectedVisitType) {
       case "first":
@@ -126,7 +140,7 @@ export default function ProductNewOptionsSelector({
 
   return (
     <div className="space-y-3 border-t border-gray-200 pt-6">
-      {/* 방문 타입 선택 (드롭다운) */}
+      {/* 1. 초진/재진 선택 (드롭다운) - 항상 먼저 표시 */}
       <div className="relative">
         <select
           value={selectedVisitType || ""}
@@ -153,7 +167,7 @@ export default function ProductNewOptionsSelector({
         </svg>
       </div>
 
-      {/* 옵션 선택 (드롭다운) - 방문 타입 선택 후 표시 */}
+      {/* 2. 옵션 선택 (드롭다운) - 초진/재진 선택 후 표시 */}
       {selectedVisitType && (
         <div className="relative">
           <select
@@ -162,11 +176,16 @@ export default function ProductNewOptionsSelector({
             className="w-full appearance-none bg-white border border-gray-300 rounded px-4 py-3 pr-10 text-sm text-gray-700 focus:outline-none focus:border-gray-400"
           >
             <option value="">옵션을 선택해주세요</option>
-            {options.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.name} - {(basePrice + option.price).toLocaleString()}원
-              </option>
-            ))}
+            {options.map((option) => {
+              const discountedPrice = getOptionDiscountedPrice(option);
+              const hasDiscount = (option.discount_rate || 0) > 0;
+              return (
+                <option key={option.id} value={option.id}>
+                  {option.name} - {discountedPrice.toLocaleString()}원
+                  {hasDiscount && ` (${option.discount_rate}% 할인)`}
+                </option>
+              );
+            })}
           </select>
           <svg
             className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none"
@@ -184,7 +203,7 @@ export default function ProductNewOptionsSelector({
         </div>
       )}
 
-      {/* 상세 설정 (드롭다운) - 옵션 선택 후 설정이 필요한 경우 */}
+      {/* 3. 상세 설정 (드롭다운) - 옵션에 개월수 설정이 있고 방문 타입에 따라 필요한 경우에만 표시 */}
       {showSettings &&
         visibleSettings.map((setting) => (
           <div key={setting.id} className="relative">

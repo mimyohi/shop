@@ -20,8 +20,10 @@ export interface ProductOption {
   image_url?: string
   detail_images?: string[]
 
-  // 가격 (Option 단위)
+  // 가격 및 할인
   price: number
+  discount_rate: number // 0-100 (할인률 %)
+  is_representative: boolean // 대표 옵션 여부
 
   // 방문 타입별 설정 사용 여부
   use_settings_on_first: boolean
@@ -87,7 +89,6 @@ export interface ProductWithOptions {
   slug?: string
   name: string
   description: string
-  price: number
   image_url: string
   category: string
   created_at: string

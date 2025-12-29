@@ -25,6 +25,8 @@ export interface ProductOptionWithSettings {
   image_url?: string
   detail_images?: string[]
   price: number
+  discount_rate: number
+  is_representative: boolean
   use_settings_on_first: boolean
   use_settings_on_revisit_with_consult: boolean
   use_settings_on_revisit_no_consult: boolean

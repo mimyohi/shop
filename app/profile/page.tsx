@@ -179,7 +179,7 @@ async function ProfilePageContent({ searchParams }: ProfilePageProps) {
       .order("created_at", { ascending: false }),
     // Points History
     supabase
-      .from("points_history")
+      .from("point_history")
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })

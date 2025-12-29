@@ -356,6 +356,97 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // 포인트 차감 (결제 완료 시에만, 가상계좌는 입금 완료 웹훅에서 처리)
+    console.log("포인트 차감 조건 확인:", {
+      isCardPaid,
+      pointsUsed,
+      userId: orderData.user_id,
+      shouldDeduct: isCardPaid && pointsUsed > 0 && orderData.user_id,
+    });
+
+    if (isCardPaid && pointsUsed > 0 && orderData.user_id) {
+      try {
+        // 1. 포인트 히스토리 추가
+        console.log("포인트 히스토리 추가 시도:", {
+          user_id: orderData.user_id,
+          points: -pointsUsed,
+          order_id: orderData.id,
+        });
+        const { error: historyError } = await supabaseAdmin
+          .from("point_history")
+          .insert({
+            user_id: orderData.user_id,
+            points: -pointsUsed,
+            type: "use",
+            reason: `주문 사용 (${orderData.order_id})`,
+            order_id: orderData.id,
+          });
+
+        if (historyError) {
+          console.error("포인트 히스토리 저장 실패:", historyError);
+        }
+
+        // 2. 사용자 포인트 차감
+        const { data: currentPoints } = await supabaseAdmin
+          .from("user_points")
+          .select("points, total_used")
+          .eq("user_id", orderData.user_id)
+          .single();
+
+        if (currentPoints) {
+          const { error: pointsError } = await supabaseAdmin
+            .from("user_points")
+            .update({
+              points: currentPoints.points - pointsUsed,
+              total_used: (currentPoints.total_used || 0) + pointsUsed,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("user_id", orderData.user_id);
+
+          if (pointsError) {
+            console.error("포인트 차감 실패:", pointsError);
+          } else {
+            console.log("포인트 차감 완료:", {
+              userId: orderData.user_id,
+              used: pointsUsed,
+              remaining: currentPoints.points - pointsUsed,
+            });
+          }
+        }
+      } catch (pointsError) {
+        // 포인트 차감 실패해도 결제는 성공으로 처리 (관리자가 수동 처리 필요)
+        console.error("포인트 처리 중 오류:", pointsError);
+      }
+    }
+
+    // 쿠폰 사용 처리 (결제 완료 시에만, 가상계좌는 입금 완료 웹훅에서 처리)
+    console.log("쿠폰 사용 처리 조건 확인:", {
+      isCardPaid,
+      userCouponId: orderData.user_coupon_id,
+      shouldProcess: isCardPaid && orderData.user_coupon_id,
+    });
+
+    if (isCardPaid && orderData.user_coupon_id) {
+      try {
+        const { error: couponError } = await supabaseAdmin
+          .from("user_coupons")
+          .update({
+            is_used: true,
+            used_at: new Date().toISOString(),
+            order_id: orderData.id,
+          })
+          .eq("id", orderData.user_coupon_id);
+
+        if (couponError) {
+          console.error("쿠폰 사용 처리 실패:", couponError);
+        } else {
+          console.log("쿠폰 사용 처리 완료:", orderData.user_coupon_id);
+        }
+      } catch (couponError) {
+        console.error("쿠폰 처리 중 오류:", couponError);
+      }
+    }
+
     // 현금영수증 발급 (신청한 경우) - 카드 결제 완료 시에만 발급
     // 가상계좌의 경우 입금 완료 웹훅에서 발급
     if (isCardPaid && orderData.cash_receipt_type && orderData.cash_receipt_number) {

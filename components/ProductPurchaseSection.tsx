@@ -122,12 +122,20 @@ export default function ProductPurchaseSection({
     }
   }, [selectedOption, selectedVisitType]);
 
+  // 선택된 옵션에 설정(개월수)이 있는지 확인
+  const optionHasSettings = useCallback((option: ProductOptionWithSettings | null) => {
+    return (option?.settings?.length ?? 0) > 0;
+  }, []);
+
   // 선택이 완료되었는지 확인
   const isSelectionComplete = useCallback(() => {
     // 옵션이 없는 상품은 바로 구매 가능
     if (hasOptions === false) return true;
 
     if (!selectedOption || !selectedVisitType) return false;
+
+    // 개월수 설정이 없는 옵션은 바로 구매 가능
+    if (!optionHasSettings(selectedOption)) return true;
 
     const needsSettings = shouldShowSettings();
     if (!needsSettings) return true;
@@ -141,30 +149,36 @@ export default function ProductPurchaseSection({
     selectedVisitType,
     selectedSettings,
     shouldShowSettings,
+    optionHasSettings,
   ]);
 
-  // 할인된 기본 가격 계산
-  const getDiscountedBasePrice = () => {
-    if (!product.discount_rate || product.discount_rate === 0) {
-      return product.price;
+  // 옵션의 할인된 가격 계산
+  const getOptionDiscountedPrice = (option: ProductOptionWithSettings) => {
+    const discountRate = option.discount_rate || 0;
+    if (discountRate === 0) {
+      return option.price;
     }
-    return Math.floor(product.price * (1 - product.discount_rate / 100));
+    return Math.floor(option.price * (1 - discountRate / 100));
   };
 
-  const discountedBasePrice = getDiscountedBasePrice();
+  // 선택된 옵션의 할인된 가격
+  const selectedOptionPrice = selectedOption
+    ? getOptionDiscountedPrice(selectedOption)
+    : 0;
 
   // 추가 상품 총 가격 계산
   const calculateAddonsPrice = () => {
     return selectedAddons.reduce((sum, addon) => sum + addon.price * addon.quantity, 0);
   };
 
-  // 총 가격 계산 (할인된 기본가격 + 옵션 추가가격 + 추가 상품)
+  // 총 가격 계산 (옵션 할인가 × 수량 + 추가 상품)
   const calculateTotalPrice = () => {
     const addonsPrice = calculateAddonsPrice();
     if (!selectedOption) {
-      return discountedBasePrice * quantity + addonsPrice;
+      // 옵션이 없는 경우 (모든 상품에 옵션 필수이므로 발생하지 않아야 함)
+      return addonsPrice;
     }
-    return (discountedBasePrice + selectedOption.price) * quantity + addonsPrice;
+    return selectedOptionPrice * quantity + addonsPrice;
   };
 
   // 선택된 아이템 제거
@@ -205,6 +219,8 @@ export default function ProductPurchaseSection({
       image_url: selectedOption.image_url,
       detail_images: selectedOption.detail_images,
       price: selectedOption.price,
+      discount_rate: selectedOption.discount_rate || 0,
+      is_representative: selectedOption.is_representative || false,
       use_settings_on_first: selectedOption.use_settings_on_first,
       use_settings_on_revisit_with_consult:
         selectedOption.use_settings_on_revisit_with_consult,
@@ -233,7 +249,6 @@ export default function ProductPurchaseSection({
       {/* 옵션 선택 드롭다운들 */}
       <ProductNewOptionsSelector
         options={productOptions}
-        basePrice={discountedBasePrice}
         onSelectionChange={handleOptionSelectionChange}
       />
 
@@ -387,7 +402,7 @@ export default function ProductPurchaseSection({
               </div>
               {/* 가격 */}
               <span className="text-sm font-medium text-gray-900 min-w-[80px] text-right">
-                {((discountedBasePrice + selectedOption.price) * quantity).toLocaleString()}원
+                {(selectedOptionPrice * quantity).toLocaleString()}원
               </span>
               {/* 삭제 버튼 */}
               <button
@@ -413,60 +428,13 @@ export default function ProductPurchaseSection({
         </div>
       )}
 
-      {/* 옵션이 없는 상품의 수량/가격 표시 */}
+      {/* 옵션이 없는 상품의 수량/가격 표시 - 모든 상품에 옵션 필수이므로 표시되지 않음 */}
       {hasOptions === false && (
         <div className="border-t border-gray-200 pt-4">
           <div className="flex items-center justify-between py-3">
             <div className="flex-1">
               <p className="text-sm text-gray-900">{product.name}</p>
-            </div>
-            <div className="flex items-center gap-4">
-              {/* 수량 조절 */}
-              <div className="flex items-center border border-gray-300 rounded-full">
-                <button
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-700"
-                >
-                  <svg
-                    className="w-3 h-3"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M20 12H4"
-                    />
-                  </svg>
-                </button>
-                <span className="w-8 text-center text-sm font-medium">
-                  {quantity}
-                </span>
-                <button
-                  onClick={() => setQuantity(quantity + 1)}
-                  className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-700"
-                >
-                  <svg
-                    className="w-3 h-3"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4v16m8-8H4"
-                    />
-                  </svg>
-                </button>
-              </div>
-              {/* 가격 */}
-              <span className="text-sm font-medium text-gray-900 min-w-[80px] text-right">
-                {(discountedBasePrice * quantity).toLocaleString()}원
-              </span>
+              <p className="text-xs text-red-500 mt-1">옵션이 필요합니다</p>
             </div>
           </div>
         </div>

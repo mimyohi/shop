@@ -411,9 +411,18 @@ export default async function OrderDetailPage({ params }: PageProps) {
                 <div key={item.id} className="py-4 first:pt-0 last:pb-0">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <p className="font-semibold text-gray-900">
-                        {item.product_name}
-                      </p>
+                      {item.product_id ? (
+                        <Link
+                          href={`/products/${item.product_id}`}
+                          className="font-semibold text-gray-900 hover:text-gray-600 hover:underline transition"
+                        >
+                          {item.product_name}
+                        </Link>
+                      ) : (
+                        <p className="font-semibold text-gray-900">
+                          {item.product_name}
+                        </p>
+                      )}
 
                       {/* 옵션 섹션 */}
                       {(item.option_name ||

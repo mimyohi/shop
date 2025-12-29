@@ -1,18 +1,6 @@
 import ProductCard from "@/components/ProductCard";
 import Link from "next/link";
-
-interface Product {
-  id: string;
-  slug: string;
-  name: string;
-  description: string | null;
-  price: number;
-  discount_rate: number | null;
-  image_url: string | null;
-  is_new_badge: boolean;
-  is_sale_badge: boolean;
-  created_at: string;
-}
+import { Product } from "@/models";
 
 interface BestItemSectionProps {
   products: Product[];
@@ -29,7 +17,7 @@ export default function BestItemSection({ products }: BestItemSectionProps) {
       <div className="hidden md:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid md:grid-cols-3 gap-x-6 gap-y-10">
           {products.map((product) => (
-            <ProductCard key={product.id} product={product as any} />
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
 
@@ -52,7 +40,7 @@ export default function BestItemSection({ products }: BestItemSectionProps) {
         >
           {products.map((product) => (
             <div key={product.id} className="flex-shrink-0 w-[200px]">
-              <ProductCard product={product as any} />
+              <ProductCard product={product} />
             </div>
           ))}
         </div>

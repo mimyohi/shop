@@ -146,12 +146,14 @@ export default async function ProductDetailPage({
     fetchProductAddonsServer(product.id),
   ]);
 
-  // 할인 가격 계산
-  const discountedPrice =
-    product.discount_rate && product.discount_rate > 0
-      ? Math.floor(product.price * (1 - product.discount_rate / 100))
-      : product.price;
-  const hasDiscount = product.discount_rate && product.discount_rate > 0;
+  // 대표 옵션에서 가격 정보 가져오기
+  const representativeOption = productOptions.find(opt => opt.is_representative);
+  const originalPrice = representativeOption?.price || 0;
+  const discountRate = representativeOption?.discount_rate || 0;
+  const discountedPrice = discountRate > 0
+    ? Math.floor(originalPrice * (1 - discountRate / 100))
+    : originalPrice;
+  const hasDiscount = discountRate > 0;
 
   return (
     <div className="min-h-screen bg-white">
@@ -187,7 +189,7 @@ export default async function ProductDetailPage({
                   </span>
                   {hasDiscount === true && (
                     <span className="text-sm text-gray-400 line-through">
-                      {product.price.toLocaleString()}원
+                      {originalPrice.toLocaleString()}원
                     </span>
                   )}
                 </div>
