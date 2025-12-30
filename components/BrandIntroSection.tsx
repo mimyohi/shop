@@ -43,9 +43,9 @@ export default function BrandIntroSection() {
                   : "opacity-0 -translate-y-[30%]"
               }`}
             >
-              <div className="relative w-[150px] h-[195px] md:w-[250px] md:h-[300px] rotate-[85deg]">
+              <div className="relative w-[170px] h-[195px] md:w-[280px] md:h-[300px]">
                 <Image
-                  src="/home/stick.png"
+                  src="/home/stick-left.png"
                   alt="MIMYOHI 제품"
                   fill
                   className="object-contain opacity-60"
@@ -116,10 +116,10 @@ export default function BrandIntroSection() {
       <div className="hidden lg:flex max-w-7xl mx-auto flex-col gap-y-[40px] px-4 sm:px-6 lg:px-8">
         {/* 상단 행 */}
         <div className="flex gap-x-[30px]">
-          {/* 왼쪽 상단 - 915*611 */}
+          {/* 왼쪽 상단 - 915*526 */}
           <Link
             href="/brand"
-            className="relative flex-1 aspect-915/611 rounded-[30px] overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+            className="relative flex-1 aspect-915/526 rounded-[30px] overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
           >
             <Image
               src="/home/pc_top_left.png"
@@ -129,8 +129,8 @@ export default function BrandIntroSection() {
             />
           </Link>
 
-          {/* 오른쪽 상단 - 915*611 */}
-          <div className="relative flex-1 aspect-915/611 rounded-[30px] overflow-hidden">
+          {/* 오른쪽 상단 - 915*526 */}
+          <div className="relative flex-1 aspect-915/526 rounded-[30px] overflow-hidden">
             <Image
               src="/home/pc_top_right.png"
               alt="MIMYOHI"
@@ -142,9 +142,9 @@ export default function BrandIntroSection() {
 
         {/* 하단 행 */}
         <div className="flex gap-x-[30px]">
-          {/* 왼쪽 하단 - 724*611 */}
+          {/* 왼쪽 하단 - 724*516 */}
           <div
-            className="relative aspect-724/611 rounded-[30px] overflow-hidden"
+            className="relative aspect-724/516 rounded-[30px] overflow-hidden"
             style={{ flex: "724" }}
           >
             <Image
@@ -155,10 +155,10 @@ export default function BrandIntroSection() {
             />
           </div>
 
-          {/* 오른쪽 하단 - 1106*611 */}
+          {/* 오른쪽 하단 - 1106*516 */}
           <Link
             href="/brand"
-            className="relative aspect-1106/611 rounded-[30px] overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+            className="relative aspect-1106/516 rounded-[30px] overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
             style={{ flex: "1106" }}
           >
             <Image
@@ -175,10 +175,10 @@ export default function BrandIntroSection() {
       <div className="hidden md:flex lg:hidden max-w-3xl mx-auto flex-col gap-y-[40px] px-4 sm:px-6">
         {/* 상단 행 */}
         <div className="flex gap-x-[30px]">
-          {/* 왼쪽 상단 - 675*611 */}
+          {/* 왼쪽 상단 - 675*526 */}
           <Link
             href="/brand"
-            className="relative flex-1 aspect-675/611 rounded-[30px] overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+            className="relative flex-1 aspect-675/526 rounded-[30px] overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
           >
             <Image
               src="/home/tablet_top_left.png"
@@ -188,8 +188,8 @@ export default function BrandIntroSection() {
             />
           </Link>
 
-          {/* 오른쪽 상단 - 675*611 */}
-          <div className="relative flex-1 aspect-675/611 rounded-[30px] overflow-hidden">
+          {/* 오른쪽 상단 - 675*526 */}
+          <div className="relative flex-1 aspect-675/526 rounded-[30px] overflow-hidden">
             <Image
               src="/home/tablet_top_right.png"
               alt="MIMYOHI"
@@ -201,9 +201,9 @@ export default function BrandIntroSection() {
 
         {/* 하단 행 */}
         <div className="flex gap-x-[30px]">
-          {/* 왼쪽 하단 - 563*611 */}
+          {/* 왼쪽 하단 - 563*516 */}
           <div
-            className="relative aspect-563/611 rounded-[30px] overflow-hidden"
+            className="relative aspect-563/516 rounded-[30px] overflow-hidden"
             style={{ flex: "563" }}
           >
             <Image
@@ -214,10 +214,10 @@ export default function BrandIntroSection() {
             />
           </div>
 
-          {/* 오른쪽 하단 - 787*611 */}
+          {/* 오른쪽 하단 - 787*516 */}
           <Link
             href="/brand"
-            className="relative aspect-787/611 rounded-[30px] overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+            className="relative aspect-787/516 rounded-[30px] overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
             style={{ flex: "787" }}
           >
             <Image

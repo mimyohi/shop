@@ -12,7 +12,7 @@ export default function BestItemSection({ products }: BestItemSectionProps) {
   }
 
   return (
-    <section className="bg-white">
+    <section className="bg-white mt-[20px] md:mt-[40px]">
       {/* 데스크톱: 3열 그리드 */}
       <div className="hidden md:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid md:grid-cols-3 gap-x-6 gap-y-10">
