@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { NEXT_PUBLIC_CHANNEL_TALK_PLUGIN_KEY } from "@/env";
 import { useOptionalAuthContext } from "@/providers/AuthProvider";
 import { supabaseAuth } from "@/lib/supabaseAuth";
@@ -15,6 +15,8 @@ export default function ChannelTalk({ pluginKey }: ChannelTalkProps) {
   const [purchasedProducts, setPurchasedProducts] = useState<string>("");
   const [lastOrderAt, setLastOrderAt] = useState<string>("");
   const [lastAccessAt, setLastAccessAt] = useState<string>("");
+  const isBootedRef = useRef(false);
+  const currentUserIdRef = useRef<string | null>(null);
 
   // 최근 접속시간 업데이트
   useEffect(() => {
@@ -110,32 +112,59 @@ export default function ChannelTalk({ pluginKey }: ChannelTalkProps) {
       document.head.appendChild(s);
     }
 
-    // 사용자 정보가 있으면 로그인 사용자로 boot, 없으면 익명 boot
-    const bootSettings: any = {
-      pluginKey: channelPluginKey,
-    };
+    // 사용자 정보 설정
+    const userProfile = user && profile ? {
+      name: profile.display_name || "",
+      mobileNumber: profile.phone || "",
+      purchasedProducts: purchasedProducts,
+      lastAccessAt: lastAccessAt,
+      lastOrderAt: lastOrderAt || null,
+    } : undefined;
 
-    if (user && profile) {
-      bootSettings.memberId = user.id;
-      bootSettings.profile = {
-        name: profile.display_name || "",
-        mobileNumber: profile.phone || "",
-        purchasedProducts: purchasedProducts,
-        lastAccessAt: lastAccessAt,
-        lastOrderAt: lastOrderAt || null,
+    // 채널톡이 준비되지 않았으면 대기
+    if (!w.ChannelIO) return;
+
+    // 현재 사용자 ID (로그인 사용자가 있으면 ID, 없으면 "anonymous")
+    const currentUserId = user?.id || "anonymous";
+
+    // 사용자가 변경되었는지 확인
+    const userChanged = currentUserIdRef.current !== currentUserId;
+
+    // 처음 boot하거나 사용자가 변경된 경우
+    if (!isBootedRef.current || userChanged) {
+      const bootSettings: any = {
+        pluginKey: channelPluginKey,
       };
-    }
 
-    // updateUser 또는 boot 호출
-    if (w.ChannelIO) {
-      w.ChannelIO("shutdown");
-      w.ChannelIO("boot", bootSettings);
+      if (user && userProfile) {
+        bootSettings.memberId = user.id;
+        bootSettings.profile = userProfile;
+      }
+
+      // boot 호출 전에 상태 업데이트 (재호출 방지)
+      isBootedRef.current = true;
+      currentUserIdRef.current = currentUserId;
+
+      w.ChannelIO("boot", bootSettings, (error: any) => {
+        if (error) {
+          console.error("Channel Talk boot error:", error);
+          // 에러 발생 시 상태 초기화
+          isBootedRef.current = false;
+          currentUserIdRef.current = null;
+        }
+      });
+    }
+    // 이미 boot되어 있고 사용자가 동일하면 프로필만 업데이트
+    else if (user && userProfile) {
+      w.ChannelIO("updateUser", {
+        profile: userProfile,
+      });
     }
 
     return () => {
       // cleanup은 하지 않음 - 다른 페이지에서도 채널톡 유지
     };
-  }, [channelPluginKey, user?.id, profile?.display_name, profile?.phone, purchasedProducts, lastAccessAt, lastOrderAt]);
+  }, [channelPluginKey, user?.id, profile?.display_name, profile?.phone, purchasedProducts, lastOrderAt]);
 
   return null;
 }
