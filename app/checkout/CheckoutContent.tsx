@@ -831,30 +831,31 @@ CheckoutContentProps) {
               <h2 className="text-lg font-medium text-gray-900 mb-4">
                 할인 혜택
               </h2>
-              {/* 쿠폰 */}
-              <div>
-                <span className="text-sm text-gray-700 mb-2 block">
-                  쿠폰 선택
-                </span>
-                <button
-                  onClick={() => setShowCouponModal(true)}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded hover:bg-gray-50 transition text-left flex justify-between items-center text-sm"
-                >
-                  <span className="text-gray-700">
-                    {selectedCoupon
-                      ? availableCoupons.find((uc) => uc.id === selectedCoupon)
-                          ?.coupon?.name
-                      : "쿠폰을 선택하세요"}
-                  </span>
-                  <span className="text-gray-400">▼</span>
-                </button>
-                {availableCoupons.length === 0 && (
-                  <p className="text-xs text-gray-400 mt-1">
-                    사용 가능한 쿠폰이 없습니다.
-                  </p>
-                )}
-              </div>
               <div className="border border-gray-200 rounded p-4 space-y-4">
+                {/* 쿠폰 */}
+                <div>
+                  <span className="text-sm text-gray-700 mb-2 block">
+                    쿠폰 선택
+                  </span>
+                  <button
+                    onClick={() => setShowCouponModal(true)}
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded hover:bg-gray-50 transition text-left flex justify-between items-center text-sm"
+                  >
+                    <span className="text-gray-700">
+                      {selectedCoupon
+                        ? availableCoupons.find(
+                            (uc) => uc.id === selectedCoupon
+                          )?.coupon?.name
+                        : "쿠폰을 선택하세요"}
+                    </span>
+                    <span className="text-gray-400">▼</span>
+                  </button>
+                  {availableCoupons.length === 0 && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      사용 가능한 쿠폰이 없습니다.
+                    </p>
+                  )}
+                </div>
                 {/* 포인트 */}
                 <div>
                   <div className="flex justify-between items-center mb-2">
