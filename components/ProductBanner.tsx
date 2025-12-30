@@ -158,7 +158,7 @@ export default function ProductBanner({ banners }: ProductBannerProps) {
   if (activeBanners.length === 1) {
     const banner = activeBanners[0];
     return (
-      <section className="py-8 bg-white">
+      <section className="pt-[20px] md:pt-10 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="relative overflow-hidden rounded-lg">
             {/* PC: 1380x501 비율 */}
@@ -208,7 +208,7 @@ export default function ProductBanner({ banners }: ProductBannerProps) {
   }
 
   return (
-    <section className="py-10 bg-white">
+    <section className="pt-[20px] md:pt-10 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div
           ref={containerRef}
@@ -236,7 +236,7 @@ export default function ProductBanner({ banners }: ProductBannerProps) {
             {extendedBanners.map((banner, index) => (
               <div key={`${banner.id}-${index}`} className="w-full shrink-0">
                 {/* PC: 1380x501 비율 */}
-            <div className="hidden md:block relative w-full aspect-[1380/501]">
+                <div className="hidden md:block relative w-full aspect-[1380/501]">
                   {banner.link_url && !isDragging ? (
                     <Link
                       href={banner.link_url}
@@ -270,7 +270,7 @@ export default function ProductBanner({ banners }: ProductBannerProps) {
                 </div>
 
                 {/* 모바일: 378x137 비율 */}
-            <div className="md:hidden relative w-full aspect-[378/137]">
+                <div className="md:hidden relative w-full aspect-[378/137]">
                   {banner.link_url && !isDragging ? (
                     <Link
                       href={banner.link_url}

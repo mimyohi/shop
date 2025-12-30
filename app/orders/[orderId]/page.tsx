@@ -250,7 +250,9 @@ export default async function OrderDetailPage({ params }: PageProps) {
               <div>
                 <span className="text-gray-500">주문일시</span>
                 <p className="font-semibold text-gray-900">
-                  {new Date(order.created_at).toLocaleString("ko-KR")}
+                  {new Date(order.created_at).toLocaleString("ko-KR", {
+                    timeZone: "Asia/Seoul",
+                  })}
                 </p>
               </div>
               <div>
@@ -346,7 +348,9 @@ export default async function OrderDetailPage({ params }: PageProps) {
                         <p className="font-semibold text-red-600">
                           {new Date(
                             order.virtual_account_due_date
-                          ).toLocaleString("ko-KR")}
+                          ).toLocaleString("ko-KR", {
+                            timeZone: "Asia/Seoul",
+                          })}
                         </p>
                         <p className="text-xs text-gray-500 mt-1">
                           * 입금 기한 내 미입금 시 주문이 자동 취소됩니다.
@@ -360,7 +364,9 @@ export default async function OrderDetailPage({ params }: PageProps) {
                         <p className="font-semibold text-green-600">
                           {new Date(
                             order.virtual_account_deposited_at
-                          ).toLocaleString("ko-KR")}
+                          ).toLocaleString("ko-KR", {
+                            timeZone: "Asia/Seoul",
+                          })}
                         </p>
                       </div>
                     )}

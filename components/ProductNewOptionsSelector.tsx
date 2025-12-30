@@ -172,38 +172,38 @@ export default function ProductNewOptionsSelector({
 
       {/* 2. 옵션 선택 (드롭다운) - TODO: 임시로 visitType 조건 제거 */}
       {/* {selectedVisitType && ( */}
-        <div className="relative">
-          <select
-            value={selectedOption?.id || ""}
-            onChange={handleOptionChange}
-            className="w-full appearance-none bg-white border border-gray-300 rounded px-4 py-3 pr-10 text-sm text-gray-700 focus:outline-none focus:border-gray-400"
-          >
-            <option value="">옵션을 선택해주세요</option>
-            {options.map((option) => {
-              const discountedPrice = getOptionDiscountedPrice(option);
-              const hasDiscount = (option.discount_rate || 0) > 0;
-              return (
-                <option key={option.id} value={option.id}>
-                  {option.name} - {discountedPrice.toLocaleString()}원
-                  {hasDiscount && ` (${option.discount_rate}% 할인)`}
-                </option>
-              );
-            })}
-          </select>
-          <svg
-            className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 9l-7 7-7-7"
-            />
-          </svg>
-        </div>
+      <div className="relative">
+        <select
+          value={selectedOption?.id || ""}
+          onChange={handleOptionChange}
+          className="w-full appearance-none bg-white border border-gray-300 rounded px-4 py-3 pr-10 text-sm text-gray-700 focus:outline-none focus:border-gray-400"
+        >
+          <option value="">옵션을 선택해주세요</option>
+          {options.map((option) => {
+            const discountedPrice = getOptionDiscountedPrice(option);
+            const hasDiscount = (option.discount_rate || 0) > 0;
+            return (
+              <option key={option.id} value={option.id}>
+                {option.name} - {discountedPrice.toLocaleString()}원
+                {hasDiscount && ` (${option.discount_rate}% 할인)`}
+              </option>
+            );
+          })}
+        </select>
+        <svg
+          className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      </div>
       {/* )} */}
 
       {/* 3. 상세 설정 (드롭다운) - 옵션에 개월수 설정이 있고 방문 타입에 따라 필요한 경우에만 표시 */}
@@ -215,7 +215,7 @@ export default function ProductNewOptionsSelector({
               onChange={(e) => handleSettingChange(setting.id, e.target.value)}
               className="w-full appearance-none bg-white border border-gray-300 rounded px-4 py-3 pr-10 text-sm text-gray-700 focus:outline-none focus:border-gray-400"
             >
-              <option value="">{setting.name}을(를) 선택해주세요</option>
+              <option value="">{setting.name}의 단계를 선택해주세요</option>
               {setting.types?.map((type) => (
                 <option key={type.id} value={type.id}>
                   {type.name}

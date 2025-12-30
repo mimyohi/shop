@@ -313,7 +313,9 @@ export default function ProfileContent({
 
   const formatCouponDate = (dateString?: string) => {
     if (!dateString) return "상시";
-    return new Date(dateString).toLocaleDateString("ko-KR");
+    return new Date(dateString).toLocaleDateString("ko-KR", {
+      timeZone: "Asia/Seoul",
+    });
   };
 
   const formatPointDate = (dateString: string) => {
@@ -322,6 +324,7 @@ export default function ProfileContent({
       year: "numeric",
       month: "long",
       day: "numeric",
+      timeZone: "Asia/Seoul",
     });
   };
 
@@ -623,7 +626,9 @@ export default function ProfileContent({
                                 <p className="text-xs text-gray-400 mb-1">
                                   {new Date(
                                     order.created_at
-                                  ).toLocaleDateString("ko-KR")}
+                                  ).toLocaleDateString("ko-KR", {
+                                    timeZone: "Asia/Seoul",
+                                  })}
                                 </p>
                                 <p className="text-sm font-medium text-gray-900">
                                   {order.order_id}
@@ -1082,7 +1087,9 @@ export default function ProfileContent({
                       마지막 수정{" "}
                       {new Date(
                         savedHealthConsultation.updated_at
-                      ).toLocaleDateString("ko-KR")}
+                      ).toLocaleDateString("ko-KR", {
+                        timeZone: "Asia/Seoul",
+                      })}
                     </p>
                   )}
                 </div>

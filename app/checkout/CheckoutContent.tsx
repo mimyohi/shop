@@ -222,6 +222,23 @@ CheckoutContentProps) {
   //   }
   // }, [savedHealthConsultation, healthConsultation]);
 
+  // 쿠폰 변경 시 포인트 자동 재조정
+  useEffect(() => {
+    if (usePoints > 0) {
+      const couponDiscount = calculateDiscount();
+      const maxUsablePoints = Math.min(
+        userPoints?.points || 0,
+        getTotalPrice() - couponDiscount
+      );
+
+      // 현재 사용 중인 포인트가 최대 사용 가능 포인트를 초과하면 자동 조정
+      if (usePoints > maxUsablePoints) {
+        setUsePoints(maxUsablePoints);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCoupon]); // selectedCoupon이 변경될 때마다 실행
+
   const calculateDiscount = () => {
     let discount = 0;
 
@@ -726,7 +743,8 @@ CheckoutContentProps) {
               {item.option && (
                 <div className="flex justify-between">
                   <span className="text-gray-500">
-                    옵션 금액 ({discountedOptionPrice.toLocaleString()}원 × {item.quantity}개)
+                    옵션 금액 ({discountedOptionPrice.toLocaleString()}원 ×{" "}
+                    {item.quantity}개)
                   </span>
                   <span className="text-gray-900">
                     {(discountedOptionPrice * item.quantity).toLocaleString()}원
@@ -739,16 +757,23 @@ CheckoutContentProps) {
                 <div className="flex justify-between">
                   <span className="text-gray-500">추가 상품</span>
                   <span className="text-gray-900">
-                    +{item.selected_addons
-                      .reduce((sum, addon) => sum + addon.price * addon.quantity, 0)
-                      .toLocaleString()}원
+                    +
+                    {item.selected_addons
+                      .reduce(
+                        (sum, addon) => sum + addon.price * addon.quantity,
+                        0
+                      )
+                      .toLocaleString()}
+                    원
                   </span>
                 </div>
               )}
 
               {/* 상품 금액 소계 */}
               <div className="flex justify-between pt-1">
-                <span className="text-gray-700 font-medium">상품 금액 소계</span>
+                <span className="text-gray-700 font-medium">
+                  상품 금액 소계
+                </span>
                 <span className="text-gray-900 font-medium">
                   {getTotalPrice().toLocaleString()}원
                 </span>
@@ -806,7 +831,32 @@ CheckoutContentProps) {
               <h2 className="text-lg font-medium text-gray-900 mb-4">
                 할인 혜택
               </h2>
+
               <div className="border border-gray-200 rounded p-4 space-y-4">
+                {/* 쿠폰 */}
+                <div>
+                  <span className="text-sm text-gray-700 mb-2 block">
+                    쿠폰 선택
+                  </span>
+                  <button
+                    onClick={() => setShowCouponModal(true)}
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded hover:bg-gray-50 transition text-left flex justify-between items-center text-sm"
+                  >
+                    <span className="text-gray-700">
+                      {selectedCoupon
+                        ? availableCoupons.find(
+                            (uc) => uc.id === selectedCoupon
+                          )?.coupon?.name
+                        : "쿠폰을 선택하세요"}
+                    </span>
+                    <span className="text-gray-400">▼</span>
+                  </button>
+                  {availableCoupons.length === 0 && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      사용 가능한 쿠폰이 없습니다.
+                    </p>
+                  )}
+                </div>
                 {/* 포인트 */}
                 <div>
                   <div className="flex justify-between items-center mb-2">
@@ -844,31 +894,6 @@ CheckoutContentProps) {
                   {userPoints && userPoints.points < 1000 && (
                     <p className="text-xs text-gray-400 mt-1">
                       * 1,000P 이상부터 사용 가능합니다.
-                    </p>
-                  )}
-                </div>
-
-                {/* 쿠폰 */}
-                <div>
-                  <span className="text-sm text-gray-700 mb-2 block">
-                    쿠폰 선택
-                  </span>
-                  <button
-                    onClick={() => setShowCouponModal(true)}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded hover:bg-gray-50 transition text-left flex justify-between items-center text-sm"
-                  >
-                    <span className="text-gray-700">
-                      {selectedCoupon
-                        ? availableCoupons.find(
-                            (uc) => uc.id === selectedCoupon
-                          )?.coupon?.name
-                        : "쿠폰을 선택하세요"}
-                    </span>
-                    <span className="text-gray-400">▼</span>
-                  </button>
-                  {availableCoupons.length === 0 && (
-                    <p className="text-xs text-gray-400 mt-1">
-                      사용 가능한 쿠폰이 없습니다.
                     </p>
                   )}
                 </div>
