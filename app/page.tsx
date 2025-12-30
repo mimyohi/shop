@@ -136,9 +136,10 @@ async function getHomeProducts(): Promise<HomeProduct[]> {
   repOptions?.forEach((option: any) => {
     if (option.product_id) {
       const discountRate = option.discount_rate || 0;
-      const discountedPrice = discountRate > 0
-        ? Math.floor(option.price * (1 - discountRate / 100))
-        : option.price;
+      const discountedPrice =
+        discountRate > 0
+          ? Math.floor(option.price * (1 - discountRate / 100))
+          : option.price;
       repOptionsMap.set(option.product_id, {
         id: option.id,
         name: option.name,

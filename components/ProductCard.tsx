@@ -50,13 +50,13 @@ export default function ProductCard({ product }: ProductCardProps) {
           {/* 배지들 */}
           <div className="absolute top-3 left-3 flex gap-1.5">
             {isNew && (
-              <span className="w-[47px] h-[26px] flex items-center justify-center bg-[#5ED1FF] text-white text-[10px] rounded-[10px] font-medium">
-                NEW
+              <span className="px-3 py-1 flex items-center justify-center bg-[#5ED1FF] text-white text-xs rounded-full font-medium">
+                new
               </span>
             )}
             {isSale && (
-              <span className="w-[47px] h-[26px] flex items-center justify-center bg-[#55A6FD] text-white text-[10px] rounded-[10px] font-medium">
-                SALE
+              <span className="px-3 py-1 flex items-center justify-center bg-[#6DC76D] text-white text-xs rounded-full font-medium">
+                sale
               </span>
             )}
           </div>
