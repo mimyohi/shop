@@ -29,7 +29,8 @@ import { useCreateAddress } from "@/queries/addresses.queries";
 import { useShippingFee } from "@/hooks/useShippingFee";
 import {
   NEXT_PUBLIC_PORTONE_STORE_ID,
-  NEXT_PUBLIC_PORTONE_CHANNEL_KEY,
+  NEXT_PUBLIC_PORTONE_CHANNEL_KEY_CARD,
+  NEXT_PUBLIC_PORTONE_CHANNEL_KEY_TRANSFER,
 } from "@/env";
 
 // 방문 타입 한글 변환
@@ -469,13 +470,25 @@ export default function CheckoutContent({
         }
       };
 
+      // 결제 방법에 따라 채널 키 선택
+      const getChannelKey = () => {
+        switch (paymentMethod) {
+          case "TRANSFER":
+            return NEXT_PUBLIC_PORTONE_CHANNEL_KEY_TRANSFER;
+          case "CARD":
+          case "VIRTUAL_ACCOUNT":
+          default:
+            return NEXT_PUBLIC_PORTONE_CHANNEL_KEY_CARD;
+        }
+      };
+
       const paymentRequest: Parameters<typeof PortOne.requestPayment>[0] = {
         storeId,
         paymentId: orderId,
         orderName,
         totalAmount: calculateFinalPrice(),
         currency: "CURRENCY_KRW",
-        channelKey: NEXT_PUBLIC_PORTONE_CHANNEL_KEY,
+        channelKey: getChannelKey(),
         payMethod: getPayMethod(),
         customer: {
           fullName: customerName,

@@ -463,9 +463,14 @@ export async function POST(request: NextRequest) {
             ? `${firstProductName} 외 ${orderItems.length - 1}건`
             : firstProductName;
 
+        // 결제 방법에 따라 채널 키 선택
+        const channelKey = orderData.payment_method === "TRANSFER"
+          ? env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY_TRANSFER
+          : env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY_CARD;
+
         const cashReceiptResult = await portone.payment.cashReceipt.issueCashReceipt({
           paymentId,
-          channelKey: env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY,
+          channelKey,
           type: orderData.cash_receipt_type as "PERSONAL" | "CORPORATE",
           orderName: cashReceiptOrderName,
           currency: "KRW",
