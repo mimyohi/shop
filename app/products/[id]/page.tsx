@@ -63,6 +63,7 @@ function formatDate(dateString: string): string {
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "Asia/Seoul",  // 한국 시간대 강제 지정
   });
 }
 

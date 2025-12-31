@@ -80,11 +80,11 @@ export default function Footer() {
                 <p>토요일 : 10:00~15:00</p>
               </div>
 
-              <div>
+              {/* <div>
                 <p className="font-medium text-gray-700 mb-2">결제정보</p>
                 <p className="font-medium text-gray-600">무통장 계좌정보</p>
                 <p>하나은행 130-910035-36804 주식회사 미묘히</p>
-              </div>
+              </div> */}
             </div>
 
             {/* 오른쪽: 네비게이션 링크들 */}
@@ -114,11 +114,11 @@ export default function Footer() {
                 </ul>
               </div>
 
-              <div>
+              {/* <div>
                 <p className="font-medium text-gray-700 mb-2">결제정보</p>
                 <p className="font-medium text-gray-600">무통장 계좌정보</p>
                 <p>하나은행 130-910035-36804 주식회사 미묘히</p>
-              </div>
+              </div> */}
             </div>
 
             {/* 오른쪽: 네비게이션 링크들 */}
@@ -374,11 +374,11 @@ export default function Footer() {
               <p>토요일 : 10:00~15:00</p>
             </div>
 
-            <div>
+            {/* <div>
               <p className="font-medium text-gray-700 mb-2">결제정보</p>
               <p className="font-medium text-gray-600">무통장 계좌정보</p>
               <p>하나은행 130-910035-36804 주식회사 미묘히</p>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
