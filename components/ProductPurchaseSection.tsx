@@ -128,12 +128,11 @@ export default function ProductPurchaseSection({
   }, []);
 
   // 선택이 완료되었는지 확인
-  // TODO: 임시로 visitType 없이도 구매 가능하도록 수정
   const isSelectionComplete = useCallback(() => {
     // 옵션이 없는 상품은 바로 구매 가능
     if (hasOptions === false) return true;
 
-    if (!selectedOption) return false;
+    if (!selectedOption || !selectedVisitType) return false;
 
     // 개월수 설정이 없는 옵션은 바로 구매 가능
     if (!optionHasSettings(selectedOption)) return true;
@@ -200,8 +199,7 @@ export default function ProductPurchaseSection({
       return;
     }
 
-    // TODO: 임시로 visitType 체크 제거
-    if (!selectedOption) {
+    if (!selectedOption || !selectedVisitType) {
       alert("옵션을 선택해주세요.");
       return;
     }
@@ -344,18 +342,17 @@ export default function ProductPurchaseSection({
       )}
 
       {/* 선택된 상품 표시 - 옵션이 있는 경우 */}
-      {/* TODO: 임시로 visitType 체크 제거 */}
-      {canBuy && selectedOption && (
+      {canBuy && selectedOption && selectedVisitType && (
         <div className="border-t border-gray-200 pt-4">
           <div className="flex items-center justify-between py-3">
             <div className="flex-1">
               <p className="text-sm text-gray-900">{product.name}</p>
               <p className="text-xs text-gray-500 mt-0.5">
-                {selectedVisitType && getVisitTypeLabel(selectedVisitType)}
+                {getVisitTypeLabel(selectedVisitType)}
                 {selectedSettings.length > 0 && (
                   <span>
-                    {selectedVisitType ? " / " : ""}
-                    {selectedSettings.map((s) => s.type_name).join(", ")}
+                    {" "}
+                    / {selectedSettings.map((s) => s.type_name).join(", ")}
                   </span>
                 )}
               </p>

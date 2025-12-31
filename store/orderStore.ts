@@ -27,11 +27,10 @@ interface OrderStore {
   setHasHydrated: (state: boolean) => void;
 
   // 주문 아이템 설정 (옵션 있는 상품)
-  // TODO: 임시로 visitType null 허용
   setOrderItem: (
     option: ProductOption,
     quantity: number,
-    visitType: VisitType | null,
+    visitType: VisitType,
     selectedSettings?: SelectedOptionSetting[],
     product?: Product,
     selectedAddons?: SelectedAddon[]
@@ -66,7 +65,7 @@ export const useOrderStore = create<OrderStore>()(
       setOrderItem: (
         option: ProductOption,
         quantity: number,
-        visitType: VisitType | null,
+        visitType: VisitType,
         selectedSettings = [],
         product?: Product,
         selectedAddons = []
