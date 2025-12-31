@@ -6,16 +6,14 @@ import Link from "next/link";
 import { validateAndFormatPhone, formatPhoneInput } from "@/lib/phone/validation";
 import { signIn, signUp, supabaseAuth } from "@/lib/supabaseAuth";
 import { updateKakaoUserProfileAction } from "@/lib/actions/profiles.actions";
-// 문진표 관련 import 주석 처리
-// import { saveUserHealthConsultationAction } from "@/lib/actions/health-consultations.actions";
+import { saveUserHealthConsultationAction } from "@/lib/actions/health-consultations.actions";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-// import HealthConsultationForm from "@/components/HealthConsultationForm";
+import HealthConsultationForm from "@/components/HealthConsultationForm";
 import { TERMS_OF_SERVICE, PRIVACY_POLICY } from "@/lib/terms";
-// import { HealthConsultationDetails } from "@/models";
+import { HealthConsultationDetails } from "@/models";
 
-// 문진표 단계 제거
-type SignupStep = "agreement" | "form";
+type SignupStep = "agreement" | "form" | "health";
 
 function SignupContent() {
   const router = useRouter();
@@ -64,22 +62,22 @@ function SignupContent() {
   >("idle");
   const [emailMessage, setEmailMessage] = useState("");
 
-  // 문진표 작성 상태 - 주석 처리
-  // const [registeredUserId, setRegisteredUserId] = useState<string | null>(null);
-  // const [healthSubmitting, setHealthSubmitting] = useState(false);
+  // 문진표 작성 상태
+  const [registeredUserId, setRegisteredUserId] = useState<string | null>(null);
+  const [healthSubmitting, setHealthSubmitting] = useState(false);
 
-  // 일반 사용자 회원가입 정보 임시 저장 - 문진표 단계 제거로 더 이상 필요 없음
-  // const [pendingSignupData, setPendingSignupData] = useState<{
-  //   email: string;
-  //   password: string;
-  //   displayName: string;
-  //   phone: string;
-  //   agreements: {
-  //     marketing: boolean;
-  //     sms: boolean;
-  //     email: boolean;
-  //   };
-  // } | null>(null);
+  // 일반 사용자 회원가입 정보 임시 저장 (Step 3에서 실제 가입 시 사용)
+  const [pendingSignupData, setPendingSignupData] = useState<{
+    email: string;
+    password: string;
+    displayName: string;
+    phone: string;
+    agreements: {
+      marketing: boolean;
+      sms: boolean;
+      email: boolean;
+    };
+  } | null>(null);
 
   // 카카오 사용자 감지
   useEffect(() => {
@@ -298,12 +296,8 @@ function SignupContent() {
       }
 
       setLoading(false);
-      // 문진표 단계 제거 - 바로 완료
-      // setRegisteredUserId(kakaoUserId);
-      // setStep("health");
-      alert("회원가입이 완료되었습니다!");
-      router.push("/");
-      router.refresh();
+      setRegisteredUserId(kakaoUserId);
+      setStep("health");
       return;
     }
 
@@ -337,189 +331,130 @@ function SignupContent() {
       return;
     }
 
-    // 문진표 단계 제거 - 바로 회원가입 진행
-    // setPendingSignupData({
-    //   email: formData.email,
-    //   password: formData.password,
-    //   displayName: formData.displayName.trim(),
-    //   phone: verifiedPhoneE164,
-    //   agreements: {
-    //     marketing: agreements.marketing,
-    //     sms: agreements.sms,
-    //     email: agreements.email,
-    //   },
-    // });
-    // setStep("health");
+    // 회원가입 정보를 임시 저장하고 문진표 단계로 이동
+    // 실제 회원가입은 문진표 작성 완료 시 수행
+    setPendingSignupData({
+      email: formData.email,
+      password: formData.password,
+      displayName: formData.displayName.trim(),
+      phone: verifiedPhoneE164,
+      agreements: {
+        marketing: agreements.marketing,
+        sms: agreements.sms,
+        email: agreements.email,
+      },
+    });
 
-    setLoading(true);
+    setStep("health");
+  };
+
+  // 문진표 제출 핸들러
+  const handleHealthSubmit = async (
+    data: Partial<HealthConsultationDetails>
+  ) => {
+    setHealthSubmitting(true);
+    setError("");
+
+    // 카카오 사용자인 경우 (이미 가입된 상태)
+    if (isKakaoUser && registeredUserId) {
+      const result = await saveUserHealthConsultationAction({
+        user_id: registeredUserId,
+        ...(data as HealthConsultationDetails),
+      });
+
+      if (!result.success) {
+        setError(result.error || "문진표 저장에 실패했습니다.");
+        setHealthSubmitting(false);
+        return;
+      }
+
+      setHealthSubmitting(false);
+      alert("회원가입이 완료되었습니다!");
+      router.push("/");
+      router.refresh();
+      return;
+    }
+
+    // 일반 사용자인 경우 (아직 가입되지 않은 상태)
+    if (!pendingSignupData) {
+      setError("회원가입 정보를 찾을 수 없습니다. 처음부터 다시 시도해주세요.");
+      setHealthSubmitting(false);
+      return;
+    }
+
     try {
-      // 회원가입
+      // 1. 회원가입
       const { error: signUpError } = await signUp(
-        formData.email,
-        formData.password,
+        pendingSignupData.email,
+        pendingSignupData.password,
         {
-          displayName: formData.displayName.trim(),
-          phone: verifiedPhoneE164,
+          displayName: pendingSignupData.displayName,
+          phone: pendingSignupData.phone,
           phoneVerified: true,
         }
       );
 
       if (signUpError) {
         setError("회원가입에 실패했습니다. 다시 시도해주세요.");
-        setLoading(false);
+        setHealthSubmitting(false);
         return;
       }
 
-      // 자동 로그인
+      // 2. 자동 로그인
       const { data: signInData, error: autoLoginError } = await signIn(
-        formData.email,
-        formData.password
+        pendingSignupData.email,
+        pendingSignupData.password
       );
 
       if (autoLoginError || !signInData?.user) {
-        setLoading(false);
-        alert("회원가입이 완료되었습니다! 로그인해주세요.");
-        router.push("/auth/login");
+        // 회원가입은 성공했지만 자동 로그인 실패
+        setHealthSubmitting(false);
+        alert("회원가입이 완료되었습니다! 로그인 후 문진표를 작성해주세요.");
+        const nextParam = encodeURIComponent("/profile?tab=health");
+        router.push(`/auth/login?next=${nextParam}`);
         return;
       }
 
       const userId = signInData.user.id;
 
-      // 프로필 정보 업데이트
+      // 3. 프로필 정보 업데이트
       try {
         await supabaseAuth
           .from("user_profiles")
           .update({
-            phone: verifiedPhoneE164,
+            phone: pendingSignupData.phone,
             phone_verified: true,
             phone_verified_at: new Date().toISOString(),
-            marketing_consent: agreements.marketing,
-            sms_consent: agreements.sms,
-            email_consent: agreements.email,
+            marketing_consent: pendingSignupData.agreements.marketing,
+            sms_consent: pendingSignupData.agreements.sms,
+            email_consent: pendingSignupData.agreements.email,
           })
           .eq("user_id", userId);
       } catch (profileError) {
         console.error("Failed to update phone info:", profileError);
       }
 
-      setLoading(false);
+      // 4. 문진표 저장
+      const result = await saveUserHealthConsultationAction({
+        user_id: userId,
+        ...(data as HealthConsultationDetails),
+      });
+
+      if (!result.success) {
+        // 문진표 저장 실패해도 회원가입은 완료된 상태
+        console.error("Failed to save health consultation:", result.error);
+      }
+
+      setHealthSubmitting(false);
       alert("회원가입이 완료되었습니다!");
       router.push("/");
       router.refresh();
     } catch (error) {
       console.error("Signup error:", error);
       setError("회원가입 중 오류가 발생했습니다.");
-      setLoading(false);
+      setHealthSubmitting(false);
     }
   };
-
-  // 문진표 제출 핸들러 - 주석 처리
-  // const handleHealthSubmit = async (
-  //   data: Partial<HealthConsultationDetails>
-  // ) => {
-  //   setHealthSubmitting(true);
-  //   setError("");
-  //
-  //   // 카카오 사용자인 경우 (이미 가입된 상태)
-  //   if (isKakaoUser && registeredUserId) {
-  //     const result = await saveUserHealthConsultationAction({
-  //       user_id: registeredUserId,
-  //       ...(data as HealthConsultationDetails),
-  //     });
-  //
-  //     if (!result.success) {
-  //       setError(result.error || "문진표 저장에 실패했습니다.");
-  //       setHealthSubmitting(false);
-  //       return;
-  //     }
-  //
-  //     setHealthSubmitting(false);
-  //     alert("회원가입이 완료되었습니다!");
-  //     router.push("/");
-  //     router.refresh();
-  //     return;
-  //   }
-  //
-  //   // 일반 사용자인 경우 (아직 가입되지 않은 상태)
-  //   if (!pendingSignupData) {
-  //     setError("회원가입 정보를 찾을 수 없습니다. 처음부터 다시 시도해주세요.");
-  //     setHealthSubmitting(false);
-  //     return;
-  //   }
-  //
-  //   try {
-  //     // 1. 회원가입
-  //     const { error: signUpError } = await signUp(
-  //       pendingSignupData.email,
-  //       pendingSignupData.password,
-  //       {
-  //         displayName: pendingSignupData.displayName,
-  //         phone: pendingSignupData.phone,
-  //         phoneVerified: true,
-  //       }
-  //     );
-  //
-  //     if (signUpError) {
-  //       setError("회원가입에 실패했습니다. 다시 시도해주세요.");
-  //       setHealthSubmitting(false);
-  //       return;
-  //     }
-  //
-  //     // 2. 자동 로그인
-  //     const { data: signInData, error: autoLoginError } = await signIn(
-  //       pendingSignupData.email,
-  //       pendingSignupData.password
-  //     );
-  //
-  //     if (autoLoginError || !signInData?.user) {
-  //       // 회원가입은 성공했지만 자동 로그인 실패
-  //       setHealthSubmitting(false);
-  //       alert("회원가입이 완료되었습니다! 로그인 후 문진표를 작성해주세요.");
-  //       const nextParam = encodeURIComponent("/profile?tab=health");
-  //       router.push(`/auth/login?next=${nextParam}`);
-  //       return;
-  //     }
-  //
-  //     const userId = signInData.user.id;
-  //
-  //     // 3. 프로필 정보 업데이트
-  //     try {
-  //       await supabaseAuth
-  //         .from("user_profiles")
-  //         .update({
-  //           phone: pendingSignupData.phone,
-  //           phone_verified: true,
-  //           phone_verified_at: new Date().toISOString(),
-  //           marketing_consent: pendingSignupData.agreements.marketing,
-  //           sms_consent: pendingSignupData.agreements.sms,
-  //           email_consent: pendingSignupData.agreements.email,
-  //         })
-  //         .eq("user_id", userId);
-  //     } catch (profileError) {
-  //       console.error("Failed to update phone info:", profileError);
-  //     }
-  //
-  //     // 4. 문진표 저장
-  //     const result = await saveUserHealthConsultationAction({
-  //       user_id: userId,
-  //       ...(data as HealthConsultationDetails),
-  //     });
-  //
-  //     if (!result.success) {
-  //       // 문진표 저장 실패해도 회원가입은 완료된 상태
-  //       console.error("Failed to save health consultation:", result.error);
-  //     }
-  //
-  //     setHealthSubmitting(false);
-  //     alert("회원가입이 완료되었습니다!");
-  //     router.push("/");
-  //     router.refresh();
-  //   } catch (error) {
-  //     console.error("Signup error:", error);
-  //     setError("회원가입 중 오류가 발생했습니다.");
-  //     setHealthSubmitting(false);
-  //   }
-  // };
 
   const renderContent = () => {
     // 약관 동의 단계
@@ -529,7 +464,7 @@ function SignupContent() {
           <div className="max-w-[480px] mx-auto px-4">
             <h1 className="text-center text-base font-medium mb-8">회원가입</h1>
 
-            {/* 스텝 인디케이터 - 문진표 단계 제거 */}
+            {/* 스텝 인디케이터 */}
             <div className="flex items-center justify-center space-x-2 text-xs mb-8">
               <div className="flex items-center">
                 <span className="w-5 h-5 rounded-full bg-[#222222] text-white flex items-center justify-center text-[10px] font-medium">
@@ -547,7 +482,6 @@ function SignupContent() {
                 <span className="ml-1.5 text-gray-400">정보입력</span>
               </div>
               <div className="w-4 h-px bg-gray-300"></div>
-              {/* 문진표 단계 제거
               <div className="flex items-center">
                 <span className="w-5 h-5 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-[10px] font-medium">
                   3
@@ -555,10 +489,9 @@ function SignupContent() {
                 <span className="ml-1.5 text-gray-400">문진표</span>
               </div>
               <div className="w-4 h-px bg-gray-300"></div>
-              */}
               <div className="flex items-center">
                 <span className="w-5 h-5 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-[10px] font-medium">
-                  3
+                  4
                 </span>
                 <span className="ml-1.5 text-gray-400">완료</span>
               </div>
@@ -746,10 +679,10 @@ function SignupContent() {
           <div className="max-w-[400px] mx-auto px-4">
             <h1 className="text-center text-base font-medium mb-8">회원가입</h1>
 
-            {/* 스텝 인디케이터 - 문진표 단계 제거 */}
+            {/* 스텝 인디케이터 */}
             <div className="flex items-center justify-center space-x-2 text-xs mb-8">
               <div className="flex items-center">
-                <span className="w-5 h-5 rounded-full bg-black text-white flex items-center justify-center">
+                <span className="w-5 h-5 rounded-full bg-blackproducts text-white flex items-center justify-center">
                   <svg
                     className="w-3 h-3"
                     fill="none"
@@ -776,7 +709,6 @@ function SignupContent() {
                 </span>
               </div>
               <div className="w-4 h-px bg-gray-300"></div>
-              {/* 문진표 단계 제거
               <div className="flex items-center">
                 <span className="w-5 h-5 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-[10px] font-medium">
                   3
@@ -784,10 +716,9 @@ function SignupContent() {
                 <span className="ml-1.5 text-gray-400">문진표</span>
               </div>
               <div className="w-4 h-px bg-gray-300"></div>
-              */}
               <div className="flex items-center">
                 <span className="w-5 h-5 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-[10px] font-medium">
-                  3
+                  4
                 </span>
                 <span className="ml-1.5 text-gray-400">완료</span>
               </div>
@@ -1093,43 +1024,116 @@ function SignupContent() {
       );
     }
 
-    // 문진표 작성 단계 - 주석 처리
-    // if (step === "health") {
-    //   return (
-    //     <div className="py-16 md:py-24">
-    //       <div className="max-w-3xl mx-auto px-4">
-    //         <h1 className="text-center text-base font-medium mb-8">회원가입</h1>
-    //
-    //         {/* 스텝 인디케이터 */}
-    //         <div className="flex items-center justify-center space-x-2 text-xs mb-8">
-    //           ...
-    //         </div>
-    //
-    //         {/* 안내 메시지 */}
-    //         <div className="rounded-md bg-gray-50 border border-gray-200 p-4 mb-6">
-    //           ...
-    //         </div>
-    //
-    //         {error && (
-    //           <div className="rounded-md bg-red-50 p-3 mb-6">
-    //             <div className="text-sm text-red-800">{error}</div>
-    //           </div>
-    //         )}
-    //
-    //         {/* 문진표 폼 */}
-    //         <HealthConsultationForm
-    //           onSubmit={handleHealthSubmit}
-    //           submitLabel="회원가입 완료"
-    //           isSubmitting={healthSubmitting}
-    //           initialData={{
-    //             name: formData.displayName,
-    //             phone: verifiedPhoneDisplay,
-    //           }}
-    //         />
-    //       </div>
-    //     </div>
-    //   );
-    // }
+    // 문진표 작성 단계
+    if (step === "health") {
+      return (
+        <div className="py-16 md:py-24">
+          <div className="max-w-3xl mx-auto px-4">
+            <h1 className="text-center text-base font-medium mb-8">회원가입</h1>
+
+            {/* 스텝 인디케이터 */}
+            <div className="flex items-center justify-center space-x-2 text-xs mb-8">
+              <div className="flex items-center">
+                <span className="w-5 h-5 rounded-full bg-black text-white flex items-center justify-center">
+                  <svg
+                    className="w-3 h-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                </span>
+                <span className="ml-1.5 text-gray-400">약관동의</span>
+              </div>
+              <div className="w-4 h-px bg-gray-300"></div>
+              <div className="flex items-center">
+                <span className="w-5 h-5 rounded-full bg-black text-white flex items-center justify-center">
+                  <svg
+                    className="w-3 h-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                </span>
+                <span className="ml-1.5 text-gray-400">정보입력</span>
+              </div>
+              <div className="w-4 h-px bg-gray-300"></div>
+              <div className="flex items-center">
+                <span className="w-5 h-5 rounded-full bg-[#222222] text-white flex items-center justify-center text-[10px] font-medium">
+                  3
+                </span>
+                <span className="ml-1.5 font-medium text-gray-900">문진표</span>
+              </div>
+              <div className="w-4 h-px bg-gray-300"></div>
+              <div className="flex items-center">
+                <span className="w-5 h-5 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-[10px] font-medium">
+                  4
+                </span>
+                <span className="ml-1.5 text-gray-400">완료</span>
+              </div>
+            </div>
+
+            {/* 안내 메시지 */}
+            <div className="rounded-md bg-gray-50 border border-gray-200 p-4 mb-6">
+              <div className="flex items-start">
+                <svg
+                  className="w-5 h-5 text-gray-600 mr-2 flex-shrink-0 mt-0.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    문진표를 작성해주세요 <span className="text-red-500">(필수)</span>
+                  </p>
+                  <p className="text-xs text-gray-600 mt-1">
+                    정확한 상담과 맞춤 처방을 위해 문진표 작성이 필수입니다.
+                    작성하신 정보는 의료진만 열람할 수 있습니다.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {error && (
+              <div className="rounded-md bg-red-50 p-3 mb-6">
+                <div className="text-sm text-red-800">{error}</div>
+              </div>
+            )}
+
+            {/* 문진표 폼 */}
+            <HealthConsultationForm
+              onSubmit={handleHealthSubmit}
+              submitLabel="회원가입 완료"
+              isSubmitting={healthSubmitting}
+              initialData={{
+                name: formData.displayName,
+                phone: verifiedPhoneDisplay,
+              }}
+            />
+          </div>
+        </div>
+      );
+    }
 
     return null;
   };

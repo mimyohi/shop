@@ -114,24 +114,58 @@ export default function Footer() {
                 </ul>
               </div>
 
+              <div>
+                <p className="font-medium text-gray-700 mb-2">결제정보</p>
+                <p className="font-medium text-gray-600">무통장 계좌정보</p>
+                <p>하나은행 130-910035-36804 주식회사 미묘히</p>
+              </div>
+            </div>
+
+            {/* 오른쪽: 네비게이션 링크들 */}
+            <div className="grid grid-cols-3 gap-8 pl-8">
+              {/* NAVIGATE */}
+              <div>
+                <h4 className="text-xs font-medium text-gray-700 mb-4 tracking-wide">
+                  NAVIGATE
+                </h4>
+                <ul className="space-y-3 text-xs text-gray-500">
+                  <li>
+                    <Link
+                      href="/brand"
+                      className="hover:text-gray-900 transition"
+                    >
+                      Brand
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/products"
+                      className="hover:text-gray-900 transition"
+                    >
+                      Shop
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+
               {/* SOCIAL */}
-              {/* <div>
-              <h4 className="text-xs font-medium text-gray-700 mb-4 tracking-wide">
-                SOCIAL
-              </h4>
-              <ul className="space-y-3 text-xs text-gray-500">
-                <li>
-                  <a
-                    href="https://instagram.com/mimyohi"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-gray-900 transition flex items-center gap-1"
-                  >
-                    <span>@</span> Instagram
-                  </a>
-                </li>
-              </ul>
-            </div> */}
+              <div>
+                <h4 className="text-xs font-medium text-gray-700 mb-4 tracking-wide">
+                  SOCIAL
+                </h4>
+                <ul className="space-y-3 text-xs text-gray-500">
+                  <li>
+                    <a
+                      href="https://instagram.com/mimyohi"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-gray-900 transition flex items-center gap-1"
+                    >
+                      <span>@</span> Instagram
+                    </a>
+                  </li>
+                </ul>
+              </div>
 
               {/* OFFICIAL */}
               <div>

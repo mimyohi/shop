@@ -69,8 +69,7 @@ export default function Navigation() {
 
   // PC 왼쪽 네비게이션 메뉴
   const leftNavLinks = [
-    /** TODO */
-    // { href: "/brand", label: "Brand" },
+    { href: "/brand", label: "Brand" },
     { href: "/products", label: "Shop" },
   ];
 

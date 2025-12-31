@@ -12,13 +12,12 @@ import {
   useSetDefaultAddress,
 } from "@/queries/addresses.queries";
 import { useUpdateUserProfile } from "@/queries/user-profiles.queries";
-// 문진표 관련 import 주석 처리
-// import { useUpsertUserHealthConsultation } from "@/queries/user-health-consultations.queries";
+import { useUpsertUserHealthConsultation } from "@/queries/user-health-consultations.queries";
 import { useRegisterCouponByCode } from "@/queries/coupons.queries";
-// import HealthConsultationForm from "@/components/HealthConsultationForm";
+import HealthConsultationForm from "@/components/HealthConsultationForm";
 import type {
   Coupon,
-  // HealthConsultationDetails,
+  HealthConsultationDetails,
   PointHistory,
   ShippingAddress,
   UserProfile,
@@ -31,8 +30,8 @@ type TabType =
   | "orders"
   | "points"
   | "coupons"
-  | "addresses";
-  // | "health"; // 문진표 탭 주석 처리
+  | "addresses"
+  | "health";
 
 interface ProfileContentProps {
   user: {
@@ -45,7 +44,7 @@ interface ProfileContentProps {
     userPoints: UserPoints | null;
     orders: OrderWithItems[];
     addresses: ShippingAddress[];
-    // healthConsultation: HealthConsultationDetails | null; // 문진표 주석 처리
+    healthConsultation: HealthConsultationDetails | null;
     coupons: any[];
     pointsHistory: PointHistory[];
   };
@@ -96,10 +95,9 @@ export default function ProfileContent({
     initialData.orders.filter((order) => order.status !== "pending")
   );
   const [addresses, setAddresses] = useState(initialData.addresses);
-  // 문진표 관련 상태 주석 처리
-  // const [savedHealthConsultation, setSavedHealthConsultation] = useState<
-  //   (HealthConsultationDetails & { updated_at?: string }) | null
-  // >(initialData.healthConsultation);
+  const [savedHealthConsultation, setSavedHealthConsultation] = useState<
+    (HealthConsultationDetails & { updated_at?: string }) | null
+  >(initialData.healthConsultation);
   const [myCoupons, setMyCoupons] = useState(initialData.coupons);
   const [pointsHistory] = useState(initialData.pointsHistory);
 
@@ -107,8 +105,7 @@ export default function ProfileContent({
   const deleteAddressMutation = useDeleteAddress();
   const setDefaultAddressMutation = useSetDefaultAddress();
   const updateProfileMutation = useUpdateUserProfile();
-  // 문진표 관련 mutation 주석 처리
-  // const upsertHealthMutation = useUpsertUserHealthConsultation();
+  const upsertHealthMutation = useUpsertUserHealthConsultation();
   const registerCouponMutation = useRegisterCouponByCode();
 
   // 포인트 히스토리 필터링
@@ -328,64 +325,63 @@ export default function ProfileContent({
     });
   };
 
-  // 문진표 저장 핸들러 주석 처리
-  // const handleSaveHealthConsultation = async (
-  //   data: Partial<HealthConsultationDetails>
-  // ) => {
-  //   if (!user) {
-  //     alert("유저 정보가 없습니다");
-  //     return;
-  //   }
-  //
-  //   // 필수 필드 검증
-  //   const requiredFields: (keyof HealthConsultationDetails)[] = [
-  //     "name",
-  //     "resident_number",
-  //     "phone",
-  //     "current_height",
-  //     "current_weight",
-  //     "min_weight_since_20s",
-  //     "max_weight_since_20s",
-  //     "target_weight",
-  //     "target_weight_loss_period",
-  //     "previous_western_medicine",
-  //     "previous_herbal_medicine",
-  //     "previous_other_medicine",
-  //     "occupation",
-  //     "work_hours",
-  //     "has_shift_work",
-  //     "wake_up_time",
-  //     "bedtime",
-  //     "has_daytime_sleepiness",
-  //     "meal_pattern",
-  //     "alcohol_frequency",
-  //     "water_intake",
-  //     "diet_approach",
-  //     "preferred_stage",
-  //     "medical_history",
-  //   ];
-  //
-  //   const missingFields = requiredFields.filter(
-  //     (field) => data[field] === undefined || data[field] === ""
-  //   );
-  //   if (missingFields.length > 0) {
-  //     alert("모든 필수 항목을 입력해주세요.");
-  //     return;
-  //   }
-  //
-  //   try {
-  //     await upsertHealthMutation.mutateAsync({
-  //       user_id: user.id,
-  //       ...(data as HealthConsultationDetails),
-  //     });
-  //     alert("문진 정보가 저장되었습니다.");
-  //     setSavedHealthConsultation(data as HealthConsultationDetails);
-  //     router.refresh();
-  //   } catch (error) {
-  //     console.error("문진 정보 저장 오류:", error);
-  //     alert("문진 정보를 저장하지 못했습니다.");
-  //   }
-  // };
+  const handleSaveHealthConsultation = async (
+    data: Partial<HealthConsultationDetails>
+  ) => {
+    if (!user) {
+      alert("유저 정보가 없습니다");
+      return;
+    }
+
+    // 필수 필드 검증
+    const requiredFields: (keyof HealthConsultationDetails)[] = [
+      "name",
+      "resident_number",
+      "phone",
+      "current_height",
+      "current_weight",
+      "min_weight_since_20s",
+      "max_weight_since_20s",
+      "target_weight",
+      "target_weight_loss_period",
+      "previous_western_medicine",
+      "previous_herbal_medicine",
+      "previous_other_medicine",
+      "occupation",
+      "work_hours",
+      "has_shift_work",
+      "wake_up_time",
+      "bedtime",
+      "has_daytime_sleepiness",
+      "meal_pattern",
+      "alcohol_frequency",
+      "water_intake",
+      "diet_approach",
+      "preferred_stage",
+      "medical_history",
+    ];
+
+    const missingFields = requiredFields.filter(
+      (field) => data[field] === undefined || data[field] === ""
+    );
+    if (missingFields.length > 0) {
+      alert("모든 필수 항목을 입력해주세요.");
+      return;
+    }
+
+    try {
+      await upsertHealthMutation.mutateAsync({
+        user_id: user.id,
+        ...(data as HealthConsultationDetails),
+      });
+      alert("문진 정보가 저장되었습니다.");
+      setSavedHealthConsultation(data as HealthConsultationDetails);
+      router.refresh();
+    } catch (error) {
+      console.error("문진 정보 저장 오류:", error);
+      alert("문진 정보를 저장하지 못했습니다.");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -422,7 +418,7 @@ export default function ProfileContent({
                 { key: "points", label: "포인트" },
                 { key: "coupons", label: "쿠폰" },
                 { key: "addresses", label: "배송지 관리" },
-                // { key: "health", label: "문진 관리" }, // 문진표 탭 주석 처리
+                { key: "health", label: "문진 관리" },
               ].map((tab) => (
                 <button
                   key={tab.key}
@@ -448,7 +444,7 @@ export default function ProfileContent({
                 { key: "points", label: "포인트" },
                 { key: "coupons", label: "쿠폰" },
                 { key: "addresses", label: "배송지 관리" },
-                // { key: "health", label: "문진 관리" }, // 문진표 탭 주석 처리
+                { key: "health", label: "문진 관리" },
               ].map((tab) => (
                 <button
                   key={tab.key}
@@ -1075,8 +1071,7 @@ export default function ProfileContent({
               </div>
             )}
 
-            {/* 문진표 탭 주석 처리 */}
-            {/* {activeTab === "health" && (
+            {activeTab === "health" && (
               <div>
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-xl font-medium text-gray-900">
@@ -1094,6 +1089,7 @@ export default function ProfileContent({
                   )}
                 </div>
                 <div className="border-t border-gray-200 pt-6">
+                  {/* 안내 문구 */}
                   <div className="mb-6 p-4 bg-gray-50 rounded">
                     <p className="text-sm text-gray-600">
                       한 번 저장해두면 주문/결제 시 문진 정보가 자동으로
@@ -1113,7 +1109,7 @@ export default function ProfileContent({
                   />
                 </div>
               </div>
-            )} */}
+            )}
           </div>
         </div>
       </main>

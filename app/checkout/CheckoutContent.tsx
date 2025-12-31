@@ -8,17 +8,17 @@ import { useQuery } from "@tanstack/react-query";
 import type { User } from "@supabase/supabase-js";
 import type {
   Coupon,
-  // HealthConsultationDetails, // 문진표 관련 import 주석 처리
+  HealthConsultationDetails,
   Product,
   UserPoints,
   UserCoupon,
   ShippingAddress,
   UserProfile,
-  // UserHealthConsultation, // 문진표 관련 import 주석 처리
+  UserHealthConsultation,
   PaymentMethod,
 } from "@/models";
 import { productsQueries } from "@/queries/products.queries";
-// import HealthConsultationForm from "@/components/HealthConsultationForm"; // 문진표 관련 import 주석 처리
+import HealthConsultationForm from "@/components/HealthConsultationForm";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import AddressSearch from "@/components/AddressSearch";
@@ -73,7 +73,7 @@ interface CheckoutContentProps {
   initialAvailableCoupons: UserCoupon[];
   initialAddresses: ShippingAddress[];
   initialProfile: UserProfile | null;
-  // initialHealthConsultation: UserHealthConsultation | null; // 문진표 관련 주석 처리
+  initialHealthConsultation: UserHealthConsultation | null;
 }
 
 export default function CheckoutContent({
@@ -82,8 +82,8 @@ export default function CheckoutContent({
   initialAvailableCoupons,
   initialAddresses,
   initialProfile,
-}: // initialHealthConsultation, // 문진표 관련 주석 처리
-CheckoutContentProps) {
+  initialHealthConsultation,
+}: CheckoutContentProps) {
   const router = useRouter();
   const {
     item,
@@ -101,7 +101,7 @@ CheckoutContentProps) {
   const availableCoupons = initialAvailableCoupons;
   const addresses = initialAddresses;
   const profile = initialProfile;
-  // const savedHealthConsultation = initialHealthConsultation; // 문진표 관련 주석 처리
+  const savedHealthConsultation = initialHealthConsultation;
 
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
@@ -125,10 +125,10 @@ CheckoutContentProps) {
   const [selectedCoupon, setSelectedCoupon] = useState<string>("");
   const [showCouponModal, setShowCouponModal] = useState(false);
 
-  // 건강 상담 정보 - 문진표 관련 주석 처리
-  // const [healthConsultation, setHealthConsultation] =
-  //   useState<Partial<HealthConsultationDetails> | null>(null);
-  // const [showHealthForm, setShowHealthForm] = useState(true);
+  // 건강 상담 정보
+  const [healthConsultation, setHealthConsultation] =
+    useState<Partial<HealthConsultationDetails> | null>(null);
+  const [showHealthForm, setShowHealthForm] = useState(true);
 
   // 결제 방법 선택
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CARD");
@@ -214,13 +214,12 @@ CheckoutContentProps) {
     }
   }, [profile]);
 
-  // 문진표 관련 useEffect 주석 처리
-  // useEffect(() => {
-  //   if (savedHealthConsultation && !healthConsultation) {
-  //     setHealthConsultation({ ...savedHealthConsultation });
-  //     setShowHealthForm(false);
-  //   }
-  // }, [savedHealthConsultation, healthConsultation]);
+  useEffect(() => {
+    if (savedHealthConsultation && !healthConsultation) {
+      setHealthConsultation({ ...savedHealthConsultation });
+      setShowHealthForm(false);
+    }
+  }, [savedHealthConsultation, healthConsultation]);
 
   // 쿠폰 변경 시 포인트 자동 재조정
   useEffect(() => {
@@ -375,16 +374,15 @@ CheckoutContentProps) {
       return;
     }
 
-    // 문진표 확인 로직 주석 처리
-    // if (!healthConsultation) {
-    //   const confirmProceed = confirm(
-    //     "문진 정보를 입력하지 않으셨습니다. 그대로 진행하시겠습니까?"
-    //   );
-    //   if (!confirmProceed) {
-    //     setShowHealthForm(true);
-    //     return;
-    //   }
-    // }
+    if (!healthConsultation) {
+      const confirmProceed = confirm(
+        "문진 정보를 입력하지 않으셨습니다. 그대로 진행하시겠습니까?"
+      );
+      if (!confirmProceed) {
+        setShowHealthForm(true);
+        return;
+      }
+    }
 
     const orderId = `ORDER_${Date.now()}`;
     const orderName = item.option?.name || product?.name || "상품";
@@ -451,13 +449,12 @@ CheckoutContentProps) {
             selected_addons: item.selected_addons,
           },
         ],
-        // 문진표 관련 주석 처리
-        // health_consultation: healthConsultation
-        //   ? {
-        //       user_id: user?.id,
-        //       ...healthConsultation,
-        //     }
-        //   : undefined,
+        health_consultation: healthConsultation
+          ? {
+              user_id: user?.id,
+              ...healthConsultation,
+            }
+          : undefined,
       });
 
       // 결제 방법에 따라 payMethod 설정
@@ -1274,8 +1271,8 @@ CheckoutContentProps) {
             </div>
           </section>
 
-          {/* 문진 정보 - 주석 처리 */}
-          {/* <section>
+          {/* 문진 정보 */}
+          <section>
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-medium text-gray-900 flex items-center gap-2">
                 문진 정보
@@ -1323,7 +1320,7 @@ CheckoutContentProps) {
                 </div>
               )}
             </div>
-          </section> */}
+          </section>
 
           {/* 결제 버튼 */}
           <div className="pt-4 space-y-3">
