@@ -15,7 +15,9 @@ export default function BrandIntroSection() {
           setIsVisible(true);
         }
       },
-      { threshold: 0.3 }
+      {
+        threshold: 1,
+      }
     );
 
     if (heroRef.current) {
@@ -54,7 +56,11 @@ export default function BrandIntroSection() {
             </div>
 
             {/* 중앙 로고 */}
-            <div className="relative w-[320px] h-[100px] md:w-[520px] md:h-[160px] z-10">
+            <div
+              className={`relative w-[320px] h-[100px] md:w-[520px] md:h-[160px] z-10 transition-all duration-700 ease-out delay-150 ${
+                isVisible ? "opacity-100 scale-100" : "opacity-0 scale-95"
+              }`}
+            >
               <Image
                 src="/home/home-logo.png"
                 alt="MIMYOHI"
@@ -246,7 +252,7 @@ export default function BrandIntroSection() {
         </Link>
 
         {/* mobile_2 - 353*280 */}
-        <div className="relative w-full aspect-[353/280] rounded-[20px] overflow-hidden">
+        <div className="relative w-full aspect-353/280 rounded-[20px] overflow-hidden">
           <Image
             src="/home/mobile_2.png"
             alt="MIMYOHI"
@@ -256,7 +262,7 @@ export default function BrandIntroSection() {
         </div>
 
         {/* mobile_3 - 353*479 */}
-        <div className="relative w-full aspect-[353/479] rounded-[20px] overflow-hidden">
+        <div className="relative w-full aspect-353/479 rounded-[20px] overflow-hidden">
           <Image
             src="/home/mobile_3.png"
             alt="MIMYOHI"
