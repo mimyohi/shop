@@ -83,6 +83,11 @@ export default function HealthConsultationForm({
   // 6) 과거 병력 및 복용 약
   const [medicalHistory, setMedicalHistory] = useState(initialData?.medical_history || '');
 
+  // 7) 상담 가능한 시간
+  const [consultationAvailableTime, setConsultationAvailableTime] = useState(
+    initialData?.consultation_available_time || ''
+  );
+
   useEffect(() => {
     if (initialData) {
       setName(initialData.name || '');
@@ -109,6 +114,7 @@ export default function HealthConsultationForm({
       setDietApproach(initialData.diet_approach || '');
       setPreferredStage(initialData.preferred_stage || '');
       setMedicalHistory(initialData.medical_history || '');
+      setConsultationAvailableTime(initialData.consultation_available_time || '');
     }
   }, [initialData]);
 
@@ -139,6 +145,7 @@ export default function HealthConsultationForm({
       diet_approach: dietApproach || undefined,
       preferred_stage: preferredStage || undefined,
       medical_history: medicalHistory,
+      consultation_available_time: consultationAvailableTime,
     });
   };
 
@@ -697,6 +704,28 @@ export default function HealthConsultationForm({
             className="w-full px-4 py-2 border border-gray-200 rounded focus:outline-none focus:border-gray-400"
             placeholder="예: 고혈압(혈압약 복용 중), 갑상선기능저하증(갑상선호르몬제 복용), 무릎 관절염 등, 또는 '없음'"
           />
+        </div>
+      </div>
+
+      {/* 7) 상담 가능한 시간 */}
+      <div className="border border-gray-200 rounded p-5">
+        <h3 className="text-sm font-medium text-gray-900 mb-4">7. 상담 가능한 시간</h3>
+
+        <div>
+          <label className="block text-sm text-gray-500 mb-1">
+            상담 가능한 시간대를 자유롭게 작성해주세요 <span className="text-red-500">*</span>
+          </label>
+          <textarea
+            value={consultationAvailableTime}
+            onChange={(e) => setConsultationAvailableTime(e.target.value)}
+            required
+            rows={3}
+            className="w-full px-4 py-2 border border-gray-200 rounded focus:outline-none focus:border-gray-400"
+            placeholder="예: 평일 오후 2시~5시, 주말 오전 10시~12시 가능합니다"
+          />
+          <p className="text-xs text-gray-400 mt-1">
+            ※ 전화 상담이 가능한 시간대를 구체적으로 작성해주시면 원활한 상담에 도움이 됩니다.
+          </p>
         </div>
       </div>
 

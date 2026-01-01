@@ -1216,6 +1216,8 @@ CREATE TABLE IF NOT EXISTS user_health_consultations (
   preferred_stage TEXT NOT NULL CHECK (preferred_stage IN ('stage1', 'stage2', 'stage3')),
   -- 6) 과거 병력 및 복용 약
   medical_history TEXT NOT NULL,
+  -- 7) 상담 가능한 시간
+  consultation_available_time TEXT NOT NULL DEFAULT '',
   created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW()),
   updated_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
 );
@@ -1265,6 +1267,8 @@ CREATE TABLE IF NOT EXISTS order_health_consultation (
   preferred_stage TEXT NOT NULL CHECK (preferred_stage IN ('stage1', 'stage2', 'stage3')),
   -- 6) 과거 병력 및 복용 약
   medical_history TEXT NOT NULL,
+  -- 7) 상담 가능한 시간
+  consultation_available_time TEXT NOT NULL DEFAULT '',
   created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW()),
   updated_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
 );

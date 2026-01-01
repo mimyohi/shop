@@ -117,6 +117,9 @@ export interface HealthConsultationDetails {
 
   // 6) 과거 병력 및 복용 약
   medical_history: string; // 과거 진단받았거나 현재 치료 중인 질환, 복용 중인 약
+
+  // 7) 상담 가능한 시간
+  consultation_available_time: string; // 상담 가능한 시간대
 }
 
 /**
