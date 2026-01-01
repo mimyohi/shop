@@ -98,12 +98,15 @@ function SignupContent() {
           setKakaoUserEmail(user.email || "");
         } else {
           // 카카오 모드인데 세션이 없으면 로그인 페이지로
+          setKakaoCheckDone(true); // ✅ 리다이렉트 전에 체크 완료 표시
           router.push("/auth/login");
           return;
         }
       } catch (error) {
         console.error("Failed to check kakao user:", error);
+        setKakaoCheckDone(true); // ✅ 에러 시에도 체크 완료 표시
         router.push("/auth/login");
+        return;
       }
       setKakaoCheckDone(true);
     };
