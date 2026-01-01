@@ -63,11 +63,15 @@ export async function GET(request: Request) {
         }
 
         // 프로필 완성 여부 확인 (이름, 전화번호)
-        const { data: profile } = await serviceSupabase
+        const { data: profile, error: profileCheckError } = await serviceSupabase
           .from("user_profiles")
           .select("display_name, phone, phone_verified")
           .eq("user_id", data.user.id)
-          .single();
+          .maybeSingle();
+
+        if (profileCheckError) {
+          console.error("Profile check error:", profileCheckError);
+        }
 
         const needsProfileCompletion = !profile?.display_name || !profile?.phone || !profile?.phone_verified;
 

@@ -89,15 +89,24 @@ function SignupContent() {
 
     const checkKakaoUser = async () => {
       try {
+        // 타임아웃 설정 (10초)
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Timeout")), 10000)
+        );
+
+        const userPromise = supabaseAuth.auth.getUser();
+
         const {
           data: { user },
-        } = await supabaseAuth.auth.getUser();
+        } = await Promise.race([userPromise, timeoutPromise]) as any;
+
         if (user && user.app_metadata?.provider === "kakao") {
           setIsKakaoUser(true);
           setKakaoUserId(user.id);
           setKakaoUserEmail(user.email || "");
         } else {
           // 카카오 모드인데 세션이 없으면 로그인 페이지로
+          console.warn("No kakao session found, redirecting to login");
           setKakaoCheckDone(true); // ✅ 리다이렉트 전에 체크 완료 표시
           router.push("/auth/login");
           return;
@@ -105,7 +114,7 @@ function SignupContent() {
       } catch (error) {
         console.error("Failed to check kakao user:", error);
         setKakaoCheckDone(true); // ✅ 에러 시에도 체크 완료 표시
-        router.push("/auth/login");
+        router.push("/auth/login?error=session_check_failed");
         return;
       }
       setKakaoCheckDone(true);
