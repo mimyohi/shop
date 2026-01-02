@@ -3,7 +3,10 @@
 import { Suspense, useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { validateAndFormatPhone, formatPhoneInput } from "@/lib/phone/validation";
+import {
+  validateAndFormatPhone,
+  formatPhoneInput,
+} from "@/lib/phone/validation";
 import { signIn, signUp, supabaseAuth } from "@/lib/supabaseAuth";
 import { updateKakaoUserProfileAction } from "@/lib/actions/profiles.actions";
 import { saveUserHealthConsultationAction } from "@/lib/actions/health-consultations.actions";
@@ -66,6 +69,18 @@ function SignupContent() {
   const [registeredUserId, setRegisteredUserId] = useState<string | null>(null);
   const [healthSubmitting, setHealthSubmitting] = useState(false);
 
+  // 문진 제출 시 화면 인터랙션 방지
+  useEffect(() => {
+    if (!healthSubmitting) return;
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [healthSubmitting]);
+
   // 일반 사용자 회원가입 정보 임시 저장 (Step 3에서 실제 가입 시 사용)
   const [pendingSignupData, setPendingSignupData] = useState<{
     email: string;
@@ -98,7 +113,7 @@ function SignupContent() {
 
         const {
           data: { user },
-        } = await Promise.race([userPromise, timeoutPromise]) as any;
+        } = (await Promise.race([userPromise, timeoutPromise])) as any;
 
         if (user && user.app_metadata?.provider === "kakao") {
           setIsKakaoUser(true);
@@ -1116,7 +1131,8 @@ function SignupContent() {
                 </svg>
                 <div>
                   <p className="text-sm font-medium text-gray-900">
-                    문진표를 작성해주세요 <span className="text-red-500">(필수)</span>
+                    문진표를 작성해주세요{" "}
+                    <span className="text-red-500">(필수)</span>
                   </p>
                   <p className="text-xs text-gray-600 mt-1">
                     정확한 상담과 맞춤 처방을 위해 문진표 작성이 필수입니다.
@@ -1170,6 +1186,17 @@ function SignupContent() {
     <div className="min-h-screen bg-white flex flex-col">
       <Navigation />
       <main className="flex-1">{renderContent()}</main>
+      {healthSubmitting && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center">
+          <div className="bg-white rounded-lg shadow-lg px-6 py-5 flex flex-col items-center gap-2 text-center">
+            <div className="animate-spin rounded-full h-9 w-9 border-b-2 border-gray-900"></div>
+            <p className="text-sm font-medium text-gray-800">
+              회원가입을 처리하고 있습니다
+            </p>
+            <p className="text-xs text-gray-600">잠시만 기다려주세요.</p>
+          </div>
+        </div>
+      )}
       <Footer />
     </div>
   );
@@ -1177,15 +1204,17 @@ function SignupContent() {
 
 export default function SignupPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-white flex flex-col">
-        <Navigation />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-        </main>
-        <Footer />
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-white flex flex-col">
+          <Navigation />
+          <main className="flex-1 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          </main>
+          <Footer />
+        </div>
+      }
+    >
       <SignupContent />
     </Suspense>
   );

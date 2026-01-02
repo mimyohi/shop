@@ -123,7 +123,11 @@ export async function DELETE() {
     }
 
     // auth.users에서 사용자 삭제
-    const { error: deleteError } = await serviceClient.auth.admin.deleteUser(userId);
+    // Supabase 기본은 soft-delete라 재가입 시 이메일 충돌이 날 수 있어 하드 삭제로 명시
+    const { error: deleteError } = await serviceClient.auth.admin.deleteUser(
+      userId,
+      false // should_soft_delete
+    );
 
     if (deleteError) {
       console.error("User deletion error:", deleteError);
