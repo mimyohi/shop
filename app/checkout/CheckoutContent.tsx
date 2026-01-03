@@ -176,6 +176,10 @@ export default function CheckoutContent({
     enabled: !!currentZipcode && currentZipcode.length === 5,
   });
 
+  const productTotal = getTotalPrice();
+  const shippingTotal = shippingFee?.totalShippingFee || 0;
+  const discountableAmount = productTotal + shippingTotal;
+
   // 리다이렉트 여부를 추적하는 ref
   const hasRedirected = useRef(false);
 
@@ -228,7 +232,7 @@ export default function CheckoutContent({
       const couponDiscount = calculateDiscount();
       const maxUsablePoints = Math.min(
         userPoints?.points || 0,
-        getTotalPrice() - couponDiscount
+        Math.max(0, discountableAmount - couponDiscount)
       );
 
       // 현재 사용 중인 포인트가 최대 사용 가능 포인트를 초과하면 자동 조정
@@ -237,7 +241,7 @@ export default function CheckoutContent({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCoupon]); // selectedCoupon이 변경될 때마다 실행
+  }, [selectedCoupon, discountableAmount]); // selectedCoupon/배송비 변경 시 재조정
 
   const calculateDiscount = () => {
     let discount = 0;
@@ -248,10 +252,10 @@ export default function CheckoutContent({
       );
       if (userCoupon) {
         const coupon = userCoupon.coupon as Coupon;
-        if (getTotalPrice() >= coupon.min_purchase) {
+        if (productTotal >= coupon.min_purchase) {
           if (coupon.discount_type === "percentage") {
             discount = Math.floor(
-              (getTotalPrice() * coupon.discount_value) / 100
+              (discountableAmount * coupon.discount_value) / 100
             );
             if (coupon.max_discount) {
               discount = Math.min(discount, coupon.max_discount);
@@ -267,18 +271,19 @@ export default function CheckoutContent({
   };
 
   const calculateFinalPrice = () => {
-    const total = getTotalPrice();
     const couponDiscount = calculateDiscount();
     const pointDiscount = usePoints;
-    const shipping = shippingFee?.totalShippingFee || 0;
 
-    return Math.max(0, total + shipping - couponDiscount - pointDiscount);
+    return Math.max(
+      0,
+      discountableAmount - couponDiscount - pointDiscount
+    );
   };
 
   const handlePointsChange = (value: number) => {
     const maxUsablePoints = Math.min(
       userPoints?.points || 0,
-      getTotalPrice() - calculateDiscount()
+      Math.max(0, discountableAmount - calculateDiscount())
     );
 
     if (value > maxUsablePoints) {
@@ -897,7 +902,7 @@ export default function CheckoutContent({
                         handlePointsChange(
                           Math.min(
                             userPoints?.points || 0,
-                            getTotalPrice() - calculateDiscount()
+                            Math.max(0, discountableAmount - calculateDiscount())
                           )
                         )
                       }

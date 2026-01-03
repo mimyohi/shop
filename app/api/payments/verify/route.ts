@@ -100,6 +100,8 @@ export async function POST(request: NextRequest) {
       zipcode
     );
 
+    const discountBaseAmount = productAmount + recalculatedShippingFee;
+
     // 쿠폰 할인 금액 서버 검증
     let couponDiscount = 0;
     if (orderData.user_coupon_id) {
@@ -116,12 +118,16 @@ export async function POST(request: NextRequest) {
         const validFrom = coupon.valid_from ? new Date(coupon.valid_from) : null;
         const validUntil = coupon.valid_until ? new Date(coupon.valid_until) : null;
 
-        if (coupon.is_active &&
-            (!validFrom || now >= validFrom) &&
-            (!validUntil || now <= validUntil) &&
-            productAmount >= (coupon.min_purchase || 0)) {
+        if (
+          coupon.is_active &&
+          (!validFrom || now >= validFrom) &&
+          (!validUntil || now <= validUntil) &&
+          productAmount >= (coupon.min_purchase || 0)
+        ) {
           if (coupon.discount_type === "percentage") {
-            couponDiscount = Math.floor(productAmount * (coupon.discount_value / 100));
+            couponDiscount = Math.floor(
+              discountBaseAmount * (coupon.discount_value / 100)
+            );
             if (coupon.max_discount) {
               couponDiscount = Math.min(couponDiscount, coupon.max_discount);
             }
