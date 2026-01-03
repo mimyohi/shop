@@ -498,17 +498,21 @@ COMMENT ON FUNCTION get_representative_option IS '상품의 대표 옵션 정보
 CREATE TABLE IF NOT EXISTS user_profiles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
-  email VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL UNIQUE,
   display_name VARCHAR(255),
   phone VARCHAR(50),
   phone_verified BOOLEAN DEFAULT false,
   phone_verified_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW()),
-  updated_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
+  updated_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW()),
+  marketing_consent BOOLEAN DEFAULT false,
+  sms_consent BOOLEAN DEFAULT false,
+  email_consent BOOLEAN DEFAULT false
 );
 
 CREATE INDEX IF NOT EXISTS idx_user_profiles_user_id ON user_profiles(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_profiles_email ON user_profiles(email);
+CREATE INDEX IF NOT EXISTS idx_user_profiles_email_lower ON user_profiles(LOWER(email));
 CREATE INDEX IF NOT EXISTS idx_user_profiles_phone ON user_profiles(phone);
 
 DROP TRIGGER IF EXISTS update_user_profiles_updated_at ON user_profiles;

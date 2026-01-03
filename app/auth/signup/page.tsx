@@ -102,34 +102,59 @@ function SignupContent() {
       return;
     }
 
-    const checkKakaoUser = async () => {
+    const checkKakaoUser = async (retryCount = 0) => {
       try {
-        // 타임아웃 설정 (10초)
+        console.log(`[Kakao Signup] 세션 체크 시도... (retry: ${retryCount})`);
+
+        // 타임아웃 설정 (15초로 증가)
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Timeout")), 10000)
+          setTimeout(() => reject(new Error("Timeout")), 15000)
         );
 
         const userPromise = supabaseAuth.auth.getUser();
 
         const {
           data: { user },
+          error: userError,
         } = (await Promise.race([userPromise, timeoutPromise])) as any;
 
+        console.log("[Kakao Signup] 세션 체크 결과:", {
+          hasUser: !!user,
+          userId: user?.id,
+          email: user?.email,
+          provider: user?.app_metadata?.provider,
+          error: userError,
+        });
+
+        if (userError) {
+          throw new Error(`Supabase auth error: ${userError.message}`);
+        }
+
         if (user && user.app_metadata?.provider === "kakao") {
+          console.log("[Kakao Signup] 카카오 세션 확인 완료");
           setIsKakaoUser(true);
           setKakaoUserId(user.id);
           setKakaoUserEmail(user.email || "");
         } else {
           // 카카오 모드인데 세션이 없으면 로그인 페이지로
-          console.warn("No kakao session found, redirecting to login");
-          setKakaoCheckDone(true); // ✅ 리다이렉트 전에 체크 완료 표시
+          console.warn("[Kakao Signup] 카카오 세션 없음, 로그인 페이지로 리다이렉트");
+          console.warn("[Kakao Signup] User data:", user);
+          setKakaoCheckDone(true);
           router.push("/auth/login");
           return;
         }
       } catch (error) {
-        console.error("Failed to check kakao user:", error);
-        setKakaoCheckDone(true); // ✅ 에러 시에도 체크 완료 표시
-        router.push("/auth/login?error=session_check_failed");
+        console.error("[Kakao Signup] 세션 체크 실패:", error);
+
+        // 타임아웃 에러인 경우 한 번만 재시도
+        if (error instanceof Error && error.message === "Timeout" && retryCount < 1) {
+          console.log("[Kakao Signup] 타임아웃으로 인한 재시도...");
+          await new Promise(resolve => setTimeout(resolve, 1000)); // 1초 대기
+          return checkKakaoUser(retryCount + 1);
+        }
+
+        setKakaoCheckDone(true);
+        router.push(`/auth/login?error=session_check_failed&reason=${encodeURIComponent(error instanceof Error ? error.message : 'unknown')}`);
         return;
       }
       setKakaoCheckDone(true);
