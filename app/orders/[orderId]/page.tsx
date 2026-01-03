@@ -138,7 +138,11 @@ function getPaymentStatusLabel(status: string | null): {
 }
 
 // 결제 방법 라벨
-function getPaymentMethodLabel(method: string | null | undefined): string {
+function getPaymentMethodLabel(
+  method: string | null | undefined,
+  totalAmount?: number | null
+): string {
+  if (totalAmount === 0) return "무료 결제";
   if (!method) return "-";
   switch (method) {
     case "VIRTUAL_ACCOUNT":
@@ -274,7 +278,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
               <div>
                 <span className="text-gray-500">결제 방법</span>
                 <p className="font-semibold text-gray-900">
-                  {getPaymentMethodLabel(order.payment_method)}
+                  {getPaymentMethodLabel(order.payment_method, order.total_amount)}
                 </p>
               </div>
               <div>

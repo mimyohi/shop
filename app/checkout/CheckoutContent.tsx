@@ -387,6 +387,7 @@ export default function CheckoutContent({
 
     const orderId = `ORDER_${Date.now()}`;
     const orderName = item.option?.name || product?.name || "상품";
+    const finalAmount = calculateFinalPrice();
 
     setIsLoading(true);
 
@@ -416,7 +417,7 @@ export default function CheckoutContent({
         user_email: customerEmail,
         user_name: customerName,
         user_phone: customerPhone,
-        total_amount: calculateFinalPrice(),
+        total_amount: finalAmount,
         order_id: orderId,
         consultation_status: getConsultationStatusByVisitType(item.visit_type),
         ...(shippingInfo && {
@@ -482,11 +483,16 @@ export default function CheckoutContent({
         }
       };
 
+      if (finalAmount === 0) {
+        router.push(`/checkout/success?paymentId=${orderId}`);
+        return;
+      }
+
       const paymentRequest: Parameters<typeof PortOne.requestPayment>[0] = {
         storeId,
         paymentId: orderId,
         orderName,
-        totalAmount: calculateFinalPrice(),
+        totalAmount: finalAmount,
         currency: "CURRENCY_KRW",
         channelKey: getChannelKey(),
         payMethod: getPayMethod(),

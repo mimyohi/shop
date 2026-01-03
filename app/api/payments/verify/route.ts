@@ -30,56 +30,6 @@ export async function POST(request: NextRequest) {
 
     console.log("결제 확인 요청 - paymentId:", paymentId, "user:", user?.id);
 
-    // API Secret 확인
-    if (!env.PORTONE_API_SECRET) {
-      console.error("PORTONE_API_SECRET 환경 변수가 설정되지 않았습니다.");
-      return NextResponse.json(
-        { error: "포트원 API 설정이 올바르지 않습니다." },
-        { status: 500 }
-      );
-    }
-
-    // 포트원 SDK로 결제 정보 조회
-    let paymentData;
-    try {
-      paymentData = await portone.payment.getPayment({ paymentId });
-    } catch (e: unknown) {
-      // 에러 객체 전체 출력
-      console.error("포트원 결제 조회 실패:", JSON.stringify(e, null, 2));
-      if (e && typeof e === "object" && "data" in e) {
-        console.error("에러 data:", JSON.stringify(e.data, null, 2));
-      }
-      if (e instanceof PortOneError) {
-        return NextResponse.json(
-          { error: e.message || "결제 정보 조회에 실패했습니다." },
-          { status: 400 }
-        );
-      }
-      // 기타 에러도 로깅
-      if (e instanceof Error) {
-        return NextResponse.json(
-          { error: e.message || "결제 정보 조회에 실패했습니다." },
-          { status: 400 }
-        );
-      }
-      throw e;
-    }
-
-    // 결제 상태 확인 (카드: PAID, 가상계좌: VIRTUAL_ACCOUNT_ISSUED)
-    const isCardPaid = paymentData.status === "PAID";
-    const isVirtualAccountIssued = paymentData.status === "VIRTUAL_ACCOUNT_ISSUED";
-
-    if (!isCardPaid && !isVirtualAccountIssued) {
-      return NextResponse.json(
-        {
-          error: `결제가 완료되지 않았습니다. 상태: ${String(
-            paymentData.status
-          )}`,
-        },
-        { status: 400 }
-      );
-    }
-
     // 주문 정보 조회 (금액 검증을 위해)
     const { data: orderData, error: orderError } = await supabaseAdmin
       .from("orders")
@@ -216,8 +166,192 @@ export async function POST(request: NextRequest) {
     }
 
     // 최종 금액 계산
-    const expectedTotalAmount =
+    const expectedTotalAmountRaw =
       productAmount + recalculatedShippingFee - couponDiscount - pointsUsed;
+    const expectedTotalAmount = Math.max(0, expectedTotalAmountRaw);
+
+    const isFreePayment = expectedTotalAmount === 0;
+
+    // 무료 결제는 PG 호출 없이 처리
+    if (isFreePayment) {
+      const { error: updateError, data: updatedRows } = await supabaseAdmin
+        .from("orders")
+        .update({
+          status: "completed",
+          shipping_fee: recalculatedShippingFee,
+          total_amount: expectedTotalAmount,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("order_id", paymentId)
+        .in("status", ["pending", "payment_pending"])
+        .select("id");
+
+      if (updateError) {
+        console.error("주문 상태 업데이트 실패:", updateError);
+        return NextResponse.json(
+          { error: "주문 상태 업데이트에 실패했습니다." },
+          { status: 500 }
+        );
+      }
+
+      if (!updatedRows || updatedRows.length === 0) {
+        console.log("이미 처리된 주문 (무료 결제) - paymentId:", paymentId);
+        return NextResponse.json({
+          success: true,
+          message: "이미 처리된 주문입니다.",
+          alreadyProcessed: true,
+        });
+      }
+
+      // 포인트 차감 (무료 결제도 즉시 처리)
+      if (pointsUsed > 0 && orderData.user_id) {
+        try {
+          const { error: historyError } = await supabaseAdmin
+            .from("point_history")
+            .insert({
+              user_id: orderData.user_id,
+              points: -pointsUsed,
+              type: "use",
+              reason: `주문 사용 (${orderData.order_id})`,
+              order_id: orderData.id,
+            });
+
+          if (historyError) {
+            console.error("포인트 히스토리 저장 실패:", historyError);
+          }
+
+          const { data: currentPoints } = await supabaseAdmin
+            .from("user_points")
+            .select("points, total_used")
+            .eq("user_id", orderData.user_id)
+            .single();
+
+          if (currentPoints) {
+            const { error: pointsError } = await supabaseAdmin
+              .from("user_points")
+              .update({
+                points: currentPoints.points - pointsUsed,
+                total_used: (currentPoints.total_used || 0) + pointsUsed,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("user_id", orderData.user_id);
+
+            if (pointsError) {
+              console.error("포인트 차감 실패:", pointsError);
+            }
+          }
+        } catch (pointsError) {
+          console.error("포인트 처리 중 오류:", pointsError);
+        }
+      }
+
+      // 쿠폰 사용 처리 (무료 결제도 즉시 처리)
+      if (orderData.user_coupon_id) {
+        try {
+          const { error: couponError } = await supabaseAdmin
+            .from("user_coupons")
+            .update({
+              is_used: true,
+              used_at: new Date().toISOString(),
+              order_id: orderData.id,
+            })
+            .eq("id", orderData.user_coupon_id);
+
+          if (couponError) {
+            console.error("쿠폰 사용 처리 실패:", couponError);
+          }
+        } catch (couponError) {
+          console.error("쿠폰 처리 중 오류:", couponError);
+        }
+      }
+
+      // 주문 확인 알림톡 발송
+      const phone = orderData.user_phone || orderData.shipping_phone;
+      if (phone) {
+        try {
+          const firstProduct = orderItems[0]?.product_name || "상품";
+          const productNames =
+            orderItems.length > 1
+              ? `${firstProduct} 외 ${orderItems.length - 1}건`
+              : firstProduct;
+
+          const alimtalkResult = await sendOrderConfirmationAlimtalk(phone, {
+            orderId: orderData.order_id,
+            customerName: orderData.user_name || orderData.shipping_name,
+            totalAmount: expectedTotalAmount,
+            productNames,
+          });
+
+          if (!alimtalkResult.success) {
+            console.error("주문 확인 알림톡 발송 실패:", alimtalkResult.error);
+          }
+        } catch (alimtalkError) {
+          console.error("주문 확인 알림톡 발송 중 오류:", alimtalkError);
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        paymentMethod: "CARD",
+        verification: {
+          productAmount,
+          shippingFee: recalculatedShippingFee,
+          couponDiscount,
+          pointsUsed,
+          totalAmount: expectedTotalAmount,
+        },
+      });
+    }
+
+    // API Secret 확인
+    if (!env.PORTONE_API_SECRET) {
+      console.error("PORTONE_API_SECRET 환경 변수가 설정되지 않았습니다.");
+      return NextResponse.json(
+        { error: "포트원 API 설정이 올바르지 않습니다." },
+        { status: 500 }
+      );
+    }
+
+    // 포트원 SDK로 결제 정보 조회
+    let paymentData;
+    try {
+      paymentData = await portone.payment.getPayment({ paymentId });
+    } catch (e: unknown) {
+      // 에러 객체 전체 출력
+      console.error("포트원 결제 조회 실패:", JSON.stringify(e, null, 2));
+      if (e && typeof e === "object" && "data" in e) {
+        console.error("에러 data:", JSON.stringify(e.data, null, 2));
+      }
+      if (e instanceof PortOneError) {
+        return NextResponse.json(
+          { error: e.message || "결제 정보 조회에 실패했습니다." },
+          { status: 400 }
+        );
+      }
+      // 기타 에러도 로깅
+      if (e instanceof Error) {
+        return NextResponse.json(
+          { error: e.message || "결제 정보 조회에 실패했습니다." },
+          { status: 400 }
+        );
+      }
+      throw e;
+    }
+
+    // 결제 상태 확인 (카드: PAID, 가상계좌: VIRTUAL_ACCOUNT_ISSUED)
+    const isCardPaid = paymentData.status === "PAID";
+    const isVirtualAccountIssued = paymentData.status === "VIRTUAL_ACCOUNT_ISSUED";
+
+    if (!isCardPaid && !isVirtualAccountIssued) {
+      return NextResponse.json(
+        {
+          error: `결제가 완료되지 않았습니다. 상태: ${String(
+            paymentData.status
+          )}`,
+        },
+        { status: 400 }
+      );
+    }
 
     // PG사에서 받은 결제 금액
     const paidAmount = (paymentData as any).amount?.total || 0;
