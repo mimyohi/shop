@@ -21,7 +21,6 @@ export const userProfilesRepository = {
       if (error.code === 'PGRST116') {
         return null
       }
-      console.error('Error fetching user profile:', error)
       throw new Error('Failed to fetch user profile')
     }
 
@@ -43,7 +42,6 @@ export const userProfilesRepository = {
       .single()
 
     if (error) {
-      console.error('Error updating user profile:', error)
       throw new Error('Failed to update user profile')
     }
 

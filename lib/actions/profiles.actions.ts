@@ -72,7 +72,6 @@ export async function updateKakaoUserProfileAction(
       .single()
 
     if (error) {
-      console.error('Error updating kakao user profile:', error)
       return {
         success: false,
         error: '프로필 업데이트에 실패했습니다.',
@@ -88,7 +87,6 @@ export async function updateKakaoUserProfileAction(
       data: updated,
     }
   } catch (error: any) {
-    console.error('Error in updateKakaoUserProfileAction:', error)
     return {
       success: false,
       error: error.message || '오류가 발생했습니다.',
@@ -147,7 +145,6 @@ export async function updateUserProfileAction(userId: string, data: UpdateUserPr
       .single()
 
     if (error) {
-      console.error('Error updating user profile:', error)
       return {
         success: false,
         error: error.message || 'Failed to update user profile',
@@ -162,7 +159,6 @@ export async function updateUserProfileAction(userId: string, data: UpdateUserPr
       data: updated,
     }
   } catch (error: any) {
-    console.error('Error in updateUserProfileAction:', error)
     return {
       success: false,
       error: error.message || 'An unexpected error occurred',

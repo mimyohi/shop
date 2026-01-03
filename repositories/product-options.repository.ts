@@ -60,7 +60,6 @@ export const productOptionsRepository = {
       .order('display_order')
 
     if (error) {
-      console.error('Error fetching product options:', error)
       throw new Error('Failed to fetch product options')
     }
 
@@ -87,7 +86,6 @@ export const productOptionsRepository = {
       .order('display_order')
 
     if (error) {
-      console.error('Error fetching product addons:', error)
       throw new Error('Failed to fetch product addons')
     }
 

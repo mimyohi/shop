@@ -88,7 +88,6 @@ export const ordersRepository = {
       .single();
 
     if (orderError || !order) {
-      console.error("Error creating order:", orderError);
       throw new Error("Failed to create order");
     }
 
@@ -112,7 +111,6 @@ export const ordersRepository = {
     );
 
     if (itemsError) {
-      console.error("Error creating order items:", itemsError);
       throw new Error("Failed to create order items");
     }
 
@@ -128,7 +126,6 @@ export const ordersRepository = {
       });
 
     if (consultationError) {
-      console.error("Error creating health consultation:", consultationError);
       throw new Error("Failed to create health consultation");
     }
 
@@ -248,7 +245,6 @@ export const ordersRepository = {
       .range(from, to);
 
     if (error || !orders) {
-      console.error("Error fetching orders:", error);
       return { orders: [], totalCount: 0 };
     }
 
@@ -309,7 +305,6 @@ export const ordersRepository = {
       .single();
 
     if (error || !order) {
-      console.error("Error updating order status:", error);
       throw new Error("Failed to update order status");
     }
 
@@ -344,7 +339,6 @@ export const ordersRepository = {
       .eq("order_id", order.id);
 
     if (itemsError) {
-      console.error("Error deleting order items:", itemsError);
       throw new Error("Failed to delete order items");
     }
 
@@ -355,7 +349,6 @@ export const ordersRepository = {
       .eq("order_id", order.id);
 
     if (consultationsError) {
-      console.error("Error deleting consultations:", consultationsError);
       // Continue even if there are no consultations
     }
 
@@ -366,7 +359,6 @@ export const ordersRepository = {
       .eq("id", order.id);
 
     if (deleteError) {
-      console.error("Error deleting order:", deleteError);
       throw new Error("Failed to delete order");
     }
   },

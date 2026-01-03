@@ -66,7 +66,6 @@ export async function saveUserHealthConsultationAction(data: UpsertUserHealthCon
       .single()
 
     if (error || !upserted) {
-      console.error('Error saving user health consultation:', error)
       return {
         success: false,
         error: error?.message || 'Failed to save user health consultation',
@@ -82,7 +81,6 @@ export async function saveUserHealthConsultationAction(data: UpsertUserHealthCon
       data: upserted,
     }
   } catch (error: any) {
-    console.error('Error in saveUserHealthConsultationAction:', error)
     return {
       success: false,
       error: error.message || 'An unexpected error occurred',

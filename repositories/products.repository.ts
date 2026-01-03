@@ -49,7 +49,6 @@ async function fetchRepresentativeOptions(
     .eq("is_representative", true);
 
   if (error) {
-    console.error("Error fetching representative options:", error);
     return new Map();
   }
 
@@ -122,7 +121,6 @@ export const productsRepository = {
     const { data, error, count } = await query;
 
     if (error) {
-      console.error("Error fetching products:", error);
       throw new Error("Failed to fetch products");
     }
 
@@ -172,7 +170,6 @@ export const productsRepository = {
       .not("category", "is", null);
 
     if (error) {
-      console.error("Error fetching categories:", error);
       throw new Error("Failed to fetch categories");
     }
 
@@ -195,7 +192,6 @@ export const productsRepository = {
       .single();
 
     if (error) {
-      console.error("Error fetching product:", error);
       return null;
     }
 
@@ -217,7 +213,6 @@ export const productsRepository = {
       .single();
 
     if (error) {
-      console.error("Error fetching product:", error);
       return null;
     }
 
@@ -257,7 +252,6 @@ export const productsRepository = {
       .limit(limit);
 
     if (error) {
-      console.error("Error fetching best products:", error);
       return [];
     }
 
@@ -285,7 +279,6 @@ export const productsRepository = {
       .limit(limit);
 
     if (error) {
-      console.error("Error fetching new products:", error);
       return [];
     }
 
@@ -315,7 +308,6 @@ export const productsRepository = {
       .is("deleted_at", null);
 
     if (error) {
-      console.error("Error fetching products by ids:", error);
       throw new Error("Failed to fetch products");
     }
 

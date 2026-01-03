@@ -35,7 +35,6 @@ export const addressesRepository = {
       .order('created_at', { ascending: false })
 
     if (error) {
-      console.error('Error fetching shipping addresses:', error)
       throw new Error('Failed to fetch shipping addresses')
     }
 
@@ -53,7 +52,6 @@ export const addressesRepository = {
       .single()
 
     if (error) {
-      console.error('Error fetching shipping address:', error)
       return null
     }
 
@@ -80,7 +78,6 @@ export const addressesRepository = {
       .single()
 
     if (error) {
-      console.error('Error creating shipping address:', error)
       throw new Error('Failed to create shipping address')
     }
 
@@ -112,7 +109,6 @@ export const addressesRepository = {
       .single()
 
     if (error) {
-      console.error('Error updating shipping address:', error)
       throw new Error('Failed to update shipping address')
     }
 
@@ -130,7 +126,6 @@ export const addressesRepository = {
       .eq('user_id', userId) // 본인 소유의 배송지만 삭제 가능
 
     if (error) {
-      console.error('Error deleting shipping address:', error)
       throw new Error('Failed to delete shipping address')
     }
   },

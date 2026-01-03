@@ -18,7 +18,6 @@ export const couponsRepository = {
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("Error fetching user coupons:", error);
       throw new Error("Failed to fetch user coupons");
     }
 
@@ -45,7 +44,6 @@ export const couponsRepository = {
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("Error fetching available user coupons:", error);
       throw new Error("Failed to fetch available user coupons");
     }
 
@@ -73,7 +71,6 @@ export const couponsRepository = {
       .or(`valid_until.is.null,valid_until.gte.${now}`);
 
     if (error) {
-      console.error("Error fetching active coupons:", error);
       throw new Error("Failed to fetch active coupons");
     }
 
@@ -92,7 +89,6 @@ export const couponsRepository = {
       .single();
 
     if (error) {
-      console.error("Error fetching coupon by code:", error);
       return null;
     }
 
@@ -122,7 +118,6 @@ export const couponsRepository = {
       .single();
 
     if (error) {
-      console.error("Error issuing coupon:", error);
       throw new Error("Failed to issue coupon");
     }
 
@@ -150,7 +145,6 @@ export const couponsRepository = {
       .single();
 
     if (error) {
-      console.error("Error using coupon:", error);
       throw new Error("Failed to use coupon");
     }
 

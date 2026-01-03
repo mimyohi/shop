@@ -48,7 +48,6 @@ export async function createAddressAction(addressData: CreateAddressData) {
       .single()
 
     if (error) {
-      console.error('Error creating shipping address:', error)
       return {
         success: false,
         error: error.message || 'Failed to create shipping address',
@@ -64,7 +63,6 @@ export async function createAddressAction(addressData: CreateAddressData) {
       data,
     }
   } catch (error: any) {
-    console.error('Error in createAddressAction:', error)
     return {
       success: false,
       error: error.message || 'An unexpected error occurred',
@@ -125,7 +123,6 @@ export async function updateAddressAction(
       .single()
 
     if (error) {
-      console.error('Error updating shipping address:', error)
       return {
         success: false,
         error: error.message || 'Failed to update shipping address',
@@ -141,7 +138,6 @@ export async function updateAddressAction(
       data,
     }
   } catch (error: any) {
-    console.error('Error in updateAddressAction:', error)
     return {
       success: false,
       error: error.message || 'An unexpected error occurred',
@@ -184,7 +180,6 @@ export async function deleteAddressAction(id: string, userId: string) {
       .eq('user_id', userId) // 본인 소유의 배송지만 삭제 가능
 
     if (error) {
-      console.error('Error deleting shipping address:', error)
       return {
         success: false,
         error: error.message || 'Failed to delete shipping address',
@@ -199,7 +194,6 @@ export async function deleteAddressAction(id: string, userId: string) {
       success: true,
     }
   } catch (error: any) {
-    console.error('Error in deleteAddressAction:', error)
     return {
       success: false,
       error: error.message || 'An unexpected error occurred',

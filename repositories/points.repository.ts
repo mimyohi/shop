@@ -17,7 +17,6 @@ export const pointsRepository = {
         // No rows returned - 포인트 정보가 없으면 생성
         return this.create(userId)
       }
-      console.error('Error fetching user points:', error)
       return null
     }
 
@@ -40,7 +39,6 @@ export const pointsRepository = {
       .single()
 
     if (error) {
-      console.error('Error creating user points:', error)
       throw new Error('Failed to create user points')
     }
 
@@ -59,7 +57,6 @@ export const pointsRepository = {
       .limit(limit)
 
     if (error) {
-      console.error('Error fetching point history:', error)
       throw new Error('Failed to fetch point history')
     }
 
@@ -85,7 +82,6 @@ export const pointsRepository = {
     })
 
     if (historyError) {
-      console.error('Error creating point history:', historyError)
       throw new Error('Failed to earn points')
     }
 
@@ -106,7 +102,6 @@ export const pointsRepository = {
       .single()
 
     if (error) {
-      console.error('Error updating user points:', error)
       throw new Error('Failed to update user points')
     }
 
@@ -141,7 +136,6 @@ export const pointsRepository = {
     })
 
     if (historyError) {
-      console.error('Error creating point history:', historyError)
       throw new Error('Failed to use points')
     }
 
@@ -157,7 +151,6 @@ export const pointsRepository = {
       .single()
 
     if (error) {
-      console.error('Error updating user points:', error)
       throw new Error('Failed to update user points')
     }
 

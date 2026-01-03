@@ -81,7 +81,6 @@ export async function registerCouponByCodeAction(couponCode: string) {
       .single()
 
     if (error) {
-      console.error('Error issuing coupon:', error)
       return {
         success: false,
         error: '쿠폰 등록에 실패했습니다.',
@@ -97,7 +96,6 @@ export async function registerCouponByCodeAction(couponCode: string) {
       data,
     }
   } catch (error: any) {
-    console.error('Error in registerCouponByCodeAction:', error)
     return {
       success: false,
       error: '예상치 못한 오류가 발생했습니다.',
@@ -180,7 +178,6 @@ export async function issueCouponToUserAction(userId: string, couponId: string) 
       .single()
 
     if (error) {
-      console.error('Error issuing coupon:', error)
       return {
         success: false,
         error: error.message || 'Failed to issue coupon',
@@ -196,7 +193,6 @@ export async function issueCouponToUserAction(userId: string, couponId: string) 
       data,
     }
   } catch (error: any) {
-    console.error('Error in issueCouponToUserAction:', error)
     return {
       success: false,
       error: error.message || 'An unexpected error occurred',
@@ -270,7 +266,6 @@ export async function useCouponAction(userCouponId: string, orderId: string) {
       .single()
 
     if (error) {
-      console.error('Error using coupon:', error)
       return {
         success: false,
         error: error.message || 'Failed to use coupon',
@@ -285,7 +280,6 @@ export async function useCouponAction(userCouponId: string, orderId: string) {
       data,
     }
   } catch (error: any) {
-    console.error('Error in useCouponAction:', error)
     return {
       success: false,
       error: error.message || 'An unexpected error occurred',

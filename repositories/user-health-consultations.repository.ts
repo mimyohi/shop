@@ -17,7 +17,6 @@ export const userHealthConsultationsRepository = {
       .maybeSingle()
 
     if (error) {
-      console.error('Error fetching user health consultation:', error)
       throw new Error('Failed to fetch user health consultation')
     }
 
@@ -37,7 +36,6 @@ export const userHealthConsultationsRepository = {
       .single()
 
     if (error || !upserted) {
-      console.error('Error saving user health consultation:', error)
       throw new Error('Failed to save user health consultation')
     }
 
