@@ -66,8 +66,8 @@ export default function ForgotPasswordPage() {
         return;
       }
 
-      setPhone(data.phone);
-      setMaskedPhone(maskPhone(data.phone));
+      setPhone(data.phone); // 원본 전화번호
+      setMaskedPhone(data.maskedPhone || maskPhone(data.phone)); // 마스킹된 번호
       setStep("otp");
       setOtpCountdown(data.expiresIn || 300);
       setOtp("");

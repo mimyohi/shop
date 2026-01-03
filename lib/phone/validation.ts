@@ -35,8 +35,27 @@ export function toE164(phone: string, countryCode: CountryCode = 'KR'): string |
 
     // 이미 +로 시작하는 경우 (국제 번호)
     if (cleanPhone.startsWith('+')) {
-      const parsed = parsePhoneNumber(cleanPhone);
-      return parsed?.number || null;
+      try {
+        // 최소 길이 체크 (+82 최소 12자리: +821012345678)
+        if (cleanPhone.length < 12) {
+          return null;
+        }
+
+        // 숫자만 포함되어 있는지 확인 (+ 제외)
+        const phoneDigits = cleanPhone.substring(1);
+        if (!/^\d+$/.test(phoneDigits)) {
+          return null;
+        }
+
+        const parsed = parsePhoneNumber(cleanPhone);
+        if (!parsed || !parsed.isValid()) {
+          return null;
+        }
+        return parsed.number || null;
+      } catch (error) {
+        // parsePhoneNumber에서 에러 발생 시 null 반환
+        return null;
+      }
     }
 
     // 한국 번호 형식 검증
@@ -67,8 +86,15 @@ export function toE164(phone: string, countryCode: CountryCode = 'KR'): string |
  */
 export function toKoreanFormat(e164: string): string | null {
   try {
+    // E.164 형식 기본 검증
+    if (!e164 || !e164.startsWith('+') || e164.length < 12) {
+      return null;
+    }
+
     const parsed = parsePhoneNumber(e164);
-    if (!parsed) return null;
+    if (!parsed || !parsed.isValid()) {
+      return null;
+    }
 
     // 한국 번호가 아니면 원본 반환
     if (parsed.country !== 'KR') {

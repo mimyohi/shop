@@ -151,10 +151,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 성공 응답 (마스킹된 전화번호)
+    // 성공 응답 (마스킹된 전화번호 + 원본 전화번호)
     return NextResponse.json({
       success: true,
-      phone: maskPhone(e164Phone),
+      phone: e164Phone, // 원본 전화번호 (OTP 검증용)
+      maskedPhone: maskPhone(e164Phone), // 마스킹된 번호 (표시용)
       expiresIn: 300, // 5분 = 300초
       message: "등록된 전화번호로 인증번호가 발송되었습니다.",
     });
