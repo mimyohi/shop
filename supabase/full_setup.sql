@@ -267,7 +267,8 @@ CREATE TABLE IF NOT EXISTS product_options (
   display_order INTEGER DEFAULT 0,
 
   created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW()),
-  updated_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
+  updated_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW()),
+  deleted_at TIMESTAMPTZ DEFAULT NULL
 );
 
 COMMENT ON TABLE product_options IS '상품 옵션 (Option-Setting-Type 구조의 최상위)';
@@ -278,16 +279,19 @@ COMMENT ON COLUMN product_options.is_representative IS '대표 옵션 여부. �
 COMMENT ON COLUMN product_options.use_settings_on_first IS '초진일 때 설정 사용 여부';
 COMMENT ON COLUMN product_options.use_settings_on_revisit_with_consult IS '재진(상담필요)일 때 설정 사용 여부';
 COMMENT ON COLUMN product_options.use_settings_on_revisit_no_consult IS '재진(상담불필요)일 때 설정 사용 여부';
+COMMENT ON COLUMN product_options.deleted_at IS 'Soft delete timestamp. NULL means the option is active.';
 
 CREATE INDEX IF NOT EXISTS idx_product_options_product_id ON product_options(product_id);
 CREATE INDEX IF NOT EXISTS idx_product_options_slug ON product_options(slug);
 CREATE INDEX IF NOT EXISTS idx_product_options_category ON product_options(category);
 CREATE INDEX IF NOT EXISTS idx_product_options_display_order ON product_options(display_order);
 CREATE INDEX IF NOT EXISTS idx_product_options_price ON product_options(price);
+CREATE INDEX IF NOT EXISTS idx_product_options_deleted_at ON product_options(deleted_at);
+CREATE INDEX IF NOT EXISTS idx_product_options_active ON product_options(id) WHERE deleted_at IS NULL;
 
--- 대표 옵션 고유 인덱스 (상품당 1개만 가능)
+-- 대표 옵션 고유 인덱스 (상품당 1개만 가능, 삭제되지 않은 것만)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_product_options_representative
-ON product_options(product_id) WHERE is_representative = true;
+ON product_options(product_id) WHERE is_representative = true AND deleted_at IS NULL;
 
 DROP TRIGGER IF EXISTS trigger_set_product_group_slug ON product_options;
 CREATE TRIGGER trigger_set_product_group_slug
@@ -486,6 +490,7 @@ BEGIN
   FROM product_options po
   WHERE po.product_id = p_product_id
     AND po.is_representative = true
+    AND po.deleted_at IS NULL
   LIMIT 1;
 END;
 $$ LANGUAGE plpgsql;
@@ -887,7 +892,9 @@ JOIN products p ON cp.product_id = p.id
 LEFT JOIN LATERAL (
   SELECT po.price
   FROM product_options po
-  WHERE po.product_id = p.id AND po.is_representative = true
+  WHERE po.product_id = p.id
+    AND po.is_representative = true
+    AND po.deleted_at IS NULL
   LIMIT 1
 ) ro ON true
 WHERE c.is_active = true;

@@ -37,6 +37,7 @@ export interface ProductOption {
 
   created_at: string
   updated_at: string
+  deleted_at?: string | null
 
   // Joined data
   settings?: ProductOptionSetting[]

@@ -46,7 +46,8 @@ async function fetchRepresentativeOptions(
     .from("product_options")
     .select("id, product_id, name, price, discount_rate")
     .in("product_id", productIds)
-    .eq("is_representative", true);
+    .eq("is_representative", true)
+    .is("deleted_at", null);
 
   if (error) {
     return new Map();
