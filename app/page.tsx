@@ -212,21 +212,20 @@ export default async function Home() {
       <MainBanner banners={mainBanners} />
 
       {/* 상품 배너 */}
-      <ProductBanner banners={productBanners} />
+      {/* <ProductBanner banners={productBanners} /> */}
 
       {/* BEST ITEM 섹션 */}
       <BestItemSection products={products} />
 
       {/* 브랜드 소개 섹션 */}
-      <BrandIntroSection />
+      {/* <BrandIntroSection /> */}
 
       {/* 인스타그램 섹션 */}
-      {instagramImages.length > 0 && (
+      {/* {instagramImages.length > 0 && (
         <InstagramSection images={instagramImages} />
-      )}
+      )} */}
 
       <div className="h-10" />
-      {/* Footer */}
       <Footer />
     </div>
   );

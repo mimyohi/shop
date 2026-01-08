@@ -89,14 +89,15 @@ export default function Footer() {
                   NAVIGATE
                 </h4>
                 <ul className="space-y-3 text-xs text-gray-500">
-                  <li>
+                  {/** TODO */}
+                  {/* <li>
                     <Link
                       href="/brand"
                       className="hover:text-gray-900 transition"
                     >
                       Brand
                     </Link>
-                  </li>
+                  </li> */}
                   <li>
                     <Link
                       href="/products"
@@ -190,6 +191,8 @@ export default function Footer() {
                 NAVIGATE
               </h4>
               <ul className="space-y-2 text-xs text-gray-500">
+                {/** TODO */}
+                {/*
                 <li>
                   <Link
                     href="/brand"
@@ -198,6 +201,7 @@ export default function Footer() {
                     Brand
                   </Link>
                 </li>
+                */}
                 <li>
                   <Link
                     href="/products"

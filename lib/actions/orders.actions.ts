@@ -88,51 +88,51 @@ export async function createOrderAction(data: CreateOrderData) {
       };
     }
 
-    // 3. 건강 상담 정보 생성 (있는 경우)
-    if (data.health_consultation) {
-      // id, created_at, updated_at 필드 제외 (새 레코드 생성 시 자동 생성됨)
-      const { id: _id, created_at: _createdAt, updated_at: _updatedAt, ...healthConsultationData } = data.health_consultation;
+    // TODO: 건강 상담 정보 생성 (임시 비활성화)
+    // if (data.health_consultation) {
+    //   // id, created_at, updated_at 필드 제외 (새 레코드 생성 시 자동 생성됨)
+    //   const { id: _id, created_at: _createdAt, updated_at: _updatedAt, ...healthConsultationData } = data.health_consultation;
 
-      const { error: consultationError } = await supabase
-        .from("order_health_consultation")
-        .insert({
-          order_id: order.id,
-          ...healthConsultationData,
-        });
+    //   const { error: consultationError } = await supabase
+    //     .from("order_health_consultation")
+    //     .insert({
+    //       order_id: order.id,
+    //       ...healthConsultationData,
+    //     });
 
-      if (consultationError) {
-        console.error("Error creating health consultation:", consultationError);
-        // 롤백: 생성된 주문과 아이템 삭제
-        if (createdOrderId) {
-          await rollbackOrder(supabase, createdOrderId);
-        }
-        return {
-          success: false,
-          error: "Failed to create health consultation",
-        };
-      }
+    //   if (consultationError) {
+    //     console.error("Error creating health consultation:", consultationError);
+    //     // 롤백: 생성된 주문과 아이템 삭제
+    //     if (createdOrderId) {
+    //       await rollbackOrder(supabase, createdOrderId);
+    //     }
+    //     return {
+    //       success: false,
+    //       error: "Failed to create health consultation",
+    //     };
+    //   }
 
-      // 로그인한 사용자라면 user_health_consultations 테이블에도 저장 (다음 주문 시 자동 불러오기용)
-      if (user) {
-        const { error: userConsultationError } = await supabase
-          .from("user_health_consultations")
-          .upsert(
-            {
-              user_id: user.id,
-              ...data.health_consultation,
-              updated_at: new Date().toISOString(),
-            },
-            {
-              onConflict: "user_id",
-            }
-          );
+    //   // 로그인한 사용자라면 user_health_consultations 테이블에도 저장 (다음 주문 시 자동 불러오기용)
+    //   if (user) {
+    //     const { error: userConsultationError } = await supabase
+    //       .from("user_health_consultations")
+    //       .upsert(
+    //         {
+    //           user_id: user.id,
+    //           ...data.health_consultation,
+    //           updated_at: new Date().toISOString(),
+    //         },
+    //         {
+    //           onConflict: "user_id",
+    //         }
+    //       );
 
-        if (userConsultationError) {
-          // 사용자 문진 저장 실패는 주문에 영향을 주지 않음 (로그만 남김)
-          console.error("Error saving user health consultation:", userConsultationError);
-        }
-      }
-    }
+    //     if (userConsultationError) {
+    //       // 사용자 문진 저장 실패는 주문에 영향을 주지 않음 (로그만 남김)
+    //       console.error("Error saving user health consultation:", userConsultationError);
+    //     }
+    //   }
+    // }
 
     // 4. 전체 주문 정보 조회
     const { data: fullOrder, error: fetchError } = await supabase
@@ -143,8 +143,7 @@ export async function createOrderAction(data: CreateOrderData) {
         order_items (
           *,
           product:products(*)
-        ),
-        order_health_consultation (*)
+        )
       `
       )
       .eq("id", order.id)
@@ -188,19 +187,19 @@ export async function createOrderAction(data: CreateOrderData) {
  */
 async function rollbackOrder(supabase: Awaited<ReturnType<typeof createClient>>, orderId: string) {
   try {
-    // 1. order_health_consultation 삭제
-    await supabase
-      .from("order_health_consultation")
-      .delete()
-      .eq("order_id", orderId);
+    // TODO: order_health_consultation 삭제 (임시 비활성화)
+    // await supabase
+    //   .from("order_health_consultation")
+    //   .delete()
+    //   .eq("order_id", orderId);
 
-    // 2. order_items 삭제
+    // 1. order_items 삭제
     await supabase
       .from("order_items")
       .delete()
       .eq("order_id", orderId);
 
-    // 3. 주문 삭제
+    // 2. 주문 삭제
     await supabase
       .from("orders")
       .delete()
@@ -261,19 +260,19 @@ export async function deleteOrderByOrderIdAction(order_id: string) {
       };
     }
 
-    // 2. order_health_consultation 삭제
-    await supabase
-      .from("order_health_consultation")
-      .delete()
-      .eq("order_id", order.id);
+    // TODO: order_health_consultation 삭제 (임시 비활성화)
+    // await supabase
+    //   .from("order_health_consultation")
+    //   .delete()
+    //   .eq("order_id", order.id);
 
-    // 3. order_items 삭제
+    // 2. order_items 삭제
     await supabase
       .from("order_items")
       .delete()
       .eq("order_id", order.id);
 
-    // 4. 주문 삭제
+    // 3. 주문 삭제
     const { error: deleteError } = await supabase
       .from("orders")
       .delete()
@@ -351,13 +350,13 @@ export async function cancelOrderAction(order_id: string) {
       };
     }
 
-    // 2. order_health_consultation 삭제
-    await supabase
-      .from("order_health_consultation")
-      .delete()
-      .eq("order_id", order.id);
+    // TODO: order_health_consultation 삭제 (임시 비활성화)
+    // await supabase
+    //   .from("order_health_consultation")
+    //   .delete()
+    //   .eq("order_id", order.id);
 
-    // 3. order_items 삭제
+    // 2. order_items 삭제
     const { error: itemsError } = await supabase
       .from("order_items")
       .delete()

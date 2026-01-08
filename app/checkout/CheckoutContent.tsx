@@ -8,17 +8,17 @@ import { useQuery } from "@tanstack/react-query";
 import type { User } from "@supabase/supabase-js";
 import type {
   Coupon,
-  HealthConsultationDetails,
+  // HealthConsultationDetails, // TODO: 임시 비활성화
   Product,
   UserPoints,
   UserCoupon,
   ShippingAddress,
   UserProfile,
-  UserHealthConsultation,
+  // UserHealthConsultation, // TODO: 임시 비활성화
   PaymentMethod,
 } from "@/models";
 import { productsQueries } from "@/queries/products.queries";
-import HealthConsultationForm from "@/components/HealthConsultationForm";
+// import HealthConsultationForm from "@/components/HealthConsultationForm"; // TODO: 임시 비활성화
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import AddressSearch from "@/components/AddressSearch";
@@ -63,7 +63,9 @@ interface CheckoutContentProps {
   initialAvailableCoupons: UserCoupon[];
   initialAddresses: ShippingAddress[];
   initialProfile: UserProfile | null;
-  initialHealthConsultation: UserHealthConsultation | null;
+  // TODO: 임시 비활성화
+  // initialHealthConsultation: UserHealthConsultation | null;
+  initialHealthConsultation: any | null;
 }
 
 export default function CheckoutContent({
@@ -115,10 +117,10 @@ export default function CheckoutContent({
   const [selectedCoupon, setSelectedCoupon] = useState<string>("");
   const [showCouponModal, setShowCouponModal] = useState(false);
 
-  // 건강 상담 정보
-  const [healthConsultation, setHealthConsultation] =
-    useState<Partial<HealthConsultationDetails> | null>(null);
-  const [showHealthForm, setShowHealthForm] = useState(true);
+  // TODO: 건강 상담 정보 (임시 비활성화)
+  // const [healthConsultation, setHealthConsultation] =
+  //   useState<Partial<HealthConsultationDetails> | null>(null);
+  // const [showHealthForm, setShowHealthForm] = useState(true);
 
   // 결제 방법 선택
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CARD");
@@ -208,12 +210,13 @@ export default function CheckoutContent({
     }
   }, [profile]);
 
-  useEffect(() => {
-    if (savedHealthConsultation && !healthConsultation) {
-      setHealthConsultation({ ...savedHealthConsultation });
-      setShowHealthForm(false);
-    }
-  }, [savedHealthConsultation, healthConsultation]);
+  // TODO: 문진 정보 자동 로드 (임시 비활성화)
+  // useEffect(() => {
+  //   if (savedHealthConsultation && !healthConsultation) {
+  //     setHealthConsultation({ ...savedHealthConsultation });
+  //     setShowHealthForm(false);
+  //   }
+  // }, [savedHealthConsultation, healthConsultation]);
 
   // 쿠폰 변경 시 포인트 자동 재조정
   useEffect(() => {
@@ -369,15 +372,16 @@ export default function CheckoutContent({
       return;
     }
 
-    if (!healthConsultation) {
-      const confirmProceed = confirm(
-        "문진 정보를 입력하지 않으셨습니다. 그대로 진행하시겠습니까?"
-      );
-      if (!confirmProceed) {
-        setShowHealthForm(true);
-        return;
-      }
-    }
+    // TODO: 문진 정보 확인 (임시 비활성화)
+    // if (!healthConsultation) {
+    //   const confirmProceed = confirm(
+    //     "문진 정보를 입력하지 않으셨습니다. 그대로 진행하시겠습니까?"
+    //   );
+    //   if (!confirmProceed) {
+    //     setShowHealthForm(true);
+    //     return;
+    //   }
+    // }
 
     const orderId = `ORDER_${Date.now()}`;
     const orderName = item.option?.name || product?.name || "상품";
@@ -445,12 +449,13 @@ export default function CheckoutContent({
             selected_addons: item.selected_addons,
           },
         ],
-        health_consultation: healthConsultation
-          ? {
-              user_id: user?.id,
-              ...healthConsultation,
-            }
-          : undefined,
+        // TODO: 문진 정보 전달 (임시 비활성화)
+        // health_consultation: healthConsultation
+        //   ? {
+        //       user_id: user?.id,
+        //       ...healthConsultation,
+        //     }
+        //   : undefined,
       });
 
       // 결제 방법에 따라 payMethod 설정
@@ -1284,8 +1289,8 @@ export default function CheckoutContent({
             </div>
           </section>
 
-          {/* 문진 정보 */}
-          <section>
+          {/* TODO: 문진 정보 섹션 (임시 비활성화) */}
+          {/* <section>
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-medium text-gray-900 flex items-center gap-2">
                 문진 정보
@@ -1333,7 +1338,7 @@ export default function CheckoutContent({
                 </div>
               )}
             </div>
-          </section>
+          </section> */}
 
           {/* 결제 버튼 */}
           <div className="pt-4 space-y-3">
