@@ -47,23 +47,12 @@ function getVisitTypeLabel(visitType: string): string {
   }
 }
 
-// 방문 타입에 따른 consultation_status 결정
-// 초진: 차팅 → 상담 순서 필요
-// 재진(상담필요): 차팅 재등록 없이 바로 상담으로 이동 가능
-// 재진(상담불필요): 상담 없이 바로 배송 단계로 넘길 수 있음
+// 방문 타입에 관계없이 모든 주문은 접수 필요 상태로 시작
 function getConsultationStatusByVisitType(
   visitType: string | null | undefined
 ): "chatting_required" | "consultation_required" | "consultation_completed" {
-  switch (visitType) {
-    case "first":
-      return "chatting_required"; // 초진: 차팅 필요
-    case "revisit_with_consult":
-      return "consultation_required"; // 재진(상담필요): 바로 상담으로
-    case "revisit_no_consult":
-      return "consultation_completed"; // 재진(상담불필요): 바로 배송 가능
-    default:
-      return "chatting_required"; // 기본값: 차팅 필요
-  }
+  // 모든 경우에 접수 필요 상태로 통일
+  return "chatting_required";
 }
 
 const storeId = NEXT_PUBLIC_PORTONE_STORE_ID;
