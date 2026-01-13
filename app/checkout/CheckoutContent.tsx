@@ -643,6 +643,7 @@ export default function CheckoutContent({
                       </div>
                     </div>
                   )}
+                  {/* 초진/재진 표시 숨김 처리
                   {item.visit_type && (
                     <div className="flex items-center gap-2 mt-2">
                       <span className="inline-block text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">
@@ -650,6 +651,7 @@ export default function CheckoutContent({
                       </span>
                     </div>
                   )}
+                  */}
 
                   {item.selected_settings &&
                     item.selected_settings.length > 0 && (

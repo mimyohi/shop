@@ -347,15 +347,11 @@ export default function ProductPurchaseSection({
           <div className="flex items-center justify-between py-3">
             <div className="flex-1">
               <p className="text-sm text-gray-900">{product.name}</p>
-              <p className="text-xs text-gray-500 mt-0.5">
-                {getVisitTypeLabel(selectedVisitType)}
-                {selectedSettings.length > 0 && (
-                  <span>
-                    {" "}
-                    / {selectedSettings.map((s) => s.type_name).join(", ")}
-                  </span>
-                )}
-              </p>
+              {selectedSettings.length > 0 && (
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {selectedSettings.map((s) => s.type_name).join(", ")}
+                </p>
+              )}
             </div>
             <div className="flex items-center gap-4">
               {/* 수량 조절 */}

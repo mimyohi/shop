@@ -35,8 +35,9 @@ export default function ProductNewOptionsSelector({
   };
 
   // 초진/재진 먼저 선택 → 옵션 선택 → 설정 선택
+  // 기본값: 초진으로 자동 설정
   const [selectedVisitType, setSelectedVisitType] = useState<VisitType | null>(
-    null
+    "first"
   );
   const [selectedOption, setSelectedOption] =
     useState<ProductOptionWithSettings | null>(null);
@@ -49,10 +50,10 @@ export default function ProductNewOptionsSelector({
     return (option?.settings?.length ?? 0) > 0;
   };
 
-  // resetTrigger가 변경되면 선택 초기화
+  // resetTrigger가 변경되면 선택 초기화 (초진으로 리셋)
   useEffect(() => {
     if (resetTrigger !== undefined) {
-      setSelectedVisitType(null);
+      setSelectedVisitType("first");
       setSelectedOption(null);
       setSelectedSettings({});
     }
@@ -140,8 +141,8 @@ export default function ProductNewOptionsSelector({
 
   return (
     <div className="space-y-3 border-t border-gray-200 pt-6">
-      {/* 1. 초진/재진 선택 (드롭다운) - 항상 먼저 표시 */}
-      <div className="relative">
+      {/* 1. 초진/재진 선택 (드롭다운) - 숨김 처리 (기본값: 초진) */}
+      {/* <div className="relative">
         <select
           value={selectedVisitType || ""}
           onChange={handleVisitTypeChange}
@@ -165,7 +166,7 @@ export default function ProductNewOptionsSelector({
             d="M19 9l-7 7-7-7"
           />
         </svg>
-      </div>
+      </div> */}
 
       {/* 2. 옵션 선택 (드롭다운) - 초진/재진 선택 후 표시 */}
       {selectedVisitType && (
