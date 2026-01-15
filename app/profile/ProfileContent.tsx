@@ -101,9 +101,7 @@ export default function ProfileContent({
   // const [savedHealthConsultation, setSavedHealthConsultation] = useState<
   //   (HealthConsultationDetails & { updated_at?: string }) | null
   // >(initialData.healthConsultation);
-  const [savedHealthConsultation, setSavedHealthConsultation] = useState<any>(
-    initialData.healthConsultation
-  );
+  const [savedHealthConsultation, setSavedHealthConsultation] = useState<any>(initialData.healthConsultation);
   const [myCoupons, setMyCoupons] = useState(initialData.coupons);
   const [pointsHistory] = useState(initialData.pointsHistory);
 
@@ -639,8 +637,7 @@ export default function ProfileContent({
                                   {order.order_id}
                                 </p>
                               </div>
-                              {/** TODO */}
-                              {/* <div className="flex flex-col items-end gap-1">
+                              <div className="flex flex-col items-end gap-1">
                                 {isPaymentPending ? (
                                   <span className="text-sm text-black-600 font-medium">
                                     입금 대기
@@ -650,7 +647,7 @@ export default function ProfileContent({
                                     {consultationStatusInfo.label}
                                   </span>
                                 ) : null}
-                              </div> */}
+                              </div>
                             </div>
                             <div className="border-t border-gray-100 pt-3">
                               {order.order_items.slice(0, 2).map((item) => (
@@ -1130,7 +1127,9 @@ export default function ProfileContent({
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">회원탈퇴</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              회원탈퇴
+            </h3>
             <div className="space-y-4">
               <div className="p-4 bg-red-50 rounded text-sm text-red-700">
                 <p className="font-medium mb-2">주의사항</p>

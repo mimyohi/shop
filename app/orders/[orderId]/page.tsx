@@ -278,10 +278,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
               <div>
                 <span className="text-gray-500">결제 방법</span>
                 <p className="font-semibold text-gray-900">
-                  {getPaymentMethodLabel(
-                    order.payment_method,
-                    order.total_amount
-                  )}
+                  {getPaymentMethodLabel(order.payment_method, order.total_amount)}
                 </p>
               </div>
               <div>
@@ -294,15 +291,15 @@ export default async function OrderDetailPage({ params }: PageProps) {
                   {getPaymentStatusLabel(order.status).label}
                 </p>
               </div>
-              {/* 입금 대기 상태가 아닐 때만 주문 상태 표시 TODO*/}
-              {/* {order.status !== "payment_pending" && (
+              {/* 입금 대기 상태가 아닐 때만 주문 상태 표시 */}
+              {order.status !== "payment_pending" && (
                 <div>
                   <span className="text-gray-500">주문 상태</span>
                   <p className="font-semibold text-gray-900">
                     {consultationStatusInfo.label}
                   </p>
                 </div>
-              )} */}
+              )}
             </div>
           </div>
 
@@ -448,13 +445,11 @@ export default async function OrderDetailPage({ params }: PageProps) {
                               {item.option_name && (
                                 <p className="text-sm text-gray-600">
                                   옵션: {item.option_name}
-                                  {/* 초진/재진 표시 숨김 처리
                                   {item.visit_type && (
                                     <span className="ml-2 inline-block px-2 py-0.5 bg-black-100 text-black-700 rounded text-xs">
                                       {getVisitTypeLabel(item.visit_type)}
                                     </span>
                                   )}
-                                  */}
                                 </p>
                               )}
                               {item.selected_option_settings &&
