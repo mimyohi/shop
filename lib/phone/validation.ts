@@ -204,37 +204,3 @@ export function validateAndFormatPhone(phone: string): {
     korean,
   };
 }
-
-/**
- * 전화번호를 화면 표시용 한국 형식으로 변환 (010-1234-5678)
- * E.164 형식, 숫자만 있는 형식, 이미 포맷된 형식 등 모두 처리
- * 변환 실패 시 원본 반환
- * @param phone 전화번호 (어떤 형식이든)
- * @returns 한국 형식 전화번호 (010-1234-5678) 또는 원본
- */
-export function formatPhoneDisplay(phone: string | null | undefined): string {
-  if (!phone) return '';
-
-  // 이미 010-XXXX-XXXX 형식인 경우 그대로 반환
-  if (/^010-\d{4}-\d{4}$/.test(phone)) {
-    return phone;
-  }
-
-  // E.164 형식인 경우 (+82...)
-  if (phone.startsWith('+')) {
-    const korean = toKoreanFormat(phone);
-    if (korean) return korean;
-  }
-
-  // 숫자만 있는 경우 (01012345678)
-  const digits = phone.replace(/\D/g, '');
-  if (digits.length === 11 && digits.startsWith('010')) {
-    return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
-  }
-  if (digits.length === 10 && digits.startsWith('010')) {
-    return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
-  }
-
-  // 변환 실패 시 원본 반환
-  return phone;
-}

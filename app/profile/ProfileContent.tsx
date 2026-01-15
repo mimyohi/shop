@@ -11,7 +11,6 @@ import {
   useDeleteAddress,
   useSetDefaultAddress,
 } from "@/queries/addresses.queries";
-import { formatPhoneDisplay } from "@/lib/phone/validation";
 import { useUpdateUserProfile } from "@/queries/user-profiles.queries";
 import { useUpsertUserHealthConsultation } from "@/queries/user-health-consultations.queries";
 import { useRegisterCouponByCode } from "@/queries/coupons.queries";
@@ -515,7 +514,7 @@ export default function ProfileContent({
                     <div>
                       <p className="text-sm text-gray-500 mb-1">전화번호</p>
                       <p className="text-gray-900">
-                        {profile?.phone ? formatPhoneDisplay(profile.phone) : "미등록"}
+                        {profile?.phone || "미등록"}
                       </p>
                     </div>
                   </div>
@@ -1062,7 +1061,7 @@ export default function ProfileContent({
                             {address.address} {address.address_detail}
                           </p>
                           <p className="text-xs text-gray-400 mt-1">
-                            {address.recipient} · {formatPhoneDisplay(address.phone)}
+                            {address.recipient} · {address.phone}
                           </p>
                         </div>
                       ))}
