@@ -4,6 +4,7 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabaseServer";
 import { fetchOrderByOrderIdServer } from "@/lib/server-data";
+import { formatPhoneDisplay } from "@/lib/phone/validation";
 import BackButton from "./BackButton";
 
 // 방문 타입 한글 변환
@@ -266,7 +267,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
               <div>
                 <span className="text-gray-500">연락처</span>
                 <p className="font-semibold text-gray-900">
-                  {order.user_phone || "-"}
+                  {order.user_phone ? formatPhoneDisplay(order.user_phone) : "-"}
                 </p>
               </div>
               <div>
@@ -394,7 +395,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
                 <div>
                   <span className="text-gray-500">연락처</span>
                   <p className="font-semibold text-gray-900">
-                    {order.shipping_phone}
+                    {formatPhoneDisplay(order.shipping_phone)}
                   </p>
                 </div>
                 <div className="md:col-span-2">
@@ -684,7 +685,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
                   </div>
                   <div>
                     <span className="text-gray-500">연락처</span>
-                    <p className="font-semibold">{consultation.phone || "-"}</p>
+                    <p className="font-semibold">{consultation.phone ? formatPhoneDisplay(consultation.phone) : "-"}</p>
                   </div>
                 </div>
               </div>

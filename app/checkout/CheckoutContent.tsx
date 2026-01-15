@@ -27,6 +27,7 @@ import { useCreateOrder } from "@/queries/orders.queries";
 import { deleteOrderByOrderIdAction } from "@/lib/actions/orders.actions";
 import { useCreateAddress } from "@/queries/addresses.queries";
 import { useShippingFee } from "@/hooks/useShippingFee";
+import { formatPhoneDisplay } from "@/lib/phone/validation";
 import {
   NEXT_PUBLIC_PORTONE_STORE_ID,
   NEXT_PUBLIC_PORTONE_CHANNEL_KEY_CARD,
@@ -393,7 +394,7 @@ export default function CheckoutContent({
           shippingInfo = {
             shipping_address_id: selectedAddress.id,
             shipping_name: selectedAddress.recipient,
-            shipping_phone: selectedAddress.phone,
+            shipping_phone: formatPhoneDisplay(selectedAddress.phone),
             shipping_postal_code: selectedAddress.postal_code,
             shipping_address: selectedAddress.address,
             shipping_address_detail: selectedAddress.address_detail,
@@ -408,7 +409,7 @@ export default function CheckoutContent({
       await createOrderMutation.mutateAsync({
         user_email: customerEmail,
         user_name: customerName,
-        user_phone: customerPhone,
+        user_phone: formatPhoneDisplay(customerPhone),
         total_amount: finalAmount,
         order_id: orderId,
         consultation_status: getConsultationStatusByVisitType(item.visit_type),
@@ -1025,7 +1026,7 @@ export default function CheckoutContent({
                         )}
                       </div>
                       <p className="text-sm text-gray-600">
-                        {address.recipient} · {address.phone}
+                        {address.recipient} · {formatPhoneDisplay(address.phone)}
                       </p>
                       <p className="text-sm text-gray-500 mt-0.5">
                         {address.postal_code && `[${address.postal_code}] `}

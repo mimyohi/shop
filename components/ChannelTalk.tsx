@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { NEXT_PUBLIC_CHANNEL_TALK_PLUGIN_KEY } from "@/env";
 import { useOptionalAuthContext } from "@/providers/AuthProvider";
 import { supabaseAuth } from "@/lib/supabaseAuth";
+import { toE164 } from "@/lib/phone/validation";
 
 interface ChannelTalkProps {
   pluginKey?: string;
@@ -115,7 +116,7 @@ export default function ChannelTalk({ pluginKey }: ChannelTalkProps) {
     // 사용자 정보 설정
     const userProfile = user && profile ? {
       name: profile.display_name || "",
-      mobileNumber: profile.phone || "",
+      mobileNumber: toE164(profile.phone || '') || undefined,
       purchasedProducts: purchasedProducts,
       lastAccessAt: lastAccessAt,
       lastOrderAt: lastOrderAt || null,
