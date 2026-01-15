@@ -31,6 +31,7 @@ import {
   NEXT_PUBLIC_PORTONE_STORE_ID,
   NEXT_PUBLIC_PORTONE_CHANNEL_KEY_CARD,
   NEXT_PUBLIC_PORTONE_CHANNEL_KEY_TRANSFER,
+  NEXT_PUBLIC_PORTONE_CHANNEL_KEY_VIRTUAL_ACCOUNT,
 } from "@/env";
 
 // 방문 타입 한글 변환
@@ -263,10 +264,7 @@ export default function CheckoutContent({
     const couponDiscount = calculateDiscount();
     const pointDiscount = usePoints;
 
-    return Math.max(
-      0,
-      discountableAmount - couponDiscount - pointDiscount
-    );
+    return Math.max(0, discountableAmount - couponDiscount - pointDiscount);
   };
 
   const handlePointsChange = (value: number) => {
@@ -470,8 +468,9 @@ export default function CheckoutContent({
         switch (paymentMethod) {
           case "TRANSFER":
             return NEXT_PUBLIC_PORTONE_CHANNEL_KEY_TRANSFER;
-          case "CARD":
           case "VIRTUAL_ACCOUNT":
+            return NEXT_PUBLIC_PORTONE_CHANNEL_KEY_VIRTUAL_ACCOUNT;
+          case "CARD":
           default:
             return NEXT_PUBLIC_PORTONE_CHANNEL_KEY_CARD;
         }
@@ -509,6 +508,7 @@ export default function CheckoutContent({
           accountExpiry: {
             validHours: 168, // 7일 = 168시간
           },
+          cashReceiptType: "ANONYMOUS", // 현금영수증 UI 숨김 (별도 발급)
         };
       }
 
@@ -891,7 +891,10 @@ export default function CheckoutContent({
                         handlePointsChange(
                           Math.min(
                             userPoints?.points || 0,
-                            Math.max(0, discountableAmount - calculateDiscount())
+                            Math.max(
+                              0,
+                              discountableAmount - calculateDiscount()
+                            )
                           )
                         )
                       }
@@ -1250,7 +1253,7 @@ export default function CheckoutContent({
                 >
                   <span className="text-sm font-medium">계좌이체</span>
                 </button>
-                {/* <button
+                <button
                   type="button"
                   onClick={() => setPaymentMethod("VIRTUAL_ACCOUNT")}
                   className={`flex items-center justify-center gap-2 p-4 border rounded transition ${
@@ -1260,7 +1263,7 @@ export default function CheckoutContent({
                   }`}
                 >
                   <span className="text-sm font-medium">가상계좌</span>
-                </button> */}
+                </button>
               </div>
 
               {paymentMethod === "TRANSFER" && (
