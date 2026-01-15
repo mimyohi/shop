@@ -44,9 +44,12 @@ export async function POST(request: NextRequest) {
     const webhookData = JSON.parse(body);
     console.log("웹훅 데이터 수신:", webhookData);
 
+    // 포트원 웹훅 형식 호환: type 또는 status 필드 사용
+    const eventType = webhookData.type || webhookData.status;
+    const paymentId = webhookData.data?.paymentId || webhookData.payment_id;
+
     // 결제 완료 이벤트 처리 (가상계좌 입금 완료)
-    if (webhookData.type === "Transaction.Paid") {
-      const paymentId = webhookData.data?.paymentId;
+    if (eventType === "Transaction.Paid" || eventType === "Paid") {
 
       if (!paymentId) {
         console.error("paymentId가 없습니다.");
@@ -250,10 +253,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 가상계좌 발급 취소/만료 이벤트 처리
-    if (webhookData.type === "Transaction.VirtualAccountIssued") {
+    // 가상계좌 발급 이벤트 처리
+    if (eventType === "Transaction.VirtualAccountIssued" || eventType === "VirtualAccountIssued") {
       // 이미 verify에서 처리하므로 여기서는 로깅만
-      console.log("가상계좌 발급 이벤트:", webhookData.data?.paymentId);
+      console.log("가상계좌 발급 이벤트:", paymentId);
       return NextResponse.json({
         success: true,
         message: "가상계좌 발급 이벤트 처리됨.",
@@ -261,8 +264,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 결제 취소/환불 이벤트 처리
-    if (webhookData.type === "Transaction.Cancelled" || webhookData.type === "Transaction.PartialCancelled") {
-      const paymentId = webhookData.data?.paymentId;
+    if (eventType === "Transaction.Cancelled" || eventType === "Cancelled" ||
+        eventType === "Transaction.PartialCancelled" || eventType === "PartialCancelled") {
       console.log("결제 취소/환불 이벤트:", paymentId);
 
       if (paymentId) {
@@ -283,8 +286,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 가상계좌 입금 기한 만료 이벤트 처리 (결제 실패)
-    if (webhookData.type === "Transaction.PaymentFailed") {
-      const paymentId = webhookData.data?.paymentId;
+    if (eventType === "Transaction.PaymentFailed" || eventType === "PaymentFailed") {
       console.log("결제 실패 이벤트 (가상계좌 만료 포함):", paymentId);
 
       if (paymentId) {
@@ -318,7 +320,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 기타 이벤트
-    console.log("처리되지 않은 웹훅 타입:", webhookData.type);
+    console.log("처리되지 않은 웹훅 타입:", eventType);
     return NextResponse.json({
       success: true,
       message: "이벤트가 처리되지 않았습니다.",
