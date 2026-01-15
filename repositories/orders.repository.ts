@@ -1,5 +1,6 @@
 import { supabaseAuth } from "@/lib/supabaseAuth";
 import { Order, OrderItem, Product, OrderHealthConsultation, PaymentMethod } from "@/models";
+import { checkAndExpireVirtualAccount, checkAndExpireVirtualAccounts } from "@/lib/expire-virtual-account";
 
 export interface OrderWithItems extends Order {
   order_items: (OrderItem & {
@@ -152,6 +153,9 @@ export const ordersRepository = {
       return null;
     }
 
+    // 가상계좌 만료 체크 (Lazy Evaluation)
+    const checkedOrder = await checkAndExpireVirtualAccount(order);
+
     // order_items 조회 (product 포함)
     const { data: orderItems } = await supabaseAuth
       .from("order_items")
@@ -161,16 +165,16 @@ export const ordersRepository = {
         product:products(*)
       `
       )
-      .eq("order_id", order.id);
+      .eq("order_id", checkedOrder.id);
 
     // order_health_consultation 조회
     const { data: consultations } = await supabaseAuth
       .from("order_health_consultation")
       .select("*")
-      .eq("order_id", order.id);
+      .eq("order_id", checkedOrder.id);
 
     return {
-      ...order,
+      ...checkedOrder,
       order_items: orderItems || [],
       order_health_consultation: consultations?.[0]!,
     } as OrderWithItems;
@@ -190,6 +194,9 @@ export const ordersRepository = {
       return null;
     }
 
+    // 가상계좌 만료 체크 (Lazy Evaluation)
+    const checkedOrder = await checkAndExpireVirtualAccount(order);
+
     // order_items 조회 (product 포함)
     const { data: orderItems } = await supabaseAuth
       .from("order_items")
@@ -199,16 +206,16 @@ export const ordersRepository = {
         product:products(*)
       `
       )
-      .eq("order_id", order.id);
+      .eq("order_id", checkedOrder.id);
 
     // order_health_consultation 조회
     const { data: consultations } = await supabaseAuth
       .from("order_health_consultation")
       .select("*")
-      .eq("order_id", order.id);
+      .eq("order_id", checkedOrder.id);
 
     return {
-      ...order,
+      ...checkedOrder,
       order_items: orderItems || [],
       order_health_consultation: consultations?.[0]!,
     } as OrderWithItems;
@@ -248,9 +255,12 @@ export const ordersRepository = {
       return { orders: [], totalCount: 0 };
     }
 
+    // 가상계좌 만료 체크 (Lazy Evaluation - 일괄 처리)
+    const checkedOrders = await checkAndExpireVirtualAccounts(orders);
+
     // 각 주문에 대해 order_items와 consultations 조회
     const ordersWithItems = await Promise.all(
-      orders.map(async (order) => {
+      checkedOrders.map(async (order) => {
         const { data: orderItems } = await supabaseAuth
           .from("order_items")
           .select(

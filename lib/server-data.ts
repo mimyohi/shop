@@ -3,6 +3,7 @@ import type { ProductFilters, ProductListResponse } from "@/repositories/product
 import type { OrderWithItems } from "@/repositories/orders.repository";
 import type { ProductOptionWithSettings } from "@/repositories/product-options.repository";
 import type { UserPoints, PointHistory, UserCoupon, ShippingAddress, UserProfile, UserHealthConsultation, ProductAddon, Product, RepresentativeOption } from "@/models";
+import { checkAndExpireVirtualAccount } from "@/lib/expire-virtual-account";
 
 /**
  * 서버 사이드 전용 데이터 패칭 함수들
@@ -159,6 +160,9 @@ export async function fetchOrderByOrderIdServer(order_id: string): Promise<Order
     return null;
   }
 
+  // 가상계좌 만료 체크 (Lazy Evaluation)
+  const checkedOrder = await checkAndExpireVirtualAccount(order, supabase);
+
   // order_items 조회 (product 포함)
   const { data: orderItems } = await supabase
     .from("order_items")
@@ -168,16 +172,16 @@ export async function fetchOrderByOrderIdServer(order_id: string): Promise<Order
       product:products(*)
     `
     )
-    .eq("order_id", order.id);
+    .eq("order_id", checkedOrder.id);
 
   // order_health_consultation 조회
   const { data: consultations } = await supabase
     .from("order_health_consultation")
     .select("*")
-    .eq("order_id", order.id);
+    .eq("order_id", checkedOrder.id);
 
   return {
-    ...order,
+    ...checkedOrder,
     order_items: orderItems || [],
     order_health_consultation: consultations?.[0]!,
   } as OrderWithItems;
