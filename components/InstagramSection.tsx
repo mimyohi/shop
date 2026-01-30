@@ -37,7 +37,7 @@ export default function InstagramSection({
         {/* 헤더 */}
         <div className="text-center mb-10">
           <Link
-            href={`https://instagram.com/${instagramHandle}`}
+            href={`https://www.instagram.com/${instagramHandle}/`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-xl md:text-2xl font-light text-[#75C7C7] hover:text-[#75C7C7] transition-colors"
@@ -66,7 +66,7 @@ export default function InstagramSection({
               <Link
                 key={`${image.id}-${index}`}
                 href={
-                  image.link_url || `https://instagram.com/${instagramHandle}`
+                  image.link_url || `https://www.instagram.com/${instagramHandle}/`
                 }
                 target="_blank"
                 rel="noopener noreferrer"

@@ -116,7 +116,7 @@ export default function Footer() {
                 <ul className="space-y-3 text-xs text-gray-500">
                   <li>
                     <a
-                      href="https://instagram.com/mimyohi"
+                      href="https://www.instagram.com/mimyohi.official/"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="hover:text-gray-900 transition flex items-center gap-1"
@@ -217,7 +217,7 @@ export default function Footer() {
               <ul className="space-y-2 text-xs text-gray-500">
                 <li>
                   <a
-                    href="https://instagram.com/mimyohi"
+                    href="https://www.instagram.com/mimyohi.official/"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="hover:text-gray-900 transition"
