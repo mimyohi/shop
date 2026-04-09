@@ -26,6 +26,7 @@ export default function ChannelTalk({ pluginKey, memberHash: initialMemberHash }
   const [lastAccessAt, setLastAccessAt] = useState<string>("");
   const [memberHash, setMemberHash] = useState<string | null>(initialMemberHash ?? null);
   const [memberHashLoading, setMemberHashLoading] = useState(false);
+  const [orderLoading, setOrderLoading] = useState(false);
   const isBootedRef = useRef(false);
   const isBootingRef = useRef(false);
   const currentUserIdRef = useRef<string | null>(null);
@@ -68,6 +69,7 @@ export default function ChannelTalk({ pluginKey, memberHash: initialMemberHash }
         return;
       }
 
+      setOrderLoading(true);
       try {
         const { data, error } = await supabaseAuth
           .from("orders")
@@ -106,6 +108,8 @@ export default function ChannelTalk({ pluginKey, memberHash: initialMemberHash }
         setPurchasedProducts(Array.from(productNames).join(", "));
       } catch (error) {
         console.error("주문 정보 조회 오류:", error);
+      } finally {
+        setOrderLoading(false);
       }
     }
 
@@ -142,8 +146,8 @@ export default function ChannelTalk({ pluginKey, memberHash: initialMemberHash }
 
     if (!w.ChannelIO) return;
 
-    // memberHash 로딩 중이면 대기 (race condition 방지)
-    if (user?.id && memberHashLoading) return;
+    // memberHash 또는 주문 데이터 로딩 중이면 대기 (race condition 방지)
+    if (user?.id && (memberHashLoading || orderLoading)) return;
 
     const currentUserId = user?.id || "anonymous";
     const userChanged =
@@ -209,7 +213,7 @@ export default function ChannelTalk({ pluginKey, memberHash: initialMemberHash }
         },
       });
     }
-  }, [channelPluginKey, user?.id, user?.email, profile?.display_name, profile?.phone, memberHash, memberHashLoading, purchasedProducts, lastOrderAt, lastAccessAt]);
+  }, [channelPluginKey, user?.id, user?.email, profile?.display_name, profile?.phone, memberHash, memberHashLoading, orderLoading, purchasedProducts, lastOrderAt, lastAccessAt]);
 
   return null;
 }
