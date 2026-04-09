@@ -10,15 +10,35 @@ interface ChannelTalkProps {
   memberHash?: string | null; // 서버에서 생성한 HMAC-SHA256(userId, secret)
 }
 
-export default function ChannelTalk({ pluginKey, memberHash }: ChannelTalkProps) {
+export default function ChannelTalk({ pluginKey, memberHash: initialMemberHash }: ChannelTalkProps) {
   const channelPluginKey = pluginKey || NEXT_PUBLIC_CHANNEL_TALK_PLUGIN_KEY;
   const { user, profile } = useOptionalAuthContext();
   const [purchasedProducts, setPurchasedProducts] = useState<string>("");
   const [lastOrderAt, setLastOrderAt] = useState<string>("");
   const [lastAccessAt, setLastAccessAt] = useState<string>("");
+  const [memberHash, setMemberHash] = useState<string | null>(initialMemberHash ?? null);
   const isBootedRef = useRef(false);
   const isBootingRef = useRef(false);
   const currentUserIdRef = useRef<string | null>(null);
+  const currentMemberHashRef = useRef<string | null>(initialMemberHash ?? null);
+  // 401 에러가 난 hash는 재시도하지 않음
+  const failedMemberHashRef = useRef<string | null>(null);
+
+  // client-side 로그인 시 memberHash 동적 fetch
+  useEffect(() => {
+    if (!user?.id) {
+      setMemberHash(null);
+      return;
+    }
+    if (memberHash) return;
+
+    fetch("/api/channel-talk/member-hash")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.hash) setMemberHash(data.hash);
+      })
+      .catch(() => {});
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 최근 접속시간 업데이트
   useEffect(() => {
@@ -58,14 +78,12 @@ export default function ChannelTalk({ pluginKey, memberHash }: ChannelTalkProps)
           return;
         }
 
-        // 최근 주문시간 설정
         if (data && data.length > 0) {
           setLastOrderAt(data[0].created_at);
         } else {
           setLastOrderAt("");
         }
 
-        // 모든 주문에서 상품명 추출 및 중복 제거
         const productNames = new Set<string>();
         data?.forEach((order: any) => {
           order.order_items?.forEach((item: any) => {
@@ -114,71 +132,94 @@ export default function ChannelTalk({ pluginKey, memberHash }: ChannelTalkProps)
       document.head.appendChild(s);
     }
 
-    // 사용자 정보 설정 (user가 있으면 profile 유무와 관계없이 생성)
-    const userProfile = user ? {
-      name: profile?.display_name || "",
-      mobileNumber: profile?.phone || "",
-      email: user.email || profile?.email || "",
-      purchasedProducts: purchasedProducts,
-      lastAccessAt: lastAccessAt,
-      lastOrderAt: lastOrderAt || null,
-    } : undefined;
-
-    // 채널톡이 준비되지 않았으면 대기
     if (!w.ChannelIO) return;
 
-    // 현재 사용자 ID (로그인 사용자가 있으면 ID, 없으면 "anonymous")
     const currentUserId = user?.id || "anonymous";
+    const userChanged =
+      currentUserIdRef.current !== null && currentUserIdRef.current !== currentUserId;
+    const memberHashChanged = currentMemberHashRef.current !== memberHash;
+    const needsReboot =
+      !isBootedRef.current ||
+      userChanged ||
+      (user?.id && memberHashChanged && !!memberHash && memberHash !== failedMemberHashRef.current);
 
-    // 사용자가 변경되었는지 확인
-    const userChanged = currentUserIdRef.current !== currentUserId;
-
-    // 처음 boot하거나 사용자가 변경된 경우
-    if (!isBootedRef.current || userChanged) {
-      const bootSettings: any = {
-        pluginKey: channelPluginKey,
-      };
-
-      // memberHash가 있을 때만 memberId 설정
-      // (Identity Verification이 활성화된 경우 hash 없이 memberId 보내면 401 → 버튼 사라짐)
-      if (user && memberHash) {
-        bootSettings.memberId = user.id;
-        bootSettings.memberHash = memberHash;
+    if (needsReboot) {
+      // 이미 boot된 상태에서 유저/hash가 바뀌면 shutdown 먼저
+      if (isBootedRef.current && (userChanged || memberHashChanged)) {
+        w.ChannelIO("shutdown");
+        isBootedRef.current = false;
+        isBootingRef.current = false;
       }
-      // hash 없이도 profile은 항상 전달 (이름/전화번호/이메일이 상담창에 표시됨)
+
+      const userProfile = user
+        ? {
+            name: profile?.display_name || "",
+            mobileNumber: profile?.phone || "",
+            email: user.email || profile?.email || "",
+            purchasedProducts,
+            lastAccessAt,
+            lastOrderAt: lastOrderAt || null,
+          }
+        : undefined;
+
+      // 이전에 401 실패한 hash는 사용하지 않음
+      const safeHash = memberHash && memberHash !== failedMemberHashRef.current ? memberHash : null;
+
+      const bootSettings: any = { pluginKey: channelPluginKey };
+      if (user && safeHash) {
+        bootSettings.memberId = user.id;
+        bootSettings.memberHash = safeHash;
+      }
       if (user && userProfile) {
         bootSettings.profile = userProfile;
       }
 
-      // boot 호출 전에 상태 업데이트 (재호출 방지)
       isBootedRef.current = true;
       isBootingRef.current = true;
       currentUserIdRef.current = currentUserId;
+      currentMemberHashRef.current = memberHash;
 
       w.ChannelIO("boot", bootSettings, (error: any) => {
         isBootingRef.current = false;
         if (error) {
           console.error("Channel Talk boot error:", error);
-          // 에러 발생 시 상태 초기화
           isBootedRef.current = false;
           currentUserIdRef.current = null;
+
+          // memberId로 boot 실패 시 → 해당 hash 실패로 기록 후 익명으로 재시도
+          if (bootSettings.memberId) {
+            failedMemberHashRef.current = safeHash;
+            const fallbackSettings: any = { pluginKey: channelPluginKey };
+            if (user && userProfile) fallbackSettings.profile = userProfile;
+
+            isBootedRef.current = true;
+            isBootingRef.current = true;
+            currentUserIdRef.current = currentUserId;
+
+            w.ChannelIO("boot", fallbackSettings, (err2: any) => {
+              isBootingRef.current = false;
+              if (!err2) {
+                w.ChannelIO("showChannelButton");
+              }
+            });
+          }
         } else {
-          // boot 완료 후 채널 버튼 표시 보장
           w.ChannelIO("showChannelButton");
         }
       });
-    }
-    // boot 진행 중이 아닐 때만 프로필 업데이트 (boot 중 updateUser 호출 시 버튼이 사라지는 버그 방지)
-    else if (user && userProfile && !isBootingRef.current) {
+    } else if (user && !isBootingRef.current) {
       w.ChannelIO("updateUser", {
-        profile: userProfile,
+        profile: {
+          name: profile?.display_name || "",
+          mobileNumber: profile?.phone || "",
+          email: user.email || profile?.email || "",
+          purchasedProducts,
+          lastAccessAt,
+          lastOrderAt: lastOrderAt || null,
+        },
       });
     }
-
-    return () => {
-      // cleanup은 하지 않음 - 다른 페이지에서도 채널톡 유지
-    };
-  }, [channelPluginKey, user?.id, user?.email, profile?.display_name, profile?.phone, purchasedProducts, lastOrderAt, lastAccessAt]);
+  }, [channelPluginKey, user?.id, user?.email, profile?.display_name, profile?.phone, memberHash, purchasedProducts, lastOrderAt, lastAccessAt]);
 
   return null;
 }
