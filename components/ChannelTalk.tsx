@@ -112,10 +112,11 @@ export default function ChannelTalk({ pluginKey }: ChannelTalkProps) {
       document.head.appendChild(s);
     }
 
-    // 사용자 정보 설정
-    const userProfile = user && profile ? {
-      name: profile.display_name || "",
-      mobileNumber: profile.phone || "",
+    // 사용자 정보 설정 (user가 있으면 profile 유무와 관계없이 생성)
+    const userProfile = user ? {
+      name: profile?.display_name || "",
+      mobileNumber: profile?.phone || "",
+      email: user.email || profile?.email || "",
       purchasedProducts: purchasedProducts,
       lastAccessAt: lastAccessAt,
       lastOrderAt: lastOrderAt || null,
@@ -136,7 +137,8 @@ export default function ChannelTalk({ pluginKey }: ChannelTalkProps) {
         pluginKey: channelPluginKey,
       };
 
-      if (user && userProfile) {
+      // user가 있으면 항상 memberId 설정 (profile 로드 여부와 무관)
+      if (user) {
         bootSettings.memberId = user.id;
         bootSettings.profile = userProfile;
       }
@@ -151,6 +153,9 @@ export default function ChannelTalk({ pluginKey }: ChannelTalkProps) {
           // 에러 발생 시 상태 초기화
           isBootedRef.current = false;
           currentUserIdRef.current = null;
+        } else {
+          // boot 성공 후 버튼이 반드시 표시되도록 보장
+          w.ChannelIO("show");
         }
       });
     }
@@ -164,7 +169,7 @@ export default function ChannelTalk({ pluginKey }: ChannelTalkProps) {
     return () => {
       // cleanup은 하지 않음 - 다른 페이지에서도 채널톡 유지
     };
-  }, [channelPluginKey, user?.id, profile?.display_name, profile?.phone, purchasedProducts, lastOrderAt]);
+  }, [channelPluginKey, user?.id, user?.email, profile?.display_name, profile?.phone, purchasedProducts, lastOrderAt, lastAccessAt]);
 
   return null;
 }

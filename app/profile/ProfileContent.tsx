@@ -668,9 +668,22 @@ export default function ProfileContent({
                                 </p>
                               )}
                               <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-100">
-                                <span className="text-sm font-medium text-gray-900">
-                                  총 {order.total_amount.toLocaleString()}원
-                                </span>
+                                <div>
+                                  <span className="text-sm font-medium text-gray-900">
+                                    총 {order.total_amount.toLocaleString()}원
+                                  </span>
+                                  {order.payment_method && (
+                                    <span className="text-xs text-gray-400 ml-2">
+                                      {order.payment_method === "CARD"
+                                        ? "카드"
+                                        : order.payment_method === "VIRTUAL_ACCOUNT"
+                                        ? "가상계좌"
+                                        : order.payment_method === "TRANSFER"
+                                        ? "계좌이체"
+                                        : order.payment_method}
+                                    </span>
+                                  )}
+                                </div>
                                 <span className="text-xs text-gray-500">
                                   상세 보기 →
                                 </span>
