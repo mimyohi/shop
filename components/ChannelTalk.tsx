@@ -16,6 +16,7 @@ export default function ChannelTalk({ pluginKey }: ChannelTalkProps) {
   const [lastOrderAt, setLastOrderAt] = useState<string>("");
   const [lastAccessAt, setLastAccessAt] = useState<string>("");
   const isBootedRef = useRef(false);
+  const isBootingRef = useRef(false);
   const currentUserIdRef = useRef<string | null>(null);
 
   // 최근 접속시간 업데이트
@@ -145,22 +146,24 @@ export default function ChannelTalk({ pluginKey }: ChannelTalkProps) {
 
       // boot 호출 전에 상태 업데이트 (재호출 방지)
       isBootedRef.current = true;
+      isBootingRef.current = true;
       currentUserIdRef.current = currentUserId;
 
       w.ChannelIO("boot", bootSettings, (error: any) => {
+        isBootingRef.current = false;
         if (error) {
           console.error("Channel Talk boot error:", error);
           // 에러 발생 시 상태 초기화
           isBootedRef.current = false;
           currentUserIdRef.current = null;
         } else {
-          // boot 성공 후 버튼이 반드시 표시되도록 보장
+          // boot 완료 후 버튼 표시 보장
           w.ChannelIO("show");
         }
       });
     }
-    // 이미 boot되어 있고 사용자가 동일하면 프로필만 업데이트
-    else if (user && userProfile) {
+    // boot 진행 중이 아닐 때만 프로필 업데이트 (boot 중 updateUser 호출 시 버튼이 사라지는 버그 방지)
+    else if (user && userProfile && !isBootingRef.current) {
       w.ChannelIO("updateUser", {
         profile: userProfile,
       });
