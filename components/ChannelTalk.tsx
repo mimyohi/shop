@@ -10,6 +10,14 @@ interface ChannelTalkProps {
   memberHash?: string | null;
 }
 
+function formatMobileNumber(phone: string | null | undefined): string {
+  if (!phone) return "";
+  const digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("82")) return `+${digits}`;
+  if (/^0(10|11|16|17|18|19)/.test(digits)) return `+82${digits.substring(1)}`;
+  return phone;
+}
+
 export default function ChannelTalk({ pluginKey, memberHash: initialMemberHash }: ChannelTalkProps) {
   const channelPluginKey = pluginKey || NEXT_PUBLIC_CHANNEL_TALK_PLUGIN_KEY;
   const { user, profile } = useOptionalAuthContext();
@@ -17,6 +25,7 @@ export default function ChannelTalk({ pluginKey, memberHash: initialMemberHash }
   const [lastOrderAt, setLastOrderAt] = useState<string>("");
   const [lastAccessAt, setLastAccessAt] = useState<string>("");
   const [memberHash, setMemberHash] = useState<string | null>(initialMemberHash ?? null);
+  const [memberHashLoading, setMemberHashLoading] = useState(false);
   const isBootedRef = useRef(false);
   const isBootingRef = useRef(false);
   const currentUserIdRef = useRef<string | null>(null);
@@ -26,16 +35,19 @@ export default function ChannelTalk({ pluginKey, memberHash: initialMemberHash }
   useEffect(() => {
     if (!user?.id) {
       setMemberHash(null);
+      setMemberHashLoading(false);
       return;
     }
     if (memberHash) return;
 
+    setMemberHashLoading(true);
     fetch("/api/channel-talk/member-hash")
       .then((res) => res.json())
       .then((data) => {
         if (data.hash) setMemberHash(data.hash);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setMemberHashLoading(false));
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 최근 접속시간 업데이트
@@ -130,6 +142,9 @@ export default function ChannelTalk({ pluginKey, memberHash: initialMemberHash }
 
     if (!w.ChannelIO) return;
 
+    // memberHash 로딩 중이면 대기 (race condition 방지)
+    if (user?.id && memberHashLoading) return;
+
     const currentUserId = user?.id || "anonymous";
     const userChanged =
       currentUserIdRef.current !== null && currentUserIdRef.current !== currentUserId;
@@ -149,7 +164,7 @@ export default function ChannelTalk({ pluginKey, memberHash: initialMemberHash }
       const userProfile = user
         ? {
             name: profile?.display_name || "",
-            mobileNumber: profile?.phone || "",
+            mobileNumber: formatMobileNumber(profile?.phone),
             email: user.email || profile?.email || "",
             purchasedProducts,
             lastAccessAt,
@@ -186,7 +201,7 @@ export default function ChannelTalk({ pluginKey, memberHash: initialMemberHash }
       w.ChannelIO("updateUser", {
         profile: {
           name: profile?.display_name || "",
-          mobileNumber: profile?.phone || "",
+          mobileNumber: formatMobileNumber(profile?.phone),
           email: user.email || profile?.email || "",
           purchasedProducts,
           lastAccessAt,
@@ -194,7 +209,7 @@ export default function ChannelTalk({ pluginKey, memberHash: initialMemberHash }
         },
       });
     }
-  }, [channelPluginKey, user?.id, user?.email, profile?.display_name, profile?.phone, memberHash, purchasedProducts, lastOrderAt, lastAccessAt]);
+  }, [channelPluginKey, user?.id, user?.email, profile?.display_name, profile?.phone, memberHash, memberHashLoading, purchasedProducts, lastOrderAt, lastAccessAt]);
 
   return null;
 }
