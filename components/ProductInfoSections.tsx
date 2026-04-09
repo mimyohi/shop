@@ -56,65 +56,62 @@ export default function ProductInfoSections() {
           <h3 className="text-lg font-semibold text-gray-900 mb-4 tracking-wide">
             EXCHANGE INFO
           </h3>
-          <div className="text-sm text-gray-600 space-y-4 leading-relaxed">
-            <div>
-              <p className="font-medium text-gray-800 mb-2">
-                교환 및 반품이 가능한 경우
-              </p>
-              <p>
-                - 계약내용에 관한 서면을 받은 날부터 7일. 단, 그 서면을 받은
-                때보다 재화등의 공급이 늦게 이루어진 경우에는 재화등을
-                공급받거나 재화등의 공급이 시작된 날부터 7일 이내
-              </p>
-              <p>
-                - 공급받으신 상품 및 용역의 내용이 표시·광고 내용과 다르거나
-                계약내용과 다르게 이행된 때에는 당해 재화 등을 공급받은 날 부터
-                3월이내, 그 사실을 알게 된 날 또는 알 수 있었던 날부터 30일이내
-              </p>
-            </div>
-            <div>
-              <p className="font-medium text-gray-800 mb-2">
-                교환 및 반품이 불가능한 경우
-              </p>
-              <p>
-                - 이용자에게 책임 있는 사유로 재화 등이 멸실 또는 훼손된
-                경우(다만, 재화 등의 내용을 확인하기 위하여 포장 등을 훼손한
-                경우에는 청약철회를 할 수 있습니다)
-              </p>
-              <p>
-                - 이용자의 사용 또는 일부 소비에 의하여 재화 등의 가치가 현저히
-                감소한 경우
-              </p>
-              <p>
-                - 시간의 경과에 의하여 재판매가 곤란할 정도로 재화등의 가치가
-                현저히 감소한 경우
-              </p>
-              <p>- 복제가 가능한 재화등의 포장을 훼손한 경우</p>
-              <p>
-                - 개별 주문 생산되는 재화 등 청약철회시 판매자에게 회복할 수
-                없는 피해가 예상되어 소비자의 사전 동의를 얻은 경우
-              </p>
-              <p>
-                - 디지털 콘텐츠의 제공이 개시된 경우, (다만, 가분적 용역 또는
-                가분적 디지털콘텐츠로 구성된 계약의 경우 제공이 개시되지 아니한
-                부분은 청약철회를 할 수 있습니다.)
-              </p>
-            </div>
-            <p className="text-gray-500 mt-4">
-              ※ 고객님의 마음이 바뀌어 교환, 반품을 하실 경우 상품반송 비용은
-              고객님께서 부담하셔야 합니다.
+          <div className="text-sm text-gray-600 space-y-3 leading-relaxed">
+            <p className="font-medium text-gray-800">의약품(조제 한약 등) 관련 교환 안내</p>
+            <p>
+              ① 한의약품(조제 한약 포함)은 「약사법」 및 관련 규정에 따라 조제 후
+              보관·유통 과정에서 엄격한 안전성 확보가 요구되는 재화입니다. 따라서
+              재화의 미개봉 여부와 관계없이 교환이 불가합니다. 이는 의약품의 품질
+              및 안전성 보장을 위한 법적 의무 조치입니다.{" "}
+              <span className="text-gray-500">
+                *위 특칙은 일반 청약철회 규정보다 우선 적용됩니다.*
+              </span>
+            </p>
+            <p>② 다만, 다음 각 호의 경우에는 예외적으로 교환 또는 재발송이 가능합니다.</p>
+            <p>
+              1. 제품의 파손 또는 오배송 등 &quot;미묘히&quot;의 귀책 사유가 있는 경우
+              <br />
+              → 왕복 배송비는 &quot;미묘히&quot;가 부담합니다.
+            </p>
+            <p>
+              2. 소비자 귀책 사유(주소 오입력·부재 등)로 반송된 재화의 재발송을 요청하는 경우
+              <br />
+              → 왕복 배송비는 &quot;소비자&quot;가 부담합니다.
+            </p>
+            <p className="text-gray-500">
+              *(단, 이는 &quot;교환&quot;이 아닌 &quot;재발송&quot; 절차로 처리되며, 환불 또는
+              교환으로 간주되지 않습니다.)*
             </p>
           </div>
         </div>
 
-        {/* SERVICE INFO */}
+        {/* REFUND INFO */}
         <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-4 tracking-wide">
-            SERVICE INFO
+            REFUND INFO
           </h3>
-          <div className="text-sm text-gray-600 leading-relaxed">
-            <p>고객센터 운영시간: 평일 10:00 ~ 18:00 (점심 12:00 ~ 13:00)</p>
-            <p className="mt-1">토/일/공휴일 휴무</p>
+          <div className="text-sm text-gray-600 space-y-3 leading-relaxed">
+            <p className="font-medium text-gray-800">의약품(조제 한약 등) 환불 안내</p>
+            <p>
+              &quot;미묘히&quot;에서 구매한 한의약품(조제 한약 포함)은 「약사법」 및 의약품
+              안전관리 관련 규정에 따라 출고 후에는 제품 포장 개봉 여부와 관계없이
+              환불(청약철회)이 불가합니다.
+            </p>
+            <p>
+              한의약품은 개인별로 조제되는 의약품으로, 조제 후에는 안전성과 품질
+              보증이 필수적인 재화이기 때문에 해당 기준은 일반 상품의 청약철회
+              규정보다 우선 적용됩니다.
+            </p>
+            <p className="text-gray-500">
+              - 체질에 맞지 않는 경우
+              <br />
+              - 기대한 효과를 느끼지 못한 경우
+              <br />
+              - 불편감이나 부작용이 발생한 경우에도
+            </p>
+            <p>
+              이미 처방·조제·출고된 의약품에 대해서는 환불이 어려운 점 양해 부탁드립니다.
+            </p>
           </div>
         </div>
       </div>

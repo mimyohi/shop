@@ -4,6 +4,7 @@ const nextConfig = {
     removeConsole: true,
   },
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",
