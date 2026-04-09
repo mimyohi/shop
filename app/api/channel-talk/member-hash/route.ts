@@ -16,7 +16,7 @@ export async function GET() {
     return Response.json({ hash: null });
   }
 
-  const hash = createHmac("sha256", CHANNEL_TALK_SECRET_KEY)
+  const hash = createHmac("sha256", Buffer.from(CHANNEL_TALK_SECRET_KEY, "hex"))
     .update(user.id)
     .digest("hex");
 

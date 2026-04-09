@@ -7,7 +7,7 @@ import { supabaseAuth } from "@/lib/supabaseAuth";
 
 interface ChannelTalkProps {
   pluginKey?: string;
-  memberHash?: string | null; // 서버에서 생성한 HMAC-SHA256(userId, secret)
+  memberHash?: string | null;
 }
 
 export default function ChannelTalk({ pluginKey, memberHash: initialMemberHash }: ChannelTalkProps) {
@@ -21,10 +21,8 @@ export default function ChannelTalk({ pluginKey, memberHash: initialMemberHash }
   const isBootingRef = useRef(false);
   const currentUserIdRef = useRef<string | null>(null);
   const currentMemberHashRef = useRef<string | null>(initialMemberHash ?? null);
-  // 401 에러가 난 hash는 재시도하지 않음
-  const failedMemberHashRef = useRef<string | null>(null);
 
-  // client-side 로그인 시 memberHash 동적 fetch
+  // client-side 로그인 시 (layout.tsx prop이 null인 경우) memberHash 동적 fetch
   useEffect(() => {
     if (!user?.id) {
       setMemberHash(null);
@@ -110,7 +108,6 @@ export default function ChannelTalk({ pluginKey, memberHash: initialMemberHash }
 
     const w = window as any;
 
-    // 채널톡 placeholder 함수 설정
     if (!w.ChannelIO) {
       const ch: any = function () {
         ch.c(arguments);
@@ -122,7 +119,6 @@ export default function ChannelTalk({ pluginKey, memberHash: initialMemberHash }
       w.ChannelIO = ch;
     }
 
-    // 채널톡 스크립트 로드
     if (!w.ChannelIOInitialized) {
       w.ChannelIOInitialized = true;
       const s = document.createElement("script");
@@ -141,10 +137,9 @@ export default function ChannelTalk({ pluginKey, memberHash: initialMemberHash }
     const needsReboot =
       !isBootedRef.current ||
       userChanged ||
-      (user?.id && memberHashChanged && !!memberHash && memberHash !== failedMemberHashRef.current);
+      (user?.id && memberHashChanged && !!memberHash);
 
     if (needsReboot) {
-      // 이미 boot된 상태에서 유저/hash가 바뀌면 shutdown 먼저
       if (isBootedRef.current && (userChanged || memberHashChanged)) {
         w.ChannelIO("shutdown");
         isBootedRef.current = false;
@@ -162,13 +157,10 @@ export default function ChannelTalk({ pluginKey, memberHash: initialMemberHash }
           }
         : undefined;
 
-      // 이전에 401 실패한 hash는 사용하지 않음
-      const safeHash = memberHash && memberHash !== failedMemberHashRef.current ? memberHash : null;
-
       const bootSettings: any = { pluginKey: channelPluginKey };
-      if (user && safeHash) {
+      if (user && memberHash) {
         bootSettings.memberId = user.id;
-        bootSettings.memberHash = safeHash;
+        bootSettings.memberHash = memberHash;
       }
       if (user && userProfile) {
         bootSettings.profile = userProfile;
@@ -185,24 +177,7 @@ export default function ChannelTalk({ pluginKey, memberHash: initialMemberHash }
           console.error("Channel Talk boot error:", error);
           isBootedRef.current = false;
           currentUserIdRef.current = null;
-
-          // memberId로 boot 실패 시 → 해당 hash 실패로 기록 후 익명으로 재시도
-          if (bootSettings.memberId) {
-            failedMemberHashRef.current = safeHash;
-            const fallbackSettings: any = { pluginKey: channelPluginKey };
-            if (user && userProfile) fallbackSettings.profile = userProfile;
-
-            isBootedRef.current = true;
-            isBootingRef.current = true;
-            currentUserIdRef.current = currentUserId;
-
-            w.ChannelIO("boot", fallbackSettings, (err2: any) => {
-              isBootingRef.current = false;
-              if (!err2) {
-                w.ChannelIO("showChannelButton");
-              }
-            });
-          }
+          currentMemberHashRef.current = null;
         } else {
           w.ChannelIO("showChannelButton");
         }
