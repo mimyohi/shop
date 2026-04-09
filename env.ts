@@ -6,6 +6,8 @@ export const NEXT_PUBLIC_PORTONE_CHANNEL_KEY_CARD = process.env.NEXT_PUBLIC_PORT
 export const NEXT_PUBLIC_PORTONE_CHANNEL_KEY_TRANSFER = process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY_TRANSFER!;
 export const NEXT_PUBLIC_PORTONE_CHANNEL_KEY_VIRTUAL_ACCOUNT = process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY_VIRTUAL_ACCOUNT!;
 export const NEXT_PUBLIC_CHANNEL_TALK_PLUGIN_KEY = process.env.NEXT_PUBLIC_CHANNEL_TALK_PLUGIN_KEY!;
+// 멤버 인증용 Secret Key (서버 전용, ChannelTalk 대시보드 > 보안 > 멤버 인증에서 발급)
+export const CHANNEL_TALK_SECRET_KEY = process.env.CHANNEL_TALK_SECRET_KEY;
 
 // 서버 전용 환경변수 (클라이언트에서는 undefined)
 export const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;

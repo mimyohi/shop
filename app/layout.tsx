@@ -6,6 +6,8 @@ import ChannelTalk from "@/components/ChannelTalk";
 import ReactQueryProvider from "@/providers/ReactQueryProvider";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { createClient } from "@/lib/supabaseServer";
+import { createHmac } from "crypto";
+import { CHANNEL_TALK_SECRET_KEY } from "@/env";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -54,6 +56,13 @@ export default async function RootLayout({
       }
     : null;
 
+  // 채널톡 멤버 인증 hash (서버에서 생성)
+  // ChannelTalk 대시보드 > 설정 > 보안 > 멤버 인증에서 Secret Key 발급 후 .env에 CHANNEL_TALK_SECRET_KEY=... 추가
+  const channelTalkMemberHash =
+    user && CHANNEL_TALK_SECRET_KEY
+      ? createHmac("sha256", CHANNEL_TALK_SECRET_KEY).update(user.id).digest("hex")
+      : null;
+
   return (
     <html lang="ko">
       <head>
@@ -67,7 +76,7 @@ export default async function RootLayout({
           <ReactQueryProvider>
             <AuthProvider initialUser={initialUser} initialProfile={profile}>
               {children}
-              <ChannelTalk />
+              <ChannelTalk memberHash={channelTalkMemberHash} />
             </AuthProvider>
           </ReactQueryProvider>
         </NuqsAdapter>

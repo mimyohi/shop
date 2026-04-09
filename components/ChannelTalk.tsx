@@ -7,9 +7,10 @@ import { supabaseAuth } from "@/lib/supabaseAuth";
 
 interface ChannelTalkProps {
   pluginKey?: string;
+  memberHash?: string | null; // 서버에서 생성한 HMAC-SHA256(userId, secret)
 }
 
-export default function ChannelTalk({ pluginKey }: ChannelTalkProps) {
+export default function ChannelTalk({ pluginKey, memberHash }: ChannelTalkProps) {
   const channelPluginKey = pluginKey || NEXT_PUBLIC_CHANNEL_TALK_PLUGIN_KEY;
   const { user, profile } = useOptionalAuthContext();
   const [purchasedProducts, setPurchasedProducts] = useState<string>("");
@@ -138,9 +139,14 @@ export default function ChannelTalk({ pluginKey }: ChannelTalkProps) {
         pluginKey: channelPluginKey,
       };
 
-      // user가 있으면 항상 memberId 설정 (profile 로드 여부와 무관)
-      if (user) {
+      // memberHash가 있을 때만 memberId 설정
+      // (Identity Verification이 활성화된 경우 hash 없이 memberId 보내면 401 → 버튼 사라짐)
+      if (user && memberHash) {
         bootSettings.memberId = user.id;
+        bootSettings.memberHash = memberHash;
+      }
+      // hash 없이도 profile은 항상 전달 (이름/전화번호/이메일이 상담창에 표시됨)
+      if (user && userProfile) {
         bootSettings.profile = userProfile;
       }
 
@@ -157,8 +163,8 @@ export default function ChannelTalk({ pluginKey }: ChannelTalkProps) {
           isBootedRef.current = false;
           currentUserIdRef.current = null;
         } else {
-          // boot 완료 후 버튼 표시 보장
-          w.ChannelIO("show");
+          // boot 완료 후 채널 버튼 표시 보장
+          w.ChannelIO("showChannelButton");
         }
       });
     }
