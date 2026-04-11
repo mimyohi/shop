@@ -126,7 +126,8 @@ CREATE TABLE IF NOT EXISTS products (
   sale_end_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW()),
   updated_at TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW()),
-  deleted_at TIMESTAMPTZ DEFAULT NULL
+  deleted_at TIMESTAMPTZ DEFAULT NULL,
+  display_order INTEGER DEFAULT 0
 );
 
 COMMENT ON COLUMN products.is_new_badge IS 'NEW 뱃지 표시 여부';
@@ -144,6 +145,7 @@ CREATE INDEX IF NOT EXISTS idx_products_new_badge ON products(is_new_badge) WHER
 CREATE INDEX IF NOT EXISTS idx_products_sale_badge ON products(is_sale_badge) WHERE is_sale_badge = true;
 CREATE INDEX IF NOT EXISTS idx_products_deleted_at ON products(deleted_at);
 CREATE INDEX IF NOT EXISTS idx_products_active ON products(id) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_products_display_order ON products(display_order ASC);
 
 DROP TRIGGER IF EXISTS trigger_update_products_updated_at ON products;
 CREATE TRIGGER trigger_update_products_updated_at
