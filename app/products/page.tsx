@@ -52,7 +52,7 @@ async function ProductsContent({
   const params = await searchParams;
   const search = params.search || "";
   const category = params.category || "";
-  const sortBy = (params.sortBy as SortOption) || "latest";
+  const sortBy = (params.sortBy as SortOption) || "recommended";
   const currentPage = parseInt(params.page || "1", 10);
 
   const productData = await productsRepository.findMany({
