@@ -3,9 +3,10 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export type SortOption = "latest" | "price_asc" | "price_desc";
+export type SortOption = "recommended" | "latest" | "price_asc" | "price_desc";
 
 const sortOptions: { value: SortOption; label: string }[] = [
+  { value: "recommended", label: "추천순" },
   { value: "latest", label: "최신순" },
   { value: "price_asc", label: "낮은 가격순" },
   { value: "price_desc", label: "높은 가격순" },
@@ -18,7 +19,7 @@ export default function ProductFilter() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const currentSort = (searchParams.get("sortBy") as SortOption) || "latest";
+  const currentSort = (searchParams.get("sortBy") as SortOption) || "recommended";
 
   const handleSortChange = (sortBy: SortOption) => {
     const params = new URLSearchParams(searchParams.toString());

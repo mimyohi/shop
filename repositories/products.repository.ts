@@ -6,7 +6,7 @@ export interface ProductFilters {
   category?: string;
   minPrice?: number;
   maxPrice?: number;
-  sortBy?: "latest" | "price_asc" | "price_desc" | "name";
+  sortBy?: "recommended" | "latest" | "price_asc" | "price_desc" | "name";
   page?: number;
   limit?: number;
 }
@@ -83,7 +83,7 @@ export const productsRepository = {
     const {
       search,
       category,
-      sortBy = "latest",
+      sortBy = "recommended",
       page = 1,
       limit = 20,
     } = filters;
@@ -110,7 +110,9 @@ export const productsRepository = {
     }
 
     // 정렬 (price 정렬은 클라이언트 사이드에서 처리)
-    if (sortBy === "name") {
+    if (sortBy === "recommended") {
+      query = query.order("display_order", { ascending: true });
+    } else if (sortBy === "name") {
       query = query.order("name", { ascending: true });
     } else {
       query = query.order("created_at", { ascending: false });
